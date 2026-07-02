@@ -1,0 +1,44 @@
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import apiRouter from './routes';
+import { errorHandler } from './middleware/errorHandler';
+import { config } from './config';
+
+const app = express();
+
+// Enable Cross-Origin Resource Sharing
+app.use(cors({
+  origin: config.clientUrl,
+  credentials: true
+}));
+
+// Enable JSON request body parsing
+app.use(express.json());
+
+// Enable URL-encoded request body parsing
+app.use(express.urlencoded({ extended: true }));
+
+// Central base health-check route
+app.get('/api/health', (req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'Smart Health & Food Guide API is running'
+  });
+});
+
+// Mount modular sub-routes under the "/api" namespace
+app.use('/api', apiRouter);
+
+// Fallback for unhandled wildcards (404 Not Found)
+app.use('*', (req: Request, res: Response) => {
+  res.status(404).json({
+    status: 'error',
+    statusCode: 404,
+    message: `Cannot handle ${req.method} on requested path ${req.baseUrl || req.path}`
+  });
+});
+
+// Centralized error handling middleware
+app.use(errorHandler);
+
+export default app;
