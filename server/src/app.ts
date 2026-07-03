@@ -29,8 +29,8 @@ app.get('/api/health', (req: Request, res: Response) => {
 // Mount modular sub-routes under the "/api" namespace
 app.use('/api', apiRouter);
 
-// Fallback for unhandled wildcards (404 Not Found)
-app.use('*', (req: Request, res: Response) => {
+// Fallback for unhandled API wildcards (404 Not Found)
+app.use('/api/*', (req: Request, res: Response) => {
   res.status(404).json({
     status: 'error',
     statusCode: 404,

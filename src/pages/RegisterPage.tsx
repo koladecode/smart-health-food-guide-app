@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, Heart, Lock, Mail, ShieldCheck, User } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import { Card, CardContent } from '../components/Card';
 import { Input, Select } from '../components/Input';
@@ -9,6 +10,7 @@ import Alert from '../components/Alert';
 
 export default function RegisterPage() {
   const { navigateTo } = useNavigation();
+  const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +28,7 @@ export default function RegisterPage() {
     { value: 'allergy', label: 'Allergen Avoidance Guidance' },
   ];
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -53,14 +55,14 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    // Simulate registration
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await register(email, password);
       setSuccess(true);
-      setTimeout(() => {
-        navigateTo('dashboard');
-      }, 1000);
-    }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please check your credentials and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

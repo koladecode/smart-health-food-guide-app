@@ -70,7 +70,7 @@ const DIETARY_PREFERENCES = [
 
 export default function ProfileFormPage() {
   const { navigateTo } = useNavigation();
-  const { profile, saveProfile } = useHealthProfile();
+  const { profile, saveProfile, loadingProfile } = useHealthProfile();
 
   const [step, setStep] = useState(1);
   const [success, setSuccess] = useState(false);
@@ -218,7 +218,7 @@ export default function ProfileFormPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep(3)) return;
 
@@ -238,14 +238,16 @@ export default function ProfileFormPage() {
       alcoholConsumption: alcoholConsumption || undefined
     };
 
-    saveProfile(finalProfile);
-    setSuccess(true);
-    
-    // Smooth transition
-    setTimeout(() => {
-      setSuccess(false);
-      navigateTo('profile-summary');
-    }, 1500);
+    try {
+      await saveProfile(finalProfile);
+      setSuccess(true);
+      setTimeout(() => {
+        setSuccess(false);
+        navigateTo('profile-summary');
+      }, 1500);
+    } catch (err) {
+      console.error('Error saving profile to database:', err);
+    }
   };
 
   return (
@@ -624,6 +626,7 @@ export default function ProfileFormPage() {
                       variant="primary"
                       size="md"
                       onClick={handleSubmit}
+                      isLoading={loadingProfile}
                       icon={<Save className="w-4 h-4" />}
                       id="form-submit-btn"
                     >

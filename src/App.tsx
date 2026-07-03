@@ -7,6 +7,7 @@ import React from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { NavigationProvider, useNavigation } from './context/NavigationContext';
 import { HealthProfileProvider } from './context/HealthProfileContext';
+import { AuthProvider } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -41,9 +42,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <NavigationProvider>
-        <HealthProfileProvider>
-          <AppContent />
-        </HealthProfileProvider>
+        <AuthProvider>
+          <HealthProfileProvider>
+            <AppContent />
+          </HealthProfileProvider>
+        </AuthProvider>
       </NavigationProvider>
     </ThemeProvider>
   );

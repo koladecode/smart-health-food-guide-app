@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
 import Alert from '../components/Alert';
@@ -35,6 +36,7 @@ type ActiveTab = 'overview' | 'nutrition' | 'fitness' | 'medications';
 export default function DashboardPage() {
   const { navigateTo } = useNavigation();
   const { profile } = useHealthProfile();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,7 +52,7 @@ export default function DashboardPage() {
   const [hasAllergyAlert, setHasAllergyAlert] = useState(false);
 
   const userBio = {
-    name: profile ? profile.fullName : "Jane Doe",
+    name: profile ? profile.fullName : (user?.email?.split('@')[0] || "Jane Doe"),
     age: profile ? `${profile.age} yrs` : "28",
     weight: profile ? `${profile.weight} kg` : "68 kg",
     height: profile ? `${profile.height} cm` : "172 cm",
@@ -182,7 +184,7 @@ export default function DashboardPage() {
           <ThemeToggle />
           <button
             id="sidebar-logout-btn"
-            onClick={() => navigateTo('landing')}
+            onClick={logout}
             className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/15 rounded-xl font-semibold text-sm transition-colors text-left"
           >
             <LogOut className="w-5 h-5" />

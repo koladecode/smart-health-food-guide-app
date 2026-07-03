@@ -1,80 +1,45 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
+import { RecommendationService } from '../services/recommendationService';
+import { HealthProfileService } from '../services/healthProfileService';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 /**
- * Controller for personalized recommendation engine
+ * Controller for retrieving or generating personalized health and diet recommendations
  */
-export const getRecommendations = async (req: Request, res: Response, next: NextFunction) => {
+export const getRecommendations = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    // Placeholder: Generate structured guidelines for user
+    if (!req.user) {
+      res.status(401).json({
+        status: 'fail',
+        message: 'Unauthorized. Please sign in.'
+      });
+      return;
+    }
+
+    const userId = req.user.id;
+
+    // 1. Check for cached recommendations
+    let recs = await RecommendationService.getRecommendations(userId);
+
+    if (!recs) {
+      // 2. Fetch active health profile to generate suggestions
+      const profile = await HealthProfileService.getProfile(userId);
+      
+      if (!profile) {
+        res.status(404).json({
+          status: 'fail',
+          message: 'Health Profile not found. Please create a profile before generating recommendations.',
+        });
+        return;
+      }
+
+      // 3. Generate and cache recommendations
+      recs = await RecommendationService.generateAndSave(userId, profile);
+    }
+
     res.status(200).json({
       status: 'success',
-      data: {
-        bmiValue: 23.0,
-        bmiCategory: 'Healthy Weight',
-        foodsToEat: [
-          {
-            id: 'eat-poultry',
-            title: 'Skinless Chicken or Turkey Breast',
-            description: 'Lean protein to assist in physical repair, thermogenesis, and satiety.',
-            badge: 'Lean Protein'
-          },
-          {
-            id: 'eat-greens',
-            title: 'Dark Leafy Greens (Spinach & Kale)',
-            description: 'Abundant in non-heme iron, calcium, magnesium, and Vitamin K for skeletal and vascular protection.',
-            badge: 'Phytonutrients'
-          }
-        ],
-        foodsToAvoid: [
-          {
-            id: 'avoid-refined',
-            title: 'Refined Sugar & High-Fructose Corn Syrup',
-            description: 'Triggers systemic inflammation, increases liver fat deposition, and causes steep insulin spikes.',
-            badge: 'Inflammatory'
-          }
-        ],
-        healthyCombinations: [
-          {
-            id: 'comb-iron-vitc',
-            title: 'Plant Iron + Vitamin C',
-            description: 'Pair non-heme iron sources with active Vitamin C to convert iron into a highly soluble ferrous state, boosting absorption by up to 300%.',
-            badge: 'Absorption Booster'
-          }
-        ],
-        waterIntake: {
-          liters: 2.5,
-          cups: 10,
-          description: 'Your clinical hydration baseline is calculated at approximately 2.5 Liters daily.',
-          tips: [
-            'Drink 250ml of warm water immediately upon waking to trigger kidney filtration.',
-            'Sip fluid gradually throughout the day.'
-          ]
-        },
-        exercise: {
-          type: 'Aerobic Efficiency & Resistance Circuit',
-          frequency: '4 Days / Week',
-          duration: '40-50 Minutes',
-          intensity: 'Moderate (Zone 2)',
-          description: 'Optimizes calorie burn, improves cardiovascular endurance, and enhances insulin sensitivity.',
-          routine: [
-            'Warm-up: Light dynamic stretching (5 mins).',
-            'Zone 2 Training: Brisk uphill walking or steady cycling (25 mins).',
-            'Satiety Resistance: Bodyweight push-ups, air squats, and planks.'
-          ],
-          precautions: [
-            'Track heart rate to ensure you stay in Zone 2 to maximize lipid fat oxidation.'
-          ]
-        },
-        lifestyleTips: [
-          {
-            id: 'life-sleep',
-            title: 'Prioritize Deep Circadian Sleep Anchors',
-            description: 'Aim for 7.5 to 8.5 hours of sleep to synchronize biological clock genes and normalize insulin.',
-            badge: 'Circadian Biology'
-          }
-        ],
-        createdAt: new Date()
-      }
+      data: recs,
     });
   } catch (error) {
     next(error);

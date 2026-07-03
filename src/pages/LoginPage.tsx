@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, Heart, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import { Card, CardContent } from '../components/Card';
 import { Input } from '../components/Input';
@@ -9,13 +10,14 @@ import Alert from '../components/Alert';
 
 export default function LoginPage() {
   const { navigateTo } = useNavigation();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -30,14 +32,14 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    // Simulate login for high-fidelity interactive flow
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await login(email, password);
       setSuccess(true);
-      setTimeout(() => {
-        navigateTo('dashboard');
-      }, 1000);
-    }, 1500);
+    } catch (err: any) {
+      setError(err.message || 'Incorrect email or password. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
