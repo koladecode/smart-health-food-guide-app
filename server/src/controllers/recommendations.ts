@@ -10,6 +10,7 @@ export const getRecommendations = async (req: AuthenticatedRequest, res: Respons
   try {
     if (!req.user) {
       res.status(401).json({
+        success: false,
         status: 'fail',
         message: 'Unauthorized. Please sign in.'
       });
@@ -27,6 +28,7 @@ export const getRecommendations = async (req: AuthenticatedRequest, res: Respons
       
       if (!profile) {
         res.status(404).json({
+          success: false,
           status: 'fail',
           message: 'Health Profile not found. Please create a profile before generating recommendations.',
         });
@@ -38,10 +40,15 @@ export const getRecommendations = async (req: AuthenticatedRequest, res: Respons
     }
 
     res.status(200).json({
+      success: true,
       status: 'success',
       data: recs,
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      status: 'fail',
+      message: error.message || 'Failed to retrieve or generate recommendations'
+    });
   }
 };

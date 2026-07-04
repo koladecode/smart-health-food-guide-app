@@ -20,6 +20,7 @@ export const requireAuth = async (
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({
+        success: false,
         status: 'fail',
         message: 'No authorization token provided. Please sign in.',
       });
@@ -33,6 +34,7 @@ export const requireAuth = async (
 
     if (error || !user) {
       res.status(401).json({
+        success: false,
         status: 'fail',
         message: 'Invalid or expired session. Please sign in again.',
       });
@@ -47,6 +49,7 @@ export const requireAuth = async (
     next();
   } catch (error: any) {
     res.status(401).json({
+      success: false,
       status: 'fail',
       message: `Authentication failed: ${error.message}`,
     });
