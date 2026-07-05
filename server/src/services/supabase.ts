@@ -8,7 +8,7 @@ let supabaseAdminInstance: SupabaseClient | null = null;
  */
 export function getSupabaseAdminClient(): SupabaseClient {
   if (!supabaseAdminInstance) {
-    const url = process.env.SUPABASE_URL;
+    let url = process.env.SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!url) {
@@ -16,6 +16,14 @@ export function getSupabaseAdminClient(): SupabaseClient {
     }
     if (!serviceRoleKey) {
       throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required');
+    }
+
+    // Sanitize URL to ensure it contains only the project base URL without paths like /rest/v1
+    try {
+      const parsedUrl = new URL(url);
+      url = `${parsedUrl.protocol}//${parsedUrl.host}`;
+    } catch {
+      url = url.replace(/\/rest\/v1\/?$/, '').replace(/\/auth\/v1\/?$/, '').trim();
     }
 
     supabaseAdminInstance = createClient(url, serviceRoleKey, {

@@ -9,7 +9,7 @@ let supabaseInstance: SupabaseClient | null = null;
  */
 export function getSupabaseClient(): SupabaseClient {
   if (!supabaseInstance) {
-    const url = config.supabaseUrl;
+    let url = config.supabaseUrl;
     const anonKey = config.supabaseAnonKey;
 
     if (!url) {
@@ -19,6 +19,14 @@ export function getSupabaseClient(): SupabaseClient {
       throw new Error(
         'SUPABASE_ANON_KEY environment variable is required. Please add it via Settings/Secrets or environment variables.'
       );
+    }
+
+    // Sanitize URL to ensure it contains only the project base URL without paths like /rest/v1
+    try {
+      const parsedUrl = new URL(url);
+      url = `${parsedUrl.protocol}//${parsedUrl.host}`;
+    } catch {
+      url = url.replace(/\/rest\/v1\/?$/, '').replace(/\/auth\/v1\/?$/, '').trim();
     }
 
     supabaseInstance = createClient(url, anonKey, {
