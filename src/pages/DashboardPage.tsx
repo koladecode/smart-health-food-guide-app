@@ -35,8 +35,8 @@ type ActiveTab = 'overview' | 'nutrition' | 'fitness' | 'medications';
 
 export default function DashboardPage() {
   const { navigateTo } = useNavigation();
-  const { profile } = useHealthProfile();
-  const { user, logout } = useAuth();
+  const { profile, loadingProfile, isProfileFetched } = useHealthProfile();
+  const { user, logout, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -107,6 +107,35 @@ export default function DashboardPage() {
   };
 
   const allergenInfo = getAllergenWarningContent();
+
+  if (loading || !isProfileFetched || loadingProfile) {
+    return (
+      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300" id="dashboard-loading">
+        <header className="px-6 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950" id="loading-header">
+          <div className="flex items-center gap-2">
+            <div className="p-1 bg-emerald-600 rounded-lg text-white">
+              <Heart className="w-5 h-5" />
+            </div>
+            <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+              Smart Health Guide
+            </span>
+          </div>
+          <ThemeToggle />
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950" id="loading-main">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" id="loading-spinner" />
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading your health dashboard...</p>
+          </div>
+        </main>
+
+        <footer className="py-6 border-t border-slate-100 dark:border-slate-900 text-center text-xs text-slate-400 bg-white dark:bg-slate-950" id="loading-footer">
+          © 2026 Smart Health Guide
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 flex flex-col md:flex-row" id="dashboard-root">
@@ -243,7 +272,17 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-6" id="tab-overview-content">
               
               {/* Health Profile Completion Callout */}
-              {!profile ? (
+              {!isProfileFetched || loadingProfile ? (
+                <div className="p-5 rounded-2xl bg-slate-100/50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 animate-pulse text-left flex items-center justify-between" id="dashboard-profile-loading">
+                  <div className="flex gap-3 items-center">
+                    <div className="w-5 h-5 bg-slate-200 dark:bg-slate-800 rounded-full" />
+                    <div className="flex flex-col gap-1.5">
+                      <div className="h-4 w-36 bg-slate-200 dark:bg-slate-800 rounded" />
+                      <div className="h-3 w-64 bg-slate-200 dark:bg-slate-800 rounded" />
+                    </div>
+                  </div>
+                </div>
+              ) : !profile ? (
                 <div className="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/15 border border-amber-200/50 dark:border-amber-900/30 text-left flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" id="dashboard-profile-setup-cta">
                   <div className="flex gap-3">
                     <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />

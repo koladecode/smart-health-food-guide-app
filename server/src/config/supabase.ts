@@ -15,6 +15,7 @@ export function getSupabaseClient(): SupabaseClient {
     if (!url) {
       throw new Error('SUPABASE_URL environment variable is required');
     }
+
     if (!anonKey) {
       throw new Error(
         'SUPABASE_ANON_KEY environment variable is required. Please add it via Settings/Secrets or environment variables.'

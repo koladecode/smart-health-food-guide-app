@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import { Card, CardContent } from '../components/Card';
 import ThemeToggle from '../components/ThemeToggle';
@@ -22,6 +23,7 @@ import Alert from '../components/Alert';
 
 export default function LandingPage() {
   const { navigateTo } = useNavigation();
+  const { isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
@@ -115,7 +117,7 @@ export default function LandingPage() {
     },
     {
       q: "How secure is my health and biometric profile?",
-      a: "Extremely secure. All data is managed locally and synced via secure authentication schemas (e.g. Supabase Auth). We never share or sell personal biological records."
+      a: "Extremely secure. Your profile is synchronized with the authenticated backend and stored securely in your user account using industry-standard protocols. We never share or sell personal biological records."
     },
     {
       q: "Does it support custom diets like Keto, Vegan, or FODMAP?",
@@ -156,12 +158,20 @@ export default function LandingPage() {
             {/* Desktop CTA actions */}
             <div className="hidden md:flex items-center gap-4" id="navbar-desktop-actions">
               <ThemeToggle />
-              <Button variant="ghost" size="sm" onClick={() => navigateTo('login')} id="navbar-login-btn">
-                Log In
-              </Button>
-              <Button variant="primary" size="sm" onClick={() => navigateTo('register')} id="navbar-register-btn">
-                Get Started
-              </Button>
+              {isAuthenticated ? (
+                <Button variant="primary" size="sm" onClick={() => navigateTo('dashboard')} id="navbar-dashboard-btn">
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => navigateTo('login')} id="navbar-login-btn">
+                    Log In
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={() => navigateTo('register')} id="navbar-register-btn">
+                    Get Started
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -218,12 +228,20 @@ export default function LandingPage() {
             </a>
             <hr className="border-slate-100 dark:border-slate-800" />
             <div className="flex flex-col gap-3 pt-2">
-              <Button variant="outline" size="md" className="w-full" onClick={() => { navigateTo('login'); setMobileMenuOpen(false); }} id="navbar-mobile-login">
-                Log In
-              </Button>
-              <Button variant="primary" size="md" className="w-full" onClick={() => { navigateTo('register'); setMobileMenuOpen(false); }} id="navbar-mobile-register">
-                Get Started
-              </Button>
+              {isAuthenticated ? (
+                <Button variant="primary" size="md" className="w-full" onClick={() => { navigateTo('dashboard'); setMobileMenuOpen(false); }} id="navbar-mobile-dashboard">
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" size="md" className="w-full" onClick={() => { navigateTo('login'); setMobileMenuOpen(false); }} id="navbar-mobile-login">
+                    Log In
+                  </Button>
+                  <Button variant="primary" size="md" className="w-full" onClick={() => { navigateTo('register'); setMobileMenuOpen(false); }} id="navbar-mobile-register">
+                    Get Started
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -255,12 +273,20 @@ export default function LandingPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-6" id="hero-actions">
-                <Button variant="primary" size="lg" className="shadow-lg shadow-emerald-500/15" onClick={() => navigateTo('register')} id="hero-cta-register">
-                  Create Free Profile <ArrowRight className="w-5 h-5 ml-1" />
-                </Button>
-                <Button variant="outline" size="lg" onClick={() => navigateTo('login')} id="hero-cta-login">
-                  Access Dashboard
-                </Button>
+                {isAuthenticated ? (
+                  <Button variant="primary" size="lg" className="shadow-lg shadow-emerald-500/15" onClick={() => navigateTo('dashboard')} id="hero-cta-dashboard">
+                    Go to Your Dashboard <ArrowRight className="w-5 h-5 ml-1" />
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="primary" size="lg" className="shadow-lg shadow-emerald-500/15" onClick={() => navigateTo('register')} id="hero-cta-register">
+                      Create Free Profile <ArrowRight className="w-5 h-5 ml-1" />
+                    </Button>
+                    <Button variant="outline" size="lg" onClick={() => navigateTo('login')} id="hero-cta-login">
+                      Access Dashboard
+                    </Button>
+                  </>
+                )}
               </div>
 
               {/* Small alert disclaimer */}

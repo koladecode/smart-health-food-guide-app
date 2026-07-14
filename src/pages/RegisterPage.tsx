@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, Heart, Lock, Mail, ShieldCheck, User } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useAuth } from '../context/AuthContext';
+import { useHealthProfile } from '../context/HealthProfileContext';
 import Button from '../components/Button';
 import { Card, CardContent } from '../components/Card';
 import { Input, Select } from '../components/Input';
@@ -10,7 +11,8 @@ import Alert from '../components/Alert';
 
 export default function RegisterPage() {
   const { navigateTo } = useNavigation();
-  const { register } = useAuth();
+  const { register, isAuthenticated, loading: authLoading } = useAuth();
+  const { profile, loadingProfile } = useHealthProfile();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +21,16 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && !loadingProfile) {
+      if (profile) {
+        navigateTo('dashboard');
+      } else {
+        navigateTo('profile-form');
+      }
+    }
+  }, [isAuthenticated, authLoading, profile, loadingProfile, navigateTo]);
 
   const goalOptions = [
     { value: 'general', label: 'General Health Awareness' },

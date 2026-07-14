@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
+import { useAuth } from '../context/AuthContext';
 import { generateRecommendations } from '../utils/recommendationEngine';
 import Button from '../components/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/Card';
@@ -33,7 +34,57 @@ import Alert from '../components/Alert';
 
 export default function RecommendationsPage() {
   const { navigateTo } = useNavigation();
-  const { profile } = useHealthProfile();
+  const { profile, loadingProfile } = useHealthProfile();
+  const { fetchWithAuth, isAuthenticated } = useAuth();
+
+  // Sync recommendations to the database on mount/load
+  React.useEffect(() => {
+    if (isAuthenticated && profile) {
+      console.log('[DEBUG_LOG] [RECOMMENDATIONS_PAGE] Syncing recommendations with backend database...');
+      fetchWithAuth('/api/recommendations')
+        .then(async (res) => {
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            console.error('[DEBUG_LOG] [RECOMMENDATIONS_PAGE] Failed to sync recommendations to database:', errData?.message || res.statusText);
+          } else {
+            console.log('[DEBUG_LOG] [RECOMMENDATIONS_PAGE] Recommendations synchronized with backend successfully.');
+          }
+        })
+        .catch((err) => {
+          console.error('[DEBUG_LOG] [RECOMMENDATIONS_PAGE] Error syncing recommendations:', err);
+        });
+    }
+  }, [isAuthenticated, profile, fetchWithAuth]);
+
+  // 0. If profile is loading, show loading spinner
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300" id="recs-profile-loading">
+        <header className="px-4 py-4 md:px-8 border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex justify-between items-center" id="loading-recs-header">
+          <div className="flex items-center gap-2">
+            <div className="p-1 bg-emerald-600 rounded-lg text-white">
+              <Heart className="w-5 h-5" />
+            </div>
+            <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+              Smart Health Guide
+            </span>
+          </div>
+          <ThemeToggle />
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6" id="loading-recs-main">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading your profile and personalized recommendations...</p>
+          </div>
+        </main>
+
+        <footer className="py-6 border-t border-slate-100 dark:border-slate-900 text-center text-xs text-slate-400" id="loading-recs-footer">
+          © 2026 Smart Health Guide
+        </footer>
+      </div>
+    );
+  }
 
   // 1. If no profile, show friendly incomplete message
   if (!profile) {
@@ -541,7 +592,7 @@ export default function RecommendationsPage() {
       {/* Footer copyright */}
       <footer className="px-4 py-6 md:px-8 border-t border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex justify-between items-center text-xs text-slate-400" id="recs-footer">
         <span>© 2026 Smart Health Guide</span>
-        <span>Secure Sandboxed Analysis</span>
+        <span>Secure Account Analysis</span>
       </footer>
 
     </div>

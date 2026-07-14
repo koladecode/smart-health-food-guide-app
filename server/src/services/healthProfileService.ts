@@ -117,25 +117,32 @@ export class HealthProfileService {
 
     let profile;
     try {
-      const { data, error } = await supabase
+      console.log('[DEBUG_LOG] Preparing to insert health_profiles with payload:', JSON.stringify(dbPayload, null, 2));
+      const res = await supabase
         .from('health_profiles')
         .insert(dbPayload)
         .select()
         .single();
 
-      if (error) throw error;
-      profile = data;
+      console.log('[DEBUG_LOG] Supabase insert response (health_profiles):', JSON.stringify({ data: res.data, error: res.error }, null, 2));
+
+      if (res.error) throw res.error;
+      profile = res.data;
     } catch (err: any) {
+      console.error('[DEBUG_LOG] Exception caught during health_profiles insert:', err);
       if (err.message && err.message.includes('gender')) {
         console.warn('[HEALTH_PROFILE_SERVICE] Gender column does not exist in DB. Retrying insert without gender.');
         delete dbPayload.gender;
-        const { data, error } = await supabase
+        console.log('[DEBUG_LOG] Retrying insert health_profiles with payload:', JSON.stringify(dbPayload, null, 2));
+        const res = await supabase
           .from('health_profiles')
           .insert(dbPayload)
           .select()
           .single();
-        if (error) throw error;
-        profile = data;
+
+        console.log('[DEBUG_LOG] Supabase retry insert response (health_profiles):', JSON.stringify({ data: res.data, error: res.error }, null, 2));
+        if (res.error) throw res.error;
+        profile = res.data;
       } else {
         throw err;
       }
@@ -167,10 +174,13 @@ export class HealthProfileService {
     });
 
     if (conditionRecords.length > 0) {
-      const { error: condError } = await supabase
+      console.log('[DEBUG_LOG] Preparing to insert health_conditions records:', JSON.stringify(conditionRecords, null, 2));
+      const res = await supabase
         .from('health_conditions')
         .insert(conditionRecords);
-      if (condError) throw condError;
+
+      console.log('[DEBUG_LOG] Supabase insert response (health_conditions):', JSON.stringify({ error: res.error }, null, 2));
+      if (res.error) throw res.error;
     }
 
     return this.getProfile(userId);
@@ -186,11 +196,14 @@ export class HealthProfileService {
     const supabase = getSupabaseAdminClient();
 
     // Retrieve profile first to get ID
+    console.log('[DEBUG_LOG] Retrieving health profile ID for user_id:', userId);
     const { data: existing, error: findError } = await supabase
       .from('health_profiles')
       .select('id')
       .eq('user_id', userId)
       .single();
+
+    console.log('[DEBUG_LOG] Retrieve profile ID response:', JSON.stringify({ data: existing, error: findError }, null, 2));
 
     if (findError) throw findError;
 
@@ -213,27 +226,34 @@ export class HealthProfileService {
 
     let updated;
     try {
-      const { data, error } = await supabase
+      console.log('[DEBUG_LOG] Preparing to update health_profiles with payload:', JSON.stringify(dbPayload, null, 2), 'for profile id:', existing.id);
+      const res = await supabase
         .from('health_profiles')
         .update(dbPayload)
         .eq('id', existing.id)
         .select()
         .single();
 
-      if (error) throw error;
-      updated = data;
+      console.log('[DEBUG_LOG] Supabase update response (health_profiles):', JSON.stringify({ data: res.data, error: res.error }, null, 2));
+
+      if (res.error) throw res.error;
+      updated = res.data;
     } catch (err: any) {
+      console.error('[DEBUG_LOG] Exception caught during health_profiles update:', err);
       if (err.message && err.message.includes('gender')) {
         console.warn('[HEALTH_PROFILE_SERVICE] Gender column does not exist in DB. Retrying update without gender.');
         delete dbPayload.gender;
-        const { data, error } = await supabase
+        console.log('[DEBUG_LOG] Retrying update health_profiles with payload:', JSON.stringify(dbPayload, null, 2));
+        const res = await supabase
           .from('health_profiles')
           .update(dbPayload)
           .eq('id', existing.id)
           .select()
           .single();
-        if (error) throw error;
-        updated = data;
+
+        console.log('[DEBUG_LOG] Supabase retry update response (health_profiles):', JSON.stringify({ data: res.data, error: res.error }, null, 2));
+        if (res.error) throw res.error;
+        updated = res.data;
       } else {
         throw err;
       }
@@ -245,12 +265,15 @@ export class HealthProfileService {
 
     if (healthConditions !== undefined || foodAllergies !== undefined) {
       // Clear old health_conditions
-      const { error: deleteError } = await supabase
+      console.log('[DEBUG_LOG] Preparing to delete existing health_conditions for profile_id:', existing.id);
+      const deleteRes = await supabase
         .from('health_conditions')
         .delete()
         .eq('profile_id', existing.id);
 
-      if (deleteError) throw deleteError;
+      console.log('[DEBUG_LOG] Supabase delete response (health_conditions):', JSON.stringify({ error: deleteRes.error }, null, 2));
+
+      if (deleteRes.error) throw deleteRes.error;
 
       const conditionRecords: any[] = [];
       const activeConditions = healthConditions || [];
@@ -277,10 +300,13 @@ export class HealthProfileService {
       });
 
       if (conditionRecords.length > 0) {
-        const { error: insertError } = await supabase
+        console.log('[DEBUG_LOG] Preparing to insert health_conditions records:', JSON.stringify(conditionRecords, null, 2));
+        const insertRes = await supabase
           .from('health_conditions')
           .insert(conditionRecords);
-        if (insertError) throw insertError;
+
+        console.log('[DEBUG_LOG] Supabase insert response (health_conditions):', JSON.stringify({ error: insertRes.error }, null, 2));
+        if (insertRes.error) throw insertRes.error;
       }
     }
 

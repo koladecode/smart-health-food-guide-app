@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 
 export interface HealthProfile {
@@ -23,6 +23,7 @@ interface HealthProfileContextType {
   clearProfile: () => void;
   loadingProfile: boolean;
   fetchProfile: () => Promise<void>;
+  isProfileFetched: boolean;
 }
 
 const HealthProfileContext = createContext<HealthProfileContextType | undefined>(undefined);
@@ -30,8 +31,10 @@ const HealthProfileContext = createContext<HealthProfileContextType | undefined>
 const LOCAL_STORAGE_KEY = 'smart_health_guide_profile';
 
 export function HealthProfileProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, fetchWithAuth } = useAuth();
+  const { isAuthenticated, token, fetchWithAuth } = useAuth();
   const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
+  const [isProfileFetched, setIsProfileFetched] = useState<boolean>(false);
+  const isFetchingRef = useRef(false);
   const [profile, setProfile] = useState<HealthProfile | null>(() => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -43,54 +46,106 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
   });
 
   const fetchProfile = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      console.log('[DEBUG_FRONTEND] fetchProfile called but isAuthenticated is false. Returning.');
+      return;
+    }
+    if (isFetchingRef.current) {
+      console.log('[DEBUG_FRONTEND] fetchProfile: fetch already in progress, skipping concurrent call.');
+      return;
+    }
     try {
+      isFetchingRef.current = true;
       setLoadingProfile(true);
+      console.log('[DEBUG_FRONTEND] fetchProfile: starting GET /api/profile request...');
       const response = await fetchWithAuth('/api/profile');
+      console.log('[DEBUG_FRONTEND] fetchProfile response status:', response.status);
       if (response.ok) {
         const result = await response.json();
+        console.log('[DEBUG_FRONTEND] fetchProfile response JSON result:', JSON.stringify(result, null, 2));
         if (result.status === 'success' && result.data?.profile) {
+          const profileData = result.data.profile;
           const fetchedProfile: HealthProfile = {
-            fullName: result.data.profile.fullName || '',
-            age: result.data.profile.age || '',
-            gender: result.data.profile.gender || 'Other',
-            height: result.data.profile.height || '',
-            weight: result.data.profile.weight || '',
-            activityLevel: result.data.profile.activityLevel || 'Sedentary',
-            healthGoal: result.data.profile.healthGoal || 'Improve Overall Health',
-            healthConditions: result.data.profile.healthConditions || [],
-            foodAllergies: result.data.profile.foodAllergies || [],
-            dietaryPreference: result.data.profile.dietaryPreference || 'None',
-            currentMedications: result.data.profile.currentMedications || '',
-            smokingStatus: result.data.profile.smokingStatus || 'Never',
-            alcoholConsumption: result.data.profile.alcoholConsumption || 'None',
+            fullName: profileData.fullName || profileData.full_name || '',
+            age: profileData.age !== undefined && profileData.age !== null ? Number(profileData.age) : '',
+            gender: profileData.gender || 'Other',
+            height: profileData.height !== undefined && profileData.height !== null ? Number(profileData.height) : '',
+            weight: profileData.weight !== undefined && profileData.weight !== null ? Number(profileData.weight) : '',
+            activityLevel: profileData.activityLevel || profileData.activity_level || 'Sedentary',
+            healthGoal: profileData.healthGoal || profileData.health_goal || 'Improve Overall Health',
+            healthConditions: profileData.healthConditions || profileData.medicalConditions || [],
+            foodAllergies: profileData.foodAllergies || profileData.allergies || [],
+            dietaryPreference: profileData.dietaryPreference || profileData.dietary_preference || 'None',
+            currentMedications: profileData.currentMedications || profileData.current_medications || '',
+            smokingStatus: profileData.smokingStatus || profileData.smoking_status || 'Never',
+            alcoholConsumption: profileData.alcoholConsumption || profileData.alcohol_consumption || 'None',
           };
+          console.log('[DEBUG_FRONTEND] fetchProfile mapping success. Setting profile state to:', JSON.stringify(fetchedProfile, null, 2));
           setProfile(fetchedProfile);
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fetchedProfile));
         } else {
-          // If profile is null, make sure we reflect that
+          console.log('[DEBUG_FRONTEND] fetchProfile result did not have status success or profile data. Setting profile to null.');
           setProfile(null);
         }
       } else {
-        setProfile(null);
+        console.log('[DEBUG_FRONTEND] fetchProfile response.ok is false. Status:', response.status);
+        if (response.status === 404) {
+          setProfile(null);
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+        }
       }
     } catch (err) {
-      console.error('Error fetching profile from server:', err);
+      console.error('[DEBUG_FRONTEND] Error fetching profile from server:', err);
     } finally {
+      isFetchingRef.current = false;
       setLoadingProfile(false);
+      setIsProfileFetched(true);
+      console.log('[DEBUG_FRONTEND] fetchProfile complete. loadingProfile set to false, isProfileFetched set to true.');
     }
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && token) {
+      let hasCache = false;
+      try {
+        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (stored) {
+          const profileData = JSON.parse(stored);
+          const mappedProfile: HealthProfile = {
+            fullName: profileData.fullName || profileData.full_name || '',
+            age: profileData.age !== undefined && profileData.age !== null ? Number(profileData.age) : '',
+            gender: profileData.gender || 'Other',
+            height: profileData.height !== undefined && profileData.height !== null ? Number(profileData.height) : '',
+            weight: profileData.weight !== undefined && profileData.weight !== null ? Number(profileData.weight) : '',
+            activityLevel: profileData.activityLevel || profileData.activity_level || 'Sedentary',
+            healthGoal: profileData.healthGoal || profileData.health_goal || 'Improve Overall Health',
+            healthConditions: profileData.healthConditions || profileData.medicalConditions || [],
+            foodAllergies: profileData.foodAllergies || profileData.allergies || [],
+            dietaryPreference: profileData.dietaryPreference || profileData.dietary_preference || 'None',
+            currentMedications: profileData.currentMedications || profileData.current_medications || '',
+            smokingStatus: profileData.smokingStatus || profileData.smoking_status || 'Never',
+            alcoholConsumption: profileData.alcoholConsumption || profileData.alcohol_consumption || 'None',
+          };
+          setProfile(mappedProfile);
+          setIsProfileFetched(true);
+          hasCache = true;
+        }
+      } catch (e) {
+        console.error('Error loading cached profile:', e);
+      }
+      if (!hasCache) {
+        setIsProfileFetched(false);
+      }
       fetchProfile();
-    } else {
+    } else if (!isAuthenticated) {
       setProfile(null);
+      setIsProfileFetched(true);
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, token]);
 
   const saveProfile = async (newProfile: HealthProfile) => {
+    const previousProfile = profile;
     // Optimistic UI update
     setProfile(newProfile);
     try {
@@ -106,10 +161,15 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
           method: 'POST',
           body: JSON.stringify(newProfile),
         });
-        if (!response.ok) {
-          throw new Error('Failed to save health profile to backend database.');
+        let result: any;
+        try {
+          result = await response.json();
+        } catch (e) {
+          // ignore
         }
-        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result?.message || 'Failed to save health profile to backend database.');
+        }
         if (result.status === 'success' && result.data?.profile) {
           const savedDbProfile: HealthProfile = {
             fullName: result.data.profile.fullName || newProfile.fullName,
@@ -128,9 +188,23 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
           };
           setProfile(savedDbProfile);
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(savedDbProfile));
+        } else {
+          throw new Error(result.message || 'Failed to save health profile to backend database.');
         }
       } catch (err) {
         console.error('Error syncing saved profile with server:', err);
+        // Rollback optimistic update on failure to maintain integrity
+        setProfile(previousProfile);
+        try {
+          if (previousProfile) {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(previousProfile));
+          } else {
+            localStorage.removeItem(LOCAL_STORAGE_KEY);
+          }
+        } catch (e) {
+          console.error('Error rolling back localStorage:', e);
+        }
+        throw err;
       } finally {
         setLoadingProfile(false);
       }
@@ -139,6 +213,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
 
   const clearProfile = () => {
     setProfile(null);
+    setIsProfileFetched(true);
     try {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     } catch (e) {
@@ -148,7 +223,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
 
   return (
     <HealthProfileContext.Provider
-      value={{ profile, saveProfile, clearProfile, loadingProfile, fetchProfile }}
+      value={{ profile, saveProfile, clearProfile, loadingProfile, fetchProfile, isProfileFetched }}
       id="health-profile-provider-wrapper"
     >
       {children}

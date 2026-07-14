@@ -14,6 +14,7 @@ export function getSupabaseAdminClient(): SupabaseClient {
     if (!url) {
       throw new Error('SUPABASE_URL environment variable is required');
     }
+
     if (!serviceRoleKey) {
       throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required');
     }

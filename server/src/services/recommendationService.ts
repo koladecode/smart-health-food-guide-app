@@ -100,6 +100,7 @@ export class RecommendationService {
     recs: Omit<PersonalizedRecommendations, 'createdAt'>
   ): Promise<PersonalizedRecommendations> {
     const supabase = getSupabaseAdminClient();
+    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Attempting to insert base recommendation for user:', userId);
 
     // 1. Insert base recommendation
     const { data: rec, error } = await supabase
@@ -115,9 +116,15 @@ export class RecommendationService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to insert base recommendation:', error);
+      throw error;
+    }
+
+    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Base recommendation inserted successfully. ID:', rec.id);
 
     // 2. Insert exercises
+    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Attempting to insert exercises for recommendation_id:', rec.id);
     const { error: exError } = await supabase.from('exercises').insert({
       recommendation_id: rec.id,
       type: recs.exercise.type,
@@ -129,7 +136,12 @@ export class RecommendationService {
       precautions: recs.exercise.precautions,
     });
 
-    if (exError) throw exError;
+    if (exError) {
+      console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to insert exercises:', exError);
+      throw exError;
+    }
+
+    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Exercises inserted successfully.');
 
     // 3. Collect foods records
     const foodRecords: any[] = [];
@@ -175,8 +187,13 @@ export class RecommendationService {
     });
 
     if (foodRecords.length > 0) {
+      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Attempting to insert food records:', foodRecords.length);
       const { error: foodsError } = await supabase.from('foods').insert(foodRecords);
-      if (foodsError) throw foodsError;
+      if (foodsError) {
+        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to insert food records:', foodsError);
+        throw foodsError;
+      }
+      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Food records inserted successfully.');
     }
 
     return {
@@ -189,7 +206,9 @@ export class RecommendationService {
    * Helper utility to calculate and store recommendation directly from a Health Profile
    */
   public static async generateAndSave(userId: string, profile: HealthProfile): Promise<PersonalizedRecommendations> {
+    console.log('[DEBUG_LOG] [GENERATE_AND_SAVE] Calculating recommendations from profile for user:', userId);
     const calculated = generateRecommendations(profile);
+    console.log('[DEBUG_LOG] [GENERATE_AND_SAVE] Recommendations calculated successfully. Invoking saveRecommendation()...');
     return await this.saveRecommendation(userId, calculated);
   }
 }

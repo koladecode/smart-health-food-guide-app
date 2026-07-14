@@ -8,7 +8,10 @@ const app = express();
 
 // Enable Cross-Origin Resource Sharing
 app.use(cors({
-  origin: config.clientUrl,
+  origin: (origin, callback) => {
+    // Dynamically allow any origin requesting with credentials (same-origin, local, preview host)
+    callback(null, true);
+  },
   credentials: true
 }));
 
@@ -23,6 +26,15 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
     message: 'Smart Health & Food Guide API is running'
+  });
+});
+
+// Temporary ping route for debugging connectivity
+app.get('/api/ping', (req: Request, res: Response) => {
+  console.log("PING ENDPOINT HIT");
+  res.status(200).json({
+    success: true,
+    message: "Backend reached"
   });
 });
 

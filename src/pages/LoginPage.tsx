@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle2, Heart, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useAuth } from '../context/AuthContext';
+import { useHealthProfile } from '../context/HealthProfileContext';
 import Button from '../components/Button';
 import { Card, CardContent } from '../components/Card';
 import { Input } from '../components/Input';
@@ -10,12 +11,23 @@ import Alert from '../components/Alert';
 
 export default function LoginPage() {
   const { navigateTo } = useNavigation();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const { profile, loadingProfile } = useHealthProfile();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && !loadingProfile) {
+      if (profile) {
+        navigateTo('dashboard');
+      } else {
+        navigateTo('profile-form');
+      }
+    }
+  }, [isAuthenticated, authLoading, profile, loadingProfile, navigateTo]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

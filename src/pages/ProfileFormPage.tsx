@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile, HealthProfile } from '../context/HealthProfileContext';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/Card';
 import { Input, Select, Textarea } from '../components/Input';
@@ -70,10 +71,12 @@ const DIETARY_PREFERENCES = [
 
 export default function ProfileFormPage() {
   const { navigateTo } = useNavigation();
-  const { profile, saveProfile, loadingProfile } = useHealthProfile();
+  const { profile, saveProfile, loadingProfile, isProfileFetched } = useHealthProfile();
+  const { loading } = useAuth();
 
   const [step, setStep] = useState(1);
   const [success, setSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form states
@@ -111,6 +114,35 @@ export default function ProfileFormPage() {
       setCurrentMedications(profile.currentMedications || '');
     }
   }, [profile]);
+
+  if (loading || !isProfileFetched || loadingProfile) {
+    return (
+      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300" id="profile-form-loading">
+        <header className="px-4 py-4 md:px-8 border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex justify-between items-center" id="loading-form-header">
+          <div className="flex items-center gap-2">
+            <div className="p-1 bg-emerald-600 rounded-lg text-white">
+              <Heart className="w-5 h-5" />
+            </div>
+            <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+              Smart Health Guide
+            </span>
+          </div>
+          <ThemeToggle />
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6" id="loading-form-main">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" id="loading-form-spinner" />
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading your profile details...</p>
+          </div>
+        </main>
+
+        <footer className="py-6 border-t border-slate-100 dark:border-slate-900 text-center text-xs text-slate-400" id="loading-form-footer">
+          © 2026 Smart Health Guide
+        </footer>
+      </div>
+    );
+  }
 
   // Multi-select handler for conditions
   const handleConditionToggle = (id: string) => {
@@ -238,6 +270,8 @@ export default function ProfileFormPage() {
       alcoholConsumption: alcoholConsumption || undefined
     };
 
+    setSaveError(null);
+
     try {
       await saveProfile(finalProfile);
       setSuccess(true);
@@ -245,8 +279,9 @@ export default function ProfileFormPage() {
         setSuccess(false);
         navigateTo('profile-summary');
       }, 1500);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving profile to database:', err);
+      setSaveError(err.message || 'Failed to save health profile to backend database.');
     }
   };
 
@@ -309,7 +344,17 @@ export default function ProfileFormPage() {
           <Alert variant="success" title="Health Profile Updates Logged" className="mb-6" id="profile-success-alert">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span>Saving records locally. Redirecting you to your profile review...</span>
+              <span>Synchronizing profile with secure cloud backend. Redirecting you to your profile review...</span>
+            </div>
+          </Alert>
+        )}
+
+        {/* Alert for error */}
+        {saveError && (
+          <Alert variant="error" title="Failed to Save Health Profile" className="mb-6" id="profile-save-error-alert">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <span>{saveError}</span>
             </div>
           </Alert>
         )}
@@ -645,7 +690,7 @@ export default function ProfileFormPage() {
       <footer className="px-4 py-6 md:px-8 border-t border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400" id="profile-form-footer">
         <div className="flex items-center gap-1.5 max-w-md text-left" id="profile-disclaimer">
           <AlertCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-          <span>Information is evaluated only dynamically in local sandboxed memory.</span>
+          <span>Profile is synchronized with the authenticated backend and stored securely in your account.</span>
         </div>
         <span>© 2026 Smart Health Guide</span>
       </footer>

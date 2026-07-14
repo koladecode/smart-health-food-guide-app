@@ -108,13 +108,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const registeredUser = result.data.user;
       const sessionToken = result.data.session?.access_token || null;
 
-      setUser(registeredUser);
-      setToken(sessionToken);
-
       if (sessionToken) {
         localStorage.setItem(TOKEN_KEY, sessionToken);
         localStorage.setItem(USER_KEY, JSON.stringify(registeredUser));
       }
+
+      setUser(registeredUser);
+      setToken(sessionToken);
 
       setLoading(false);
       // Redirect to profile-form to complete profile
@@ -145,9 +145,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const loggedInUser = result.data.user;
       const sessionToken = result.data.session?.access_token || null;
 
-      setUser(loggedInUser);
-      setToken(sessionToken);
-
       if (sessionToken) {
         localStorage.setItem(TOKEN_KEY, sessionToken);
         localStorage.setItem(USER_KEY, JSON.stringify(loggedInUser));
@@ -170,6 +167,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('smart_health_guide_profile', JSON.stringify(profileResult.data.profile));
         }
       }
+
+      setUser(loggedInUser);
+      setToken(sessionToken);
 
       setLoading(false);
       if (hasProfile) {

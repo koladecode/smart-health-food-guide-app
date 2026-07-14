@@ -26,7 +26,37 @@ import ThemeToggle from '../components/ThemeToggle';
 
 export default function ProfileSummaryPage() {
   const { navigateTo } = useNavigation();
-  const { profile } = useHealthProfile();
+  const { profile, loadingProfile } = useHealthProfile();
+
+  // If profile is loading, show loading spinner
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300" id="profile-summary-loading">
+        <header className="px-4 py-4 md:px-8 border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex justify-between items-center" id="loading-summary-header">
+          <div className="flex items-center gap-2">
+            <div className="p-1 bg-emerald-600 rounded-lg text-white">
+              <Heart className="w-5 h-5" />
+            </div>
+            <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+              Smart Health Guide
+            </span>
+          </div>
+          <ThemeToggle />
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6" id="loading-summary-main">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading your health profile...</p>
+          </div>
+        </main>
+
+        <footer className="py-6 border-t border-slate-100 dark:border-slate-900 text-center text-xs text-slate-400" id="loading-summary-footer">
+          © 2026 Smart Health Guide
+        </footer>
+      </div>
+    );
+  }
 
   // If no profile exists, prompt user to create one
   if (!profile) {
@@ -156,7 +186,7 @@ export default function ProfileSummaryPage() {
           <div className="flex flex-col gap-2 text-left">
             <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider w-fit">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Health Metrics Synced Locally</span>
+              <span>Profile Synchronized with Account</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight mt-1">
               {profile.fullName}'s Profile Summary
