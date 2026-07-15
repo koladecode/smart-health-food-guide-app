@@ -51,13 +51,20 @@ export default function DashboardPage() {
   const [selectedAllergen, setSelectedAllergen] = useState('none');
   const [hasAllergyAlert, setHasAllergyAlert] = useState(false);
 
+  // Redirect to profile-form if profile doesn't exist
+  React.useEffect(() => {
+    if (isProfileFetched && !loadingProfile && !loading && !profile) {
+      navigateTo('profile-form');
+    }
+  }, [profile, isProfileFetched, loadingProfile, loading, navigateTo]);
+
   const userBio = {
-    name: profile ? profile.fullName : (user?.email?.split('@')[0] || "Jane Doe"),
-    age: profile ? `${profile.age} yrs` : "28",
-    weight: profile ? `${profile.weight} kg` : "68 kg",
-    height: profile ? `${profile.height} cm` : "172 cm",
-    goal: profile ? profile.healthGoal : "Blood Glucose Regulation",
-    activity: profile ? profile.activityLevel : "Moderately Active"
+    name: profile ? profile.fullName : (user?.email?.split('@')[0] || "User"),
+    age: profile ? `${profile.age} yrs` : "",
+    weight: profile ? `${profile.weight} kg` : "",
+    height: profile ? `${profile.height} cm` : "",
+    goal: profile ? profile.healthGoal : "",
+    activity: profile ? profile.activityLevel : ""
   };
 
   const menuItems = [
@@ -174,7 +181,7 @@ export default function DashboardPage() {
             onClick={() => navigateTo(profile ? 'profile-summary' : 'profile-form')}
           >
             <div className="w-10 h-10 rounded-full bg-emerald-600/10 text-emerald-600 flex items-center justify-center font-extrabold text-sm">
-              {profile ? profile.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'JD'}
+              {profile ? profile.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'US'}
             </div>
             <div className="overflow-hidden">
               <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{userBio.name}</h4>

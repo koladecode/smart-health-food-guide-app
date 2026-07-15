@@ -10,16 +10,19 @@ export interface HealthProfile {
   userId: string;
   fullName: string;
   age: number;
+  gender?: string;
   weight: number;
   height: number;
   activityLevel: 'Sedentary' | 'Lightly Active' | 'Moderately Active' | 'Very Active';
-  healthGoal: 'Lose Weight' | 'Gain Weight' | 'Improve Overall Health' | 'Blood Glucose Regulation' | 'Other';
+  healthGoal: 'Weight Loss' | 'Weight Gain' | 'Muscle Gain' | 'Improve Overall Health' | 'Heart Health' | 'Blood Sugar Control' | 'Lose Weight' | 'Maintain Weight' | 'Gain Weight' | 'Blood Glucose Regulation' | 'Other';
   healthConditions: string[];
   foodAllergies: string[];
   dietaryPreference: 'None' | 'Vegetarian' | 'Vegan' | 'Keto' | 'Paleo';
   smokingStatus: 'Never' | 'Former smoker' | 'Active smoker';
   alcoholConsumption: 'None' | 'Light' | 'Moderate' | 'Heavy';
   currentMedications?: string;
+  sleepDuration?: string;
+  stressLevel?: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -335,7 +335,7 @@ export default function ProfileSummaryPage() {
                       <span>Chronic Health Conditions</span>
                     </span>
                     <div className="flex flex-wrap gap-2">
-                      {profile.healthConditions?.map((condId) => {
+                      {profile.healthConditions?.filter(condId => !condId.startsWith('sleep_') && !condId.startsWith('stress_')).map((condId) => {
                         const label = condId === 'none' ? 'No Chronic Conditions' : condId.charAt(0).toUpperCase() + condId.slice(1);
                         const isNone = condId === 'none';
                         return (
@@ -416,6 +416,14 @@ export default function ProfileSummaryPage() {
                   <div className="flex justify-between items-center px-4 py-3 bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-850 rounded-xl">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Alcohol Consumption</span>
                     <span className="text-xs font-bold text-slate-900 dark:text-white">{profile.alcoholConsumption || 'Not specified'}</span>
+                  </div>
+                  <div className="flex justify-between items-center px-4 py-3 bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-850 rounded-xl">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Average Sleep Duration</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">{profile.sleepDuration || 'Not specified'}</span>
+                  </div>
+                  <div className="flex justify-between items-center px-4 py-3 bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-850 rounded-xl">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Daily Stress Level</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">{profile.stressLevel || 'Not specified'}</span>
                   </div>
                 </div>
 

@@ -138,7 +138,7 @@ export default function RegisterPage() {
                   <Input
                     label="Your Name"
                     id="register-name-input"
-                    placeholder="Jane Doe"
+                    placeholder="e.g. Alex Smith"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     icon={<User className="w-4 h-4" />}
@@ -149,7 +149,7 @@ export default function RegisterPage() {
                     label="Email Address"
                     type="email"
                     id="register-email-input"
-                    placeholder="jane@domain.com"
+                    placeholder="your.email@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     icon={<Mail className="w-4 h-4" />}

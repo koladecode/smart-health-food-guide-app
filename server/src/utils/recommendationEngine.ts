@@ -1,6 +1,114 @@
 import { HealthProfile, PersonalizedRecommendations, RecommendationItem } from '../types';
 
 /**
+ * Robust allergy safety filter that analyzes titles, descriptions, and badges.
+ */
+function isAllergySafe(
+  title: string,
+  description: string,
+  badge: string,
+  allergies: string[]
+): boolean {
+  const normAllergies = allergies.map(a => a.toLowerCase());
+  const combinedText = `${title} ${description} ${badge}`.toLowerCase();
+
+  if (normAllergies.includes('peanuts') && (combinedText.includes('peanut') || combinedText.includes('arachis'))) {
+    return false;
+  }
+  if (normAllergies.includes('tree_nuts') && (
+    combinedText.includes('almond') || 
+    combinedText.includes('walnut') || 
+    combinedText.includes('cashew') || 
+    combinedText.includes('macadamia') || 
+    combinedText.includes('pecan') || 
+    combinedText.includes('pistachio') ||
+    combinedText.includes('hazelnut') ||
+    combinedText.includes('tree nut') ||
+    combinedText.includes('nut butter')
+  )) {
+    return false;
+  }
+  if (normAllergies.includes('gluten') && (
+    combinedText.includes('gluten') || 
+    combinedText.includes('wheat') || 
+    combinedText.includes('barley') || 
+    combinedText.includes('rye') || 
+    combinedText.includes('spelt') || 
+    combinedText.includes('bran') ||
+    combinedText.includes('pasta') ||
+    combinedText.includes('bread')
+  )) {
+    return false;
+  }
+  if (normAllergies.includes('dairy') && (
+    combinedText.includes('dairy') || 
+    combinedText.includes('milk') || 
+    combinedText.includes('butter') || 
+    combinedText.includes('cheese') || 
+    combinedText.includes('yogurt') || 
+    combinedText.includes('kefir') || 
+    combinedText.includes('whey') || 
+    combinedText.includes('cream') ||
+    combinedText.includes('lactose')
+  )) {
+    return false;
+  }
+  if (normAllergies.includes('soy') && (
+    combinedText.includes('soy') || 
+    combinedText.includes('tofu') || 
+    combinedText.includes('tempeh') || 
+    combinedText.includes('edamame') || 
+    combinedText.includes('miso') || 
+    combinedText.includes('lecithin')
+  )) {
+    return false;
+  }
+  if (normAllergies.includes('eggs') && (
+    combinedText.includes('egg') || 
+    combinedText.includes('albumen') || 
+    combinedText.includes('mayo')
+  )) {
+    return false;
+  }
+  if (normAllergies.includes('shellfish') && (
+    combinedText.includes('shellfish') || 
+    combinedText.includes('shrimp') || 
+    combinedText.includes('lobster') || 
+    combinedText.includes('crab') || 
+    combinedText.includes('oyster') || 
+    combinedText.includes('mussel') || 
+    combinedText.includes('clam') || 
+    combinedText.includes('prawn')
+  )) {
+    return false;
+  }
+
+  // Generic custom allergy fallback checks
+  const standardAllergies = ['peanuts', 'tree_nuts', 'tree nuts', 'gluten', 'dairy', 'soy', 'eggs', 'shellfish', 'none'];
+  for (const allergy of normAllergies) {
+    if (!allergy || standardAllergies.includes(allergy)) {
+      continue;
+    }
+    const cleanAllergy = allergy.replace(/_/g, ' ').trim();
+    if (!cleanAllergy) continue;
+
+    if (combinedText.includes(cleanAllergy)) {
+      return false;
+    }
+
+    // Check individual words in multi-word custom allergies if at least 3 characters
+    const words = cleanAllergy.split(/\s+/).filter(w => w.length > 2);
+    for (const word of words) {
+      if (combinedText.includes(word)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
  * Generates personalized, modular recommendations based on the user's Health Profile parameters.
  */
 export function generateRecommendations(profile: HealthProfile): Omit<PersonalizedRecommendations, 'createdAt'> {
@@ -12,6 +120,13 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   const conditions = profile.healthConditions || ['none'];
   const allergies = profile.foodAllergies || ['none'];
   const diet = profile.dietaryPreference || 'None';
+
+  const isWeightLoss = goal === 'Weight Loss' || goal === 'Lose Weight';
+  const isWeightGain = goal === 'Weight Gain' || goal === 'Gain Weight';
+  const isMuscleGain = goal === 'Muscle Gain';
+  const isOverallHealth = goal === 'Improve Overall Health';
+  const isHeartHealth = goal === 'Heart Health';
+  const isBloodSugarControl = goal === 'Blood Sugar Control';
 
   // 1. BMI Calculation
   let bmiValue = 0;
@@ -36,14 +151,16 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   const isKeto = diet === 'Keto';
   const isPaleo = diet === 'Paleo';
 
+  const normConditions = conditions.map(c => c.toLowerCase());
+
   // Helper flags for health conditions
-  const hasDiabetes = conditions.includes('diabetes');
-  const hasHypertension = conditions.includes('hypertension');
-  const hasCholesterol = conditions.includes('cholesterol');
-  const hasHeart = conditions.includes('heart');
-  const hasKidney = conditions.includes('kidney');
-  const hasAsthma = conditions.includes('asthma');
-  const hasGastro = conditions.includes('gastro');
+  const hasDiabetes = normConditions.includes('diabetes');
+  const hasHypertension = normConditions.includes('hypertension');
+  const hasCholesterol = normConditions.includes('cholesterol');
+  const hasHeart = normConditions.includes('heart');
+  const hasKidney = normConditions.includes('kidney');
+  const hasAsthma = normConditions.includes('asthma');
+  const hasGastro = normConditions.includes('gastro');
 
   // Helper flags for food allergies
   const allergyPeanuts = allergies.includes('peanuts');
@@ -126,7 +243,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   }
 
   // Goal-driven additions
-  if (goal === 'Lose Weight') {
+  if (isWeightLoss) {
     foodsToEat.push({
       id: 'eat-cruciferous',
       title: 'Cruciferous Vegetables',
@@ -139,7 +256,13 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       description: 'Excellent soluble fiber that swells in the stomach to trigger stretch receptors and induce lasting fullness.',
       badge: 'High Satiety'
     });
-  } else if (goal === 'Gain Weight') {
+    foodsToEat.push({
+      id: 'eat-lean-chicken-breast-wl',
+      title: 'Lean Skinless Chicken Breast',
+      description: 'High thermic effect of food (TEF) and essential proteins to preserve lean body mass during a caloric deficit.',
+      badge: 'Satiety Protein'
+    });
+  } else if (isWeightGain) {
     foodsToEat.push({
       id: 'eat-nut-butter',
       title: 'Natural Almond & Peanut Butter',
@@ -152,7 +275,20 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       description: 'Rich in complex carbohydrates to replenish glycogen reserves and support muscular growth.',
       badge: 'Complex Carbohydrates'
     });
-  } else if (goal === 'Improve Overall Health') {
+  } else if (isMuscleGain) {
+    foodsToEat.push({
+      id: 'eat-tempeh-mg',
+      title: 'Organic Tempeh or Grass-Fed Bison',
+      description: 'High in creatine, zinc, iron, and rich branch-chain amino acids (BCAAs) that directly signal muscle protein synthesis.',
+      badge: 'Muscle Hypertrophy'
+    });
+    foodsToEat.push({
+      id: 'eat-egg-whites-mg',
+      title: 'Pasture-Raised Eggs or Whey Isolated Protein',
+      description: 'Highest biological value (BV) protein that is rapidly absorbed by damaged muscle fibers to accelerate strength recovery.',
+      badge: 'Anabolic Recovery'
+    });
+  } else if (isOverallHealth) {
     foodsToEat.push({
       id: 'eat-fermented',
       title: 'Unsweetened Kefir or Sauerkraut',
@@ -164,6 +300,32 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       title: 'Dark Leafy Greens (Spinach & Kale)',
       description: 'Abundant in non-heme iron, calcium, magnesium, and Vitamin K for skeletal and vascular protection.',
       badge: 'Phytonutrients'
+    });
+  } else if (isHeartHealth) {
+    foodsToEat.push({
+      id: 'eat-extra-virgin-olive-oil-hh',
+      title: 'Cold-Pressed Extra Virgin Olive Oil',
+      description: 'Rich in polyphenols and monounsaturated oleic acid, which helps raise protective HDL cholesterol and reduce arterial plaque.',
+      badge: 'Vascular Protection'
+    });
+    foodsToEat.push({
+      id: 'eat-wild-salmon-hh',
+      title: 'Wild-Caught Salmon & Sardines',
+      description: 'Contains high levels of EPA and DHA Omega-3 fatty acids, which regulate heartbeat rhythm and decrease resting heart rate.',
+      badge: 'Cardioprotection'
+    });
+  } else if (isBloodSugarControl) {
+    foodsToEat.push({
+      id: 'eat-cinnamon-apple-cider-bs',
+      title: 'Organic Apple Cider Vinegar & Ceylon Cinnamon',
+      description: 'ACV delays gastric emptying to slow carbohydrate digestion, while cinnamon acts as an insulin-mimetic to pull glucose into cells.',
+      badge: 'Glycemic Shield'
+    });
+    foodsToEat.push({
+      id: 'eat-chia-flax-seeds-bs',
+      title: 'Soaked Chia & Flax Seeds',
+      description: 'Gel-forming soluble fibers that coat the intestinal walls, slowing down starch breakdown and smoothing glucose levels.',
+      badge: 'Insulin Sensitivity'
     });
   }
 
@@ -238,20 +400,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
 
   // Strictly filter out allergen items from Foods to Eat
   let filteredFoodsToEat = foodsToEat.filter(item => {
-    const titleLower = item.title.toLowerCase();
-    const descLower = item.description.toLowerCase();
-
-    if (allergyPeanuts && (titleLower.includes('peanut') || descLower.includes('peanut'))) return false;
-    if (allergyTreeNuts && (titleLower.includes('almond') || descLower.includes('almond') || titleLower.includes('walnut') || descLower.includes('walnut') || titleLower.includes('nut ') || descLower.includes('nut '))) return false;
-    if (allergyGluten && (titleLower.includes('oat') || descLower.includes('oat') || titleLower.includes('wheat') || descLower.includes('wheat') || titleLower.includes('bran') || descLower.includes('bran'))) {
-      if (titleLower.includes('wheat') || titleLower.includes('bran')) return false;
-    }
-    if (allergyDairy && (titleLower.includes('kefir') || descLower.includes('kefir') || titleLower.includes('yogurt') || descLower.includes('yogurt') || titleLower.includes('dairy') || descLower.includes('dairy'))) return false;
-    if (allergySoy && (titleLower.includes('tofu') || descLower.includes('tofu') || titleLower.includes('tempeh') || descLower.includes('tempeh') || titleLower.includes('soy') || descLower.includes('soy'))) return false;
-    if (allergyEggs && (titleLower.includes('egg') || descLower.includes('egg'))) return false;
-    if (allergyShellfish && (titleLower.includes('shrimp') || descLower.includes('shrimp') || titleLower.includes('shellfish') || descLower.includes('shellfish'))) return false;
-    
-    return true;
+    return isAllergySafe(item.title, item.description, item.badge || '', allergies);
   });
 
   // Ensure Vegetarian/Vegan constraints
@@ -283,19 +432,71 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
     badge: 'Arterial Hazard'
   });
 
-  if (goal === 'Lose Weight') {
+  if (isWeightLoss) {
     foodsToAvoid.push({
       id: 'avoid-liquid-calories',
       title: 'Sweetened Fruit Juices & Sodas',
       description: 'Contains high caloric density without any dietary fiber, easily bypassing satiety signals.',
       badge: 'Caloric density'
     });
-  } else if (goal === 'Gain Weight') {
+    foodsToAvoid.push({
+      id: 'avoid-processed-dressing-wl',
+      title: 'Creamy Commercial Salad Dressings',
+      description: 'Contain hidden sugars and refined seed oils that instantly add hundreds of empty calories to healthy meals, stalling weight loss.',
+      badge: 'Hidden Calorie Trap'
+    });
+  } else if (isWeightGain) {
     foodsToAvoid.push({
       id: 'avoid-empty-junk',
       title: 'Processed Fast Foods',
       description: 'While high in calories, they lack the dense micronutrients, minerals, and clean proteins required for lean muscle gains.',
       badge: 'Low Micronutrients'
+    });
+  } else if (isMuscleGain) {
+    foodsToAvoid.push({
+      id: 'avoid-alcohol-mg',
+      title: 'Excessive Alcohol Consumption',
+      description: 'Alcohol suppresses muscle protein synthesis pathways (mTOR) and decreases testosterone levels, severely impairing muscle recovery.',
+      badge: 'Protein Synthesis Inhibitor'
+    });
+    foodsToAvoid.push({
+      id: 'avoid-processed-sugars-mg',
+      title: 'Refined Sugar & High-Fructose Sweets',
+      description: 'Triggers rapid blood glucose drops that lead to sudden lethargy and muscle breakdown (catabolism).',
+      badge: 'Catabolic Trigger'
+    });
+  } else if (isOverallHealth) {
+    foodsToAvoid.push({
+      id: 'avoid-trans-fats-oh',
+      title: 'Hydrogenated Seed & Vegetable Oils',
+      description: 'Highly processed industrial seed oils (canola, corn, soy) that promote systemic cellular oxidation and damage arterial walls.',
+      badge: 'Oxidative Stress'
+    });
+  } else if (isHeartHealth) {
+    foodsToAvoid.push({
+      id: 'avoid-cured-sodium-hh',
+      title: 'Cured Meats, Salami, and High-Sodium Soups',
+      description: 'Excess sodium retains extracellular fluids, instantly increasing pressure in the cardiovascular walls and straining cardiac chambers.',
+      badge: 'Cardiovascular Stress'
+    });
+    foodsToAvoid.push({
+      id: 'avoid-margarine-trans-hh',
+      title: 'Margarine, Shortening, & Commercial Trans-Fats',
+      description: 'Directly lowers cardioprotective HDL while raising atherogenic LDL, leading to rapid vascular plaque buildup.',
+      badge: 'Atherogenesis Hazard'
+    });
+  } else if (isBloodSugarControl) {
+    foodsToAvoid.push({
+      id: 'avoid-refined-grains-bs',
+      title: 'White Bread, White Rice & Processed Cereals',
+      description: 'Stripped of protective fiber, these refined starches digest in minutes, sparking aggressive pancreatic insulin spikes.',
+      badge: 'Insulin Resistance Trap'
+    });
+    foodsToAvoid.push({
+      id: 'avoid-dried-fruits-bs',
+      title: 'Dried Glazed Fruits with Added Syrups',
+      description: 'Concentrated fructose without water content triggers immediate glycogen liver congestion and rapid blood sugar spikes.',
+      badge: 'High Glycemic Load'
     });
   }
 
@@ -436,9 +637,256 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
     }
   });
 
-  // 5. Food Combinations
+  // 5. Food Combinations (Breakfast, Lunch, Dinner, Snack & Synergistic Pairings)
   const healthyCombinations: RecommendationItem[] = [];
 
+  // --- DYNAMIC MEAL COMBINATIONS GENERATOR ---
+  // A. Breakfast Base, Carb, Protein, and Fat Selection
+  let breakfastBase = 'organic plain Greek yogurt';
+  if (isVegan || allergyDairy) {
+    breakfastBase = allergyTreeNuts ? 'organic oat beverage' : 'coconut ferment';
+  } else {
+    breakfastBase = allergyTreeNuts ? 'organic goat yogurt' : 'organic plain Greek yogurt';
+  }
+
+  let breakfastCarb = 'organic steel-cut oats';
+  if (isKeto) {
+    breakfastCarb = 'sliced avocado & fresh raspberries';
+  } else if (isPaleo) {
+    breakfastCarb = 'roasted sweet potato hash & wild blueberries';
+  } else if (allergyGluten) {
+    breakfastCarb = isBloodSugarControl || hasDiabetes ? 'organic quinoa flakes & fresh blackberries' : 'roasted sweet potato hash & wild blueberries';
+  } else if (isBloodSugarControl || hasDiabetes) {
+    breakfastCarb = 'quinoa flakes & wild organic blueberries';
+  } else if (hasGastro) {
+    breakfastCarb = 'warm cooked banana porridge';
+  }
+
+  let breakfastProtein = 'pasture-raised eggs';
+  if (isVegan || allergyEggs) {
+    if (isKeto) {
+      breakfastProtein = allergySoy ? 'organic pea protein concentrate' : 'scrambled organic firm tofu';
+    } else {
+      breakfastProtein = allergySoy ? 'cooked red lentils' : 'steamed organic tempeh';
+    }
+  } else {
+    breakfastProtein = 'soft-boiled pasture-raised eggs';
+  }
+
+  let breakfastFat = 'organic walnuts';
+  if (allergyTreeNuts || allergyPeanuts) {
+    breakfastFat = 'organic pumpkin seeds & chia seeds';
+  } else if (isKeto) {
+    breakfastFat = 'sliced avocado & organic pumpkin seeds';
+  }
+
+  const breakfastTitle = '🌅 Synergistic Breakfast Bowl';
+  let breakfastDesc = `Power your morning with a tailored combination of ${breakfastProtein} paired with ${breakfastCarb} and a base of ${breakfastBase}, finished with a sprinkle of ${breakfastFat}.`;
+  
+  if (isKeto) {
+    breakfastDesc = `A perfect low-carb, high-fat morning start combining ${breakfastProtein} with ${breakfastCarb} cooked in cold-pressed olive oil, topped with ${breakfastFat}. This keeps your body in fat-burning ketosis and stabilizes morning energy.`;
+  } else if (isWeightLoss) {
+    breakfastDesc = `A nutrient-dense, calorie-controlled breakfast featuring ${breakfastProtein} alongside fiber-rich ${breakfastCarb}, served with ${breakfastBase} and topped with a portion-controlled sprinkle of ${breakfastFat} to optimize morning fullness.`;
+  } else if (isMuscleGain || isWeightGain) {
+    breakfastDesc = `An anabolic fueling combination containing high-quality ${breakfastProtein} paired with slow-burning ${breakfastCarb} and rich ${breakfastBase}, topped with energy-dense ${breakfastFat} to drive muscle recovery and caloric efficiency.`;
+  } else if (isHeartHealth || hasHypertension) {
+    breakfastDesc = `A cardioprotective, low-sodium pairing of ${breakfastProtein} (rich in omega-3) and heart-healthy ${breakfastCarb}, nested over light ${breakfastBase} and topped with vascular-friendly ${breakfastFat}.`;
+  } else if (isBloodSugarControl || hasDiabetes) {
+    breakfastDesc = `A glycemic-stabilizing morning bowl pairing ${breakfastProtein} with slow-release, low-glycemic ${breakfastCarb} and a base of ${breakfastBase}, sprinkled with fiber-rich ${breakfastFat} to ensure a slow, steady hill of glucose.`;
+  } else if (hasGastro) {
+    breakfastDesc = `An easy-to-digest, warm morning bowl combining well-cooked, non-irritating ${breakfastProtein} with soothing ${breakfastCarb} and gut-friendly ${breakfastBase}, lightly dusted with ${breakfastFat} to prevent acid reflux.`;
+  }
+
+  healthyCombinations.push({
+    id: 'comb-breakfast',
+    title: breakfastTitle,
+    description: breakfastDesc,
+    badge: 'Morning Fuel'
+  });
+
+  // B. Lunch Protein, Carb, Veg, and Dressing Selection
+  let lunchProtein = 'organic chicken breast';
+  if (isVegan || isVeg) {
+    if (allergySoy) {
+      lunchProtein = 'steamed French lentils';
+    } else {
+      lunchProtein = 'steamed organic tempeh';
+    }
+  } else if (isHeartHealth || hasHypertension || hasCholesterol) {
+    lunchProtein = 'wild-caught salmon';
+  } else if (hasKidney) {
+    lunchProtein = 'moderate portion of skinless organic chicken';
+  }
+
+  let lunchCarb = 'steamed brown rice';
+  if (isKeto) {
+    lunchCarb = 'steamed cauliflower rice';
+  } else if (isPaleo) {
+    lunchCarb = 'roasted sweet potato wedges';
+  } else if (allergyGluten) {
+    lunchCarb = 'cooked red quinoa';
+  } else if (isBloodSugarControl || hasDiabetes) {
+    lunchCarb = 'organic red quinoa';
+  } else if (hasGastro) {
+    lunchCarb = 'warm cooked jasmine rice';
+  }
+
+  let lunchVeg = 'sautéed baby spinach and carrots';
+  if (hasKidney) {
+    lunchVeg = 'steamed green beans & sliced carrots';
+  } else if (hasGastro) {
+    lunchVeg = 'well-cooked peeled carrots & tender zucchini slices';
+  } else if (isKeto) {
+    lunchVeg = 'sautéed asparagus spears & arugula';
+  }
+
+  let lunchDressing = 'extra virgin olive oil & fresh lemon juice';
+  if (hasGastro) {
+    lunchDressing = 'extra virgin olive oil & fresh herbs';
+  } else if (isHeartHealth || hasCholesterol) {
+    lunchDressing = 'cold-pressed extra virgin olive oil';
+  }
+
+  const lunchTitle = '🥗 Macronutrient Balanced Lunch';
+  let lunchDesc = `A highly satisfying, nutrient-dense lunch bowl containing ${lunchProtein} served alongside ${lunchCarb}, paired with ${lunchVeg} and drizzled with ${lunchDressing}.`;
+
+  if (isKeto) {
+    lunchDesc = `A low-glycemic ketogenic lunch consisting of ${lunchProtein} over a bed of low-carb ${lunchCarb}, served with fiber-rich ${lunchVeg} and a generous drizzle of ${lunchDressing} for optimal ketone production.`;
+  } else if (isWeightLoss) {
+    lunchDesc = `A portion-controlled, high-satiety lunch pairing lean ${lunchProtein} with a moderate serving of complex ${lunchCarb}, surrounded by volume-rich ${lunchVeg} and lightly dressed with ${lunchDressing}.`;
+  } else if (isMuscleGain || isWeightGain) {
+    lunchDesc = `A calorie-dense, anabolic lunch fueling recovery with ${lunchProtein}, a generous portion of carbohydrate-rich ${lunchCarb}, dynamic micronutrients from ${lunchVeg}, and energy-sustaining ${lunchDressing}.`;
+  } else if (isHeartHealth || hasHypertension) {
+    lunchDesc = `A vascular-friendly, low-sodium lunch utilizing cardioprotective ${lunchProtein} with soluble-fiber rich ${lunchCarb}, antioxidant-rich ${lunchVeg}, and healthy fats from ${lunchDressing}.`;
+  } else if (isBloodSugarControl || hasDiabetes) {
+    lunchDesc = `A blood-sugar stabilizing lunch aligning lean ${lunchProtein} with slow-burning ${lunchCarb} to prevent post-prandial spikes, accompanied by fiber-rich ${lunchVeg} and ${lunchDressing}.`;
+  } else if (hasGastro) {
+    lunchDesc = `A stomach-soothing, warm lunch pairing easily digestible ${lunchProtein} with soft, well-cooked ${lunchCarb}, non-irritating steamed ${lunchVeg}, and light ${lunchDressing}.`;
+  }
+
+  healthyCombinations.push({
+    id: 'comb-lunch',
+    title: lunchTitle,
+    description: lunchDesc,
+    badge: 'Mid-day Satiety'
+  });
+
+  // C. Dinner Protein, Carb, Veg, and Fat Selection
+  let dinnerProtein = 'wild-caught cod fillet';
+  if (isVegan || isVeg) {
+    if (allergySoy) {
+      dinnerProtein = 'cooked black-eyed peas';
+    } else {
+      dinnerProtein = 'baked organic tofu';
+    }
+  } else if (isHeartHealth || hasHypertension) {
+    dinnerProtein = 'wild-caught cod fillet';
+  } else if (hasKidney) {
+    dinnerProtein = 'moderate portion of steamed cod';
+  }
+
+  let dinnerCarb = 'steamed wild rice';
+  if (isKeto) {
+    dinnerCarb = 'spiralized zucchini noodles';
+  } else if (isPaleo) {
+    dinnerCarb = 'roasted butternut squash slices';
+  } else if (allergyGluten) {
+    dinnerCarb = 'steamed wild rice';
+  } else if (isBloodSugarControl || hasDiabetes) {
+    dinnerCarb = 'cooked red quinoa';
+  } else if (hasGastro) {
+    dinnerCarb = 'warm butternut squash puree';
+  }
+
+  let dinnerVeg = 'steamed green beans';
+  if (hasKidney) {
+    dinnerVeg = 'steamed zucchini slices';
+  } else if (hasGastro) {
+    dinnerVeg = 'steamed peeled zucchini & sliced carrots';
+  } else if (isKeto) {
+    dinnerVeg = 'sautéed asparagus spears';
+  }
+
+  let dinnerFat = 'extra virgin olive oil drizzle';
+  if (isKeto) {
+    dinnerFat = 'sliced avocado & extra virgin olive oil';
+  } else if (isHeartHealth || hasCholesterol) {
+    dinnerFat = 'cold-pressed extra virgin olive oil';
+  }
+
+  const dinnerTitle = '🍽️ Nourishing Restorative Dinner';
+  let dinnerDesc = `Conclude your day with a comforting dinner of ${dinnerProtein} accompanied by slow-release ${dinnerCarb}, light ${dinnerVeg}, and finished with ${dinnerFat}.`;
+
+  if (isKeto) {
+    dinnerDesc = `A nutrient-rich, low-carb dinner pairing ${dinnerProtein} with low-carb ${dinnerCarb}, sautéed ${dinnerVeg}, and enriched with ${dinnerFat} to support overnight metabolic repair.`;
+  } else if (isWeightLoss) {
+    dinnerDesc = `A light, portion-conscious evening meal featuring ${dinnerProtein} paired with a small portion of ${dinnerCarb}, a generous plate of low-calorie ${dinnerVeg}, and ${dinnerFat}.`;
+  } else if (isMuscleGain || isWeightGain) {
+    dinnerDesc = `An abundant recovery dinner optimizing overnight protein synthesis with ${dinnerProtein}, a hearty side of carbohydrate-dense ${dinnerCarb}, fiber from ${dinnerVeg}, and ${dinnerFat}.`;
+  } else if (isHeartHealth || hasHypertension) {
+    dinnerDesc = `A heart-supporting, low-sodium evening meal combining cardioprotective ${dinnerProtein} with fiber-rich ${dinnerCarb}, vascular-clearing ${dinnerVeg}, and a heart-healthy drizzle of ${dinnerFat}.`;
+  } else if (isBloodSugarControl || hasDiabetes) {
+    dinnerDesc = `A glucose-stabilizing dinner aligning lean ${dinnerProtein} with slow-burning, high-fiber ${dinnerCarb}, steamed ${dinnerVeg}, and healthy lipid barriers from ${dinnerFat}.`;
+  } else if (hasGastro) {
+    dinnerDesc = `A soothing, easily-digestible dinner featuring warm ${dinnerProtein} served over stomach-friendly ${dinnerCarb}, tender steamed ${dinnerVeg}, and light ${dinnerFat} to prevent overnight reflux.`;
+  }
+
+  healthyCombinations.push({
+    id: 'comb-dinner',
+    title: dinnerTitle,
+    description: dinnerDesc,
+    badge: 'Evening Restorative'
+  });
+
+  // D. Snack Selection
+  let snackTitle = '🍏 Glycemic-Stabilizing Snack';
+  let snackDesc = 'A handful of organic pumpkin seeds and fresh cucumber slices to support mineral levels and steady blood glucose.';
+
+  if (isKeto) {
+    snackTitle = '🥑 Ketogenic Fuel Snack';
+    snackDesc = allergyTreeNuts 
+      ? 'Sliced fresh cucumber and celery sticks dipped in organic fresh guacamole, providing essential potassium and healthy monounsaturated fats.'
+      : 'Crispy pumpkin seeds paired with sliced avocado and a touch of sea salt (omit salt if hypertension is present) for sustained clean fats.';
+  } else if (isPaleo) {
+    snackTitle = '🍓 Paleo-Compliant Whole Food Snack';
+    snackDesc = allergyTreeNuts
+      ? 'A handful of fresh organic raspberries paired with toasted sunflower seed spread, offering clean micronutrients and healthy fats.'
+      : 'Organic walnuts paired with wild blackberries, delivering high-potency antioxidants and natural cellular energy.';
+  } else if (isBloodSugarControl || hasDiabetes) {
+    snackTitle = '🔋 Blood Sugar Balancing Snack';
+    snackDesc = 'Organic pumpkin seeds paired with fresh cucumber slices. The pumpkin seeds are rich in magnesium which improves insulin receptor sensitivity, while the cucumbers provide hydration with zero glycemic impact.';
+  } else if (isHeartHealth || hasHypertension || hasCholesterol) {
+    snackTitle = '❤️ Cardioprotective Heart-Smart Snack';
+    snackDesc = allergyTreeNuts
+      ? 'Toasted organic pumpkin seeds and fresh blueberries, which deliver potent plant sterols and soluble fiber to support arterial elasticity.'
+      : 'A small handful of organic walnuts paired with fresh blackberries. Walnuts are rich in plant-based omega-3 alpha-linolenic acid (ALA), supporting healthy lipid profiles.';
+  } else if (hasGastro) {
+    snackTitle = '🌱 Gentle Digesting Snack';
+    snackDesc = 'Warm baked apple slices sprinkled with a pinch of organic cinnamon. Apples contain gentle pectin fiber which acts as a gut prebiotic, and cooking them pre-digests the cell walls, ensuring zero gastric distress.';
+  } else if (isWeightLoss) {
+    snackTitle = '📉 High-Satiety Weight Loss Snack';
+    snackDesc = 'Fresh sliced celery and bell pepper strips dipped in low-fat organic hummus (or sunflower seed spread if soy/sesame is an issue), delivering high-volume hydration and crunch with minimal calories.';
+  } else if (isMuscleGain || isWeightGain) {
+    snackTitle = '💪 Muscle Recovery Snack';
+    if (isVegan || allergyDairy) {
+      snackDesc = allergyTreeNuts
+        ? 'High-protein organic pea protein shake mixed with oat beverage and a banana, providing immediate amino acid replenishment.'
+        : 'A bowl of coconut ferment topped with sliced banana, organic hemp hearts, and a drizzle of sunflower seed spread for clean calories.';
+    } else {
+      snackDesc = allergyTreeNuts
+        ? 'Organic plain Greek yogurt topped with pumpkin seeds, organic hemp hearts, and a sliced banana, delivering over 20g of high-biological value protein.'
+        : 'Organic plain Greek yogurt topped with walnuts, organic hemp hearts, and a sliced banana, delivering over 20g of high-biological value protein.';
+    }
+  }
+
+  healthyCombinations.push({
+    id: 'comb-snack',
+    title: snackTitle,
+    description: snackDesc,
+    badge: 'Glycemic Balance'
+  });
+
+  // --- GENERAL SCIENTIFIC SYNERGY PAIRINGS ---
   healthyCombinations.push({
     id: 'comb-iron-vitc',
     title: 'Plant Iron + Vitamin C',
@@ -446,12 +894,33 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
     badge: 'Absorption Booster'
   });
 
-  if (hasDiabetes || goal === 'Lose Weight' || bmiValue >= 25) {
+  if (hasDiabetes || bmiValue >= 25 || isWeightLoss || isBloodSugarControl) {
     healthyCombinations.push({
       id: 'comb-carb-fiber-protein',
       title: 'Carbohydrates + High Fiber + Lean Protein',
       description: 'Never consume a "naked" carb alone. Always pair it with healthy fats or proteins. This dramatically slows gastric emptying, ensuring blood sugar rises as a gentle hill rather than a spike.',
       badge: 'Glycemic Buffer'
+    });
+  } else if (isMuscleGain) {
+    healthyCombinations.push({
+      id: 'comb-carb-protein-mg',
+      title: 'High-GI Fruit or Carb + High Biological Value Protein',
+      description: 'Pair grass-fed beef or tempeh with sweet potatoes, or a banana with high-protein Greek yogurt. The carbs prompt a controlled insulin response that drives amino acids directly into depleted skeletal muscles, maximizing protein synthesis.',
+      badge: 'Anabolic Synergy'
+    });
+  } else if (isWeightGain) {
+    healthyCombinations.push({
+      id: 'comb-density-gain',
+      title: 'Healthy Monounsaturated Fats + Energetic Starches',
+      description: 'Pair sliced avocado or cashew butter with warm oatmeal or sweet potato. This maximizes caloric intake with clean, non-inflammatory macronutrients that protect digestive health.',
+      badge: 'Clean Surplus'
+    });
+  } else if (isHeartHealth) {
+    healthyCombinations.push({
+      id: 'comb-omega3-lycopene-hh',
+      title: 'Cooked Tomatoes + Cold-Pressed Olive Oil',
+      description: 'Lycopene is a powerful heart-healthy antioxidant found in tomatoes, whose absorption is boosted by 400% when heated and paired with olive oil lipids, protecting blood vessels from oxidative stress.',
+      badge: 'Vascular Longevity'
     });
   } else {
     healthyCombinations.push({
@@ -489,184 +958,622 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
     });
   }
 
-  // Filter food combinations to respect severe allergies
+  // Filter food combinations to respect severe allergies (bypassing custom pre-vetted meal plans)
   const filteredCombinations = healthyCombinations.filter(item => {
-    const text = (item.title + ' ' + item.description).toLowerCase();
-    if (allergyPeanuts && text.includes('peanut')) return false;
-    if (allergyTreeNuts && (text.includes('almond') || text.includes('walnut') || text.includes('nut'))) return false;
-    if (allergyDairy && (text.includes('yogurt') || text.includes('cheese') || text.includes('dairy') || text.includes('whey'))) return false;
-    if (allergyGluten && (text.includes('wheat') || text.includes('barley') || text.includes('toast'))) return false;
-    if (allergyEggs && text.includes('egg')) return false;
-    return true;
+    if (item.id.startsWith('comb-breakfast') || item.id.startsWith('comb-lunch') || item.id.startsWith('comb-dinner') || item.id.startsWith('comb-snack')) {
+      return true;
+    }
+    return isAllergySafe(item.title, item.description, item.badge || '', allergies);
   });
 
-  // 6. Water Intake
-  let baseWaterMl = weight * 35;
-  if (baseWaterMl === 0) baseWaterMl = 2200;
+  // 6. Water Intake Recommendation (Math-based Formula using age, weight and activity level)
+  let waterMultiplier = 35; // default clinical factor
+  if (age < 30) {
+    waterMultiplier = 40;
+  } else if (age >= 30 && age <= 55) {
+    waterMultiplier = 35;
+  } else if (age > 55 && age <= 75) {
+    waterMultiplier = 30;
+  } else if (age > 75) {
+    waterMultiplier = 25;
+  }
+
+  let baseWaterMl = weight * waterMultiplier;
+  if (baseWaterMl === 0) {
+    // Standard baseline default if weight is unspecified, adjusted by age
+    if (age < 30) baseWaterMl = 2500;
+    else if (age <= 55) baseWaterMl = 2200;
+    else baseWaterMl = 2000;
+  }
 
   let activityAdjustment = 0;
   if (activity === 'Lightly Active') activityAdjustment = 300;
   else if (activity === 'Moderately Active') activityAdjustment = 600;
   else if (activity === 'Very Active') activityAdjustment = 1000;
 
-  const totalWaterMl = baseWaterMl + activityAdjustment;
-  const totalWaterLiters = parseFloat((totalWaterMl / 1000).toFixed(1));
-  const totalWaterCups = Math.round(totalWaterMl / 250);
+  // Satiety/Weight Loss Booster & Hydration targets
+  let goalModifier = 0;
+  if (isWeightLoss) {
+    goalModifier = 250; // Extra hydration to support stomach volume and fat breakdown flushing
+  } else if (isMuscleGain || isWeightGain) {
+    goalModifier = 300; // Extra hydration to support increased protein assimilation and heavy digestion workloads
+  } else if (isBloodSugarControl) {
+    goalModifier = 200; // Extra fluid to facilitate efficient glucose clearing by the kidneys
+  }
 
-  let waterDescription = `Your clinical hydration baseline is calculated at approximately ${totalWaterLiters} Liters daily.`;
+  // Gender Muscle Mass Modifier
+  const isMale = (profile.gender || 'Other').toLowerCase() === 'male';
+  let genderModifier = 0;
+  if (isMale) {
+    genderModifier = 200; // Males typically require higher cellular water due to muscular mass coefficients
+  }
+
+  const totalWaterMl = baseWaterMl + activityAdjustment + goalModifier + genderModifier;
+  let totalWaterLiters = parseFloat((totalWaterMl / 1000).toFixed(1));
+  let isKidneyRestricted = false;
+
   if (hasKidney) {
-    waterDescription = `Your compromised renal filtration indicates a controlled hydration target of ${Math.min(2.0, totalWaterLiters)} Liters daily to prevent fluid retention. Adjust strictly according to your nephrologist's fluid prescription cards.`;
+    totalWaterLiters = 1.8; // Safe, strictly controlled medical threshold to avoid fluid overload
+    isKidneyRestricted = true;
+  }
+
+  const totalWaterCups = Math.round((totalWaterLiters * 1000) / 250);
+
+  let waterDescription = `Your customized daily clinical hydration target is set at exactly ${totalWaterLiters} Liters.`;
+  if (isKidneyRestricted) {
+    waterDescription = `CRITICAL renal target: Due to compromised kidney filtration, your hydration is capped at a safe ${totalWaterLiters} Liters maximum. This avoids dangerous fluid retention in the lungs and extremities. Coordinate with your physician.`;
   } else if (activity === 'Very Active') {
-    waterDescription = `Due to intense physical activity levels, your recommended fluid throughput is increased to ${totalWaterLiters} Liters to safely compensate for sweat loss and prevent electrolyte collapse.`;
+    waterDescription = `Increased physical output: Your water requirement is adjusted upwards to ${totalWaterLiters} Liters to safely compensate for intense fluid loss and secure optimal cardiac output.`;
   }
 
   const waterTips = [
-    'Drink 250ml of warm water immediately upon waking to trigger kidney filtration and rehydrate your cerebral tissue.',
-    'Sip fluid gradually throughout the day. Rapidly downing liters of water exhausts urinary excretion and causes sodium dilutional drops.',
-    'Monitor urine color: it should resemble light straw. If it is crystal clear, you may be flushing minerals. If it is amber, you are clinically dehydrated.'
+    'Drink 250ml of warm water immediately upon waking to flush liver byproducts and rehydrate vascular organs.',
+    'Sip fluids gradually throughout the day. Drinking huge volumes at once overloads the urinary filters and can cause rapid electrolyte loss.',
+    'Regularly inspect urine color: aim for a light straw hue. If it is crystal clear, you are flushing minerals. If it is dark amber, you are dehydrated.'
   ];
-  if (hasKidney) {
-    waterTips.push('Measure your daily urinary output to ensure fluid intake is matching output coefficients.');
+
+  if (isKidneyRestricted) {
+    waterTips.push('Measure your daily urine output. It must match your fluid intake to prevent swelling.');
   }
   if (activity === 'Very Active') {
-    waterTips.push('During extended sessions over 60 mins, add a pinch of mineral sea salt and lemon or clean electrolytes to your bottle.');
+    waterTips.push('Add a small pinch of mineral sea salt and a squeeze of fresh lemon to your exercise bottle to maintain proper sodium channels.');
   }
 
   // 7. Exercise Routine Configuration
+  const estimateCaloriesBurned = (met: number, weightKg: number, durationMins: number): number => {
+    const actualWeight = weightKg > 0 ? weightKg : 70;
+    const caloriesPerMin = met * 3.5 * actualWeight / 200;
+    return Math.round(caloriesPerMin * durationMins);
+  };
+
+  const hasArthritis = normConditions.some(c => c.includes('arthritis') || c.includes('joint') || c.includes('gout') || c.includes('osteoarthritis'));
+
   let exerciseType = 'Balanced Conditioning';
   let exerciseFreq = '3-4 Days / Week';
   let exerciseDur = '30-45 Minutes';
   let exerciseInt = 'Moderate';
   let exerciseDesc = 'A low-impact physical maintenance framework promoting metabolic flexibility.';
-  
-  const exerciseRoutines: string[] = [];
-  const exercisePrecautions: string[] = [];
 
-  if (activity === 'Sedentary') {
-    exerciseType = 'Low-Intensity Metabolic Activation';
-    exerciseFreq = '3 Days / Week';
-    exerciseDur = '20-30 Minutes';
-    exerciseInt = 'Gentle / Low';
-    exerciseDesc = 'Focuses on breaking sedentary vascular stagnation and restoring skeletal mobility.';
-    exerciseRoutines.push(
-      'Joint Decompression: Gentle pelvic tilts, shoulder rolls, and hamstring dynamic stretches (5 mins).',
-      'Metabolic Walking: 20 minutes of steady outdoor walking at a conversational pace (Zone 1).',
-      'Wall Squats & Assisted Glute Bridges: 2 sets of 10 slow reps to wake up lower body muscle fibers.'
-    );
-    exercisePrecautions.push(
-      'Avoid high-impact jumping or intense sprinting until muscle fibers and connective tissues adapt.',
-      'Take regular micro-breaks: stand up and perform 2 minutes of light walking for every 60 minutes seated.'
-    );
-  } else if (activity === 'Very Active' || goal === 'Gain Weight') {
-    exerciseType = 'Hypertrophy & High-Capacity Resistance Conditioning';
-    exerciseFreq = '4-5 Days / Week';
-    exerciseDur = '45-60 Minutes';
-    exerciseInt = 'High / Vigorous';
-    exerciseDesc = 'An intense, structured progressive overload framework to stimulate muscular development or support sports goals.';
-    exerciseRoutines.push(
-      'Dynamic Mobility: Arm swings, lunges, and light activation of rotator cuffs (8 mins).',
-      'Progressive Compound Lifting: Deadlifts, bench press, overhead press, or weighted pull-ups (3-4 sets, 6-12 reps near failure).',
-      'Interval Cardiovascular Finishers: 2 days of high-intensity kettlebell swings or rowing machine bursts (10 mins).'
-    );
-    exercisePrecautions.push(
-      'Ensure proper lifting form to prevent spinal hyperextension during axial loads.',
-      'Allow at least 48 hours of recovery between the same muscle groups to prevent overreaching syndromes.'
-    );
-  } else {
-    exerciseType = 'Aerobic Efficiency & Resistance Circuit';
-    exerciseFreq = '4 Days / Week';
-    exerciseDur = '40-50 Minutes';
-    exerciseInt = 'Moderate (Zone 2)';
-    exerciseDesc = 'Optimizes calorie burn, improves cardiovascular endurance, and enhances insulin sensitivity.';
-    exerciseRoutines.push(
-      'Warm-up: Light jumping jacks, cat-cow stretch, thoracic mobility (5 mins).',
-      'Zone 2 Cardiovascular Training: Brisk uphill walking, rowing, or steady cycling maintaining 60-70% Max Heart Rate (25 mins).',
-      'Satiety Resistance Circuit: Bodyweight push-ups, air squats, reverse lunges, and hollow-body planks (3 sets, 12-15 reps).'
-    );
-    exercisePrecautions.push(
-      'Track heart rate to ensure you stay in Zone 2 to maximize lipid fat oxidation over glycogen depletion.',
-      'Wear supportive footwear to prevent joint and tendon strain.'
-    );
+  // Determine durations and intensities dynamically
+  let baseDurationMins = 30;
+  if (activity === 'Sedentary') baseDurationMins = 20;
+  else if (activity === 'Lightly Active') baseDurationMins = 25;
+  else if (activity === 'Moderately Active') baseDurationMins = 35;
+  else if (activity === 'Very Active') baseDurationMins = 45;
+
+  if (age > 65) {
+    baseDurationMins = Math.min(baseDurationMins, 30);
+  }
+  if (bmiCategory === 'Underweight') {
+    baseDurationMins = Math.min(baseDurationMins, 25);
+  }
+  if (bmiCategory === 'Obese') {
+    baseDurationMins = Math.min(baseDurationMins, 30);
   }
 
+  let calculatedFreq = '3-4 Days / Week';
+  if (activity === 'Sedentary') calculatedFreq = '3 Days / Week';
+  else if (activity === 'Lightly Active') calculatedFreq = '3-4 Days / Week';
+  else if (activity === 'Moderately Active') calculatedFreq = '4 Days / Week';
+  else if (activity === 'Very Active') calculatedFreq = '4-5 Days / Week';
+
+  if (age > 70) {
+    calculatedFreq = '3 Days / Week';
+  }
+
+  let calculatedIntensity = 'Moderate';
   if (hasHypertension || hasHeart) {
-    exerciseType = 'Cardioprotective Low-Resistance Conditioning';
-    exerciseInt = 'Low to Moderate';
-    exerciseDesc = 'Fosters cardiac stroke volume and arterial elasticity while strictly avoiding dangerous pressure spikes.';
-    exerciseRoutines.length = 0;
-    exerciseRoutines.push(
-      'Aerobic Base Development: Steady, rhythmic walking, elliptical trainer, or water aerobics (30 mins at 50-60% Max HR).',
-      'Low-Resistance High-Rep Dynamics: Light elastic bands, bicep curls, or wall push-ups (no heavy lifting or isometric straining).',
-      'Deep Vagal Decompression: 5 minutes of slow diaphragmatic breathing to settle sympathetic vascular tone.'
-    );
-    exercisePrecautions.push(
-      'STRICTLY AVOID the Valsalva maneuver (holding your breath while lifting), as this triggers dangerous acute arterial blood pressure spikes.',
-      'If you experience sudden chest pressure, jaw pain, or severe lightheadedness, terminate the workout immediately and seek medical assessment.'
-    );
+    calculatedIntensity = 'Controlled Low';
+  } else if (hasArthritis || age > 65) {
+    calculatedIntensity = 'Low to Moderate';
+  } else {
+    if (activity === 'Sedentary') calculatedIntensity = 'Low';
+    else if (activity === 'Lightly Active') calculatedIntensity = 'Low to Moderate';
+    else if (activity === 'Moderately Active') calculatedIntensity = 'Moderate';
+    else if (activity === 'Very Active') {
+      calculatedIntensity = isMuscleGain || isWeightLoss ? 'Moderate to High' : 'Moderate';
+    }
   }
 
+  exerciseFreq = calculatedFreq;
+  exerciseDur = `${baseDurationMins} Minutes`;
+  exerciseInt = calculatedIntensity;
+
+  const exercisesToRecommend: any[] = [];
+
+  // Exercise 1: Cardiovascular / Aerobic
+  if (hasHeart || hasHypertension) {
+    exerciseType = 'Cardioprotective Cardiovascular Base Conditioning';
+    exerciseDesc = 'Designed to foster cardiac stroke volume and vascular flexibility while strictly avoiding blood pressure peaks.';
+    exercisesToRecommend.push({
+      name: 'Steady-State Flat Cardio Walk',
+      met: 3.3,
+      duration: `${baseDurationMins} minutes`,
+      frequency: '4 days/week',
+      intensity: 'Low',
+      safetyNotes: 'Keep breathing rhythmic and deep. Wear highly supportive athletic shoes. Stay on flat ground.'
+    });
+  } else if (hasArthritis) {
+    exerciseType = 'Joint-Sparing Functional Cardio';
+    exerciseDesc = 'Low-impact movements designed to preserve cardiovascular conditioning without stress on inflamed joints.';
+    exercisesToRecommend.push({
+      name: 'Water Laps or Deep Water Walking',
+      met: 4.0,
+      duration: `${baseDurationMins} minutes`,
+      frequency: '3 days/week',
+      intensity: 'Low to Moderate',
+      safetyNotes: 'Water provides hydrostatic pressure to cushion joint spaces and reduce mechanical knee/hip strain.'
+    });
+  } else if (hasAsthma) {
+    exerciseType = 'Airway-Safe Conditioning';
+    exerciseDesc = 'Steady cardio designed to elevate lung capacity while minimizing airway dehydration or cold-shock spasms.';
+    exercisesToRecommend.push({
+      name: 'Humidified Indoor Cycling',
+      met: 5.0,
+      duration: `${baseDurationMins} minutes`,
+      frequency: '3 days/week',
+      intensity: 'Moderate',
+      safetyNotes: 'Keep indoor air humid. Maintain steady conversational pace. Keep rescue inhaler within arm\'s reach.'
+    });
+  } else if (isWeightLoss) {
+    exerciseType = 'High-Frequency Metabolic Circuit & Cardio';
+    exerciseDesc = 'An active fat oxidation routine designed to maximize calorie expenditure and preserve lean body tissue.';
+    exercisesToRecommend.push({
+      name: 'Interval Cycling or Power Walking',
+      met: 6.0,
+      duration: `${baseDurationMins + 5} minutes`,
+      frequency: '4 days/week',
+      intensity: 'Moderate to High',
+      safetyNotes: 'Alternate 1 minute of faster pace with 2 minutes of moderate recovery. Stay fully hydrated.'
+    });
+  } else if (isMuscleGain || isWeightGain) {
+    exerciseType = isMuscleGain ? 'Progressive Strength & Hypertrophy Program' : 'Hypertrophy & High-Resistance Muscle Stimulus';
+    exerciseDesc = isMuscleGain ? 'A high-stimulus program targeting progressive muscle overload.' : 'A muscle-building, progressive loading routine designed to support clean lean mass gain.';
+    exercisesToRecommend.push({
+      name: 'Low-Impact Resistance Rower Warm-up',
+      met: 4.5,
+      duration: '15 minutes',
+      frequency: '3 days/week',
+      intensity: 'Low to Moderate',
+      safetyNotes: 'Focus on leg drive first, avoid hinging at the spine too early to prevent lower back stress.'
+    });
+  } else {
+    exercisesToRecommend.push({
+      name: 'Brisk Walk or Light Stationary Cycle',
+      met: 4.0,
+      duration: `${baseDurationMins} minutes`,
+      frequency: '3-4 days/week',
+      intensity: 'Moderate',
+      safetyNotes: 'Maintain a warm conversational pace. Keep shoulders relaxed and posture tall.'
+    });
+  }
+
+  // Exercise 2: Strength / Resistance Training (Tailored to avoid unsafe weightlifting/overload)
+  if (hasHeart || hasHypertension) {
+    exercisesToRecommend.push({
+      name: 'Unloaded Elastic Band Chest Press & Row',
+      met: 2.8,
+      duration: '15 minutes (2 sets of 12 reps)',
+      frequency: '3 days/week',
+      intensity: 'Low',
+      safetyNotes: 'Do not hold your breath during the push or pull phase (Valsalva). Slow and controlled movements.'
+    });
+  } else if (hasArthritis) {
+    exercisesToRecommend.push({
+      name: 'Supported Wall Sits & Leg Extensions',
+      met: 2.5,
+      duration: '15 minutes (hold sits for 20-30s)',
+      frequency: '3 days/week',
+      intensity: 'Low to Moderate',
+      safetyNotes: 'Keep lower back pinned completely flat to the wall. Stop immediately if there is sharp knee joint friction.'
+    });
+  } else if (hasKidney) {
+    exercisesToRecommend.push({
+      name: 'Moderate Resistance Band Dumbbell Circuit',
+      met: 3.5,
+      duration: '20 minutes (2 sets of 10 reps, high rest)',
+      frequency: '3 days/week',
+      intensity: 'Low to Moderate',
+      safetyNotes: 'Avoid extreme muscular fatigue or pushing to failure to eliminate rhabdomyolysis risks.'
+    });
+  } else if (isWeightLoss) {
+    exercisesToRecommend.push({
+      name: 'Full-Body Resistance Circuit (Squats, Push-ups, Rows)',
+      met: 5.0,
+      duration: '25 minutes (3 circuits)',
+      frequency: '3 days/week',
+      intensity: 'Moderate',
+      safetyNotes: 'Exhale during execution, maintain a stable core to protect your lumbar spine.'
+    });
+  } else if (isMuscleGain || isWeightGain) {
+    if (age > 60) {
+      exercisesToRecommend.push({
+        name: 'Dumbbell Goblet Squats with Chair Support',
+        met: 4.5,
+        duration: '20 minutes (3 sets of 8 reps)',
+        frequency: '3 days/week',
+        intensity: 'Moderate',
+        safetyNotes: 'Keep your torso upright. Sit back as if sitting into a chair. Ensure the chair is directly behind you.'
+      });
+    } else {
+      exercisesToRecommend.push({
+        name: 'Hypertrophic Resistance Training (Squats & Dumbbell Presses)',
+        met: 5.5,
+        duration: '35 minutes (3 sets of 8-10 reps)',
+        frequency: '3 days/week',
+        intensity: 'High',
+        safetyNotes: 'Control the descent of weights. Do not lock out elbows or knees. Maintain a rigid neutral spine.'
+      });
+    }
+  } else {
+    exercisesToRecommend.push({
+      name: 'Bodyweight Squats & Floor Glute Bridges',
+      met: 3.5,
+      duration: '20 minutes (3 sets of 12 reps)',
+      frequency: '3 days/week',
+      intensity: 'Moderate',
+      safetyNotes: 'Keep feet flat. Focus on driving hips up with glutes, avoiding lower back extension.'
+    });
+  }
+
+  // Exercise 3: Balance, Core & Mobility (Great for recovery and tailored heavily for age/conditions)
+  if (age > 60) {
+    exercisesToRecommend.push({
+      name: 'Tandem Balance Walks & Single-Leg Holds',
+      met: 2.0,
+      duration: '15 minutes',
+      frequency: 'Daily',
+      intensity: 'Low',
+      safetyNotes: 'Perform adjacent to a sturdy countertop or handrail. Keep gaze forward to train balance receptors.'
+    });
+  } else if (hasHeart || hasHypertension) {
+    exercisesToRecommend.push({
+      name: 'Parasympathetic Deep Breathing (Vagus Activation)',
+      met: 1.5,
+      duration: '10 minutes',
+      frequency: 'Daily (preferably post-exercise)',
+      intensity: 'Gentle',
+      safetyNotes: 'Inhale for 4 seconds, hold for 2, and exhale slowly for 6-8 seconds to decrease blood pressure.'
+    });
+  } else if (hasArthritis) {
+    exercisesToRecommend.push({
+      name: 'Chair Yoga & Gentle Hamstring/Hip Stretches',
+      met: 2.2,
+      duration: '20 minutes',
+      frequency: '4 days/week',
+      intensity: 'Low',
+      safetyNotes: 'Never force joint limits. Focus on stretching muscle tissue, not straining tendons.'
+    });
+  } else if (isMuscleGain || isWeightGain) {
+    exercisesToRecommend.push({
+      name: 'Planks & Bird-Dog Core Stability',
+      met: 3.0,
+      duration: '15 minutes (holds of 20-30s)',
+      frequency: '3 days/week',
+      intensity: 'Moderate',
+      safetyNotes: 'Do not let your hips sag. Keep head neutral and squeeze glutes to lock your spine.'
+    });
+  } else {
+    exercisesToRecommend.push({
+      name: 'Dynamic Vinyasa Yoga Flow',
+      met: 2.8,
+      duration: '20 minutes',
+      frequency: '2-3 days/week',
+      intensity: 'Low to Moderate',
+      safetyNotes: 'Coordinate your breathing with each movement. Rest in Child\'s Pose if fatigue arises.'
+    });
+  }
+
+  const exerciseRoutines: string[] = [];
+  for (const ex of exercisesToRecommend) {
+    const cal = estimateCaloriesBurned(ex.met, weight, parseInt(ex.duration) || 20);
+    exerciseRoutines.push(JSON.stringify({
+      name: ex.name,
+      duration: ex.duration,
+      frequency: ex.frequency,
+      intensity: ex.intensity,
+      caloriesBurned: cal,
+      safetyNotes: ex.safetyNotes
+    }));
+  }
+
+  // Precaution configuration
+  const exercisePrecautions: string[] = [];
+  if (hasHypertension || hasHeart) {
+    exercisePrecautions.push(
+      'STRICTLY AVOID the Valsalva maneuver (holding your breath during lifting or straining), as this spikes blood pressure to dangerous highs.',
+      'If you encounter sudden chest tightness, jaw/shoulder pain, cold sweat, or extreme dizziness, terminate exercise immediately and call emergency services.',
+      'Avoid exercises that involve your head being lower than your heart (e.g. decline press, certain yoga inversions).'
+    );
+  }
   if (hasAsthma) {
     exercisePrecautions.push(
-      'Keep your emergency rescue inhaler (Bronchodilator) nearby during all workouts.',
-      'Warm up longer (10-15 mins) with low intensity to allow airway capillaries to adapt and prevent exercise-induced bronchospasms.'
+      'Always keep your prescribed rescue inhaler directly adjacent to you during physical training.',
+      'Double the duration of your warm-up (10-15 mins) with low intensity to allow airway capillaries to dilate slowly, preventing bronchospasms.',
+      'If training outdoors in cold weather, wear a scarf or mask over your mouth to warm and humidify the air.'
     );
   }
-
+  if (hasArthritis) {
+    exercisePrecautions.push(
+      'Avoid high-impact running, heavy lunges, or jumping, which apply excessive mechanical shock to sensitive joint cartilage.',
+      'Perform a thorough 10-minute dynamic warm-up to lubricate the joint capsule with synovial fluid before adding load.',
+      'If any joint feels hot, swollen, or experiences sharp pain, stop immediately and apply cold compression.'
+    );
+  }
   if (hasKidney) {
     exercisePrecautions.push(
-      'Avoid high-intensity exhaustive exercise that causes severe muscle breakdown (Rhabdomyolysis), as myoglobin release strains compromised renal filters.'
+      'Avoid extreme, muscle-damaging workouts (e.g., intensive eccentric squats to failure) to eliminate risks of rhabdomyolysis.',
+      'Maintain diligent hydration during workouts, except as strictly limited by your nephrologist, to support metabolic clearing.'
+    );
+  }
+  if (age > 60) {
+    exercisePrecautions.push(
+      'Prioritize balance training and functional stability over pure load lifting to protect older neural networks and prevent fall injury.',
+      'Always ensure you have a wall, countertop, or heavy object within arm\'s reach when performing balance movements.'
+    );
+  }
+  if (exercisePrecautions.length === 0) {
+    exercisePrecautions.push(
+      'Include a 5-10 minute dedicated dynamic warmup and dynamic stretching session before each workout.',
+      'Track resting heart rate weekly as a baseline biomarker of cardiorespiratory recovery.',
+      'Maintain proper hydration and do not exercise through sharp joint pain.'
     );
   }
 
-  // 8. Generate Lifestyle Tips
+  // 8. Generate Lifestyle Recommendations
   const lifestyleTips: RecommendationItem[] = [];
 
-  lifestyleTips.push({
-    id: 'life-sleep',
-    title: 'Prioritize Deep Circadian Sleep Anchors',
-    description: 'Aim for 7.5 to 8.5 hours of sleep. Go to bed and wake up at the exact same time daily to synchronize biological clock genes, boosting leptin (fullness hormone) and normalizing insulin.',
-    badge: 'Circadian Biology'
-  });
+  // Parse sleep and stress from tags or direct fields
+  const rawConditionsList = profile.healthConditions || [];
+  let userSleep = profile.sleepDuration;
+  if (!userSleep) {
+    if (rawConditionsList.includes('sleep_less_6')) userSleep = 'Less than 6 hours';
+    else if (rawConditionsList.includes('sleep_8_plus')) userSleep = 'More than 8 hours';
+    else userSleep = '6 to 8 hours';
+  }
 
-  if (profile.smokingStatus === 'Active smoker') {
+  let userStress = profile.stressLevel;
+  if (!userStress) {
+    if (rawConditionsList.includes('stress_low')) userStress = 'Low';
+    else if (rawConditionsList.includes('stress_high')) userStress = 'High';
+    else userStress = 'Moderate';
+  }
+
+  // A. Personalized Sleep Recommendation
+  if (userSleep === 'Less than 6 hours') {
+    let sleepDesc = "You average less than 6 hours of sleep. This chronic deficit elevates morning cortisol and triggers fasting glucose spikes by impairing insulin clearance.";
+    if (hasDiabetes || isBloodSugarControl) {
+      sleepDesc += " For blood sugar management, even one night of restricted sleep reduces insulin sensitivity by 33%.";
+    }
+    if (hasHypertension) {
+      sleepDesc += " Short sleep is strongly associated with elevated sympathetic vascular tone, preventing the natural nocturnal blood pressure dip.";
+    }
+    sleepDesc += " Target a daily 20-minute afternoon Non-Sleep Deep Rest (NSDR) or Yoga Nidra session to reset your nervous system, and strictly block blue light after 8:30 PM.";
+    
     lifestyleTips.push({
-      id: 'life-smoking',
-      title: 'Mitigate Endothelial Vascular Damage',
-      description: 'Smoking directly damages blood vessel linings and worsens hypertension. Discuss nicotine replacement therapy or stress management with your doctor.',
-      badge: 'Critical Cessation'
+      id: 'life-sleep-deficit',
+      title: 'Maximize Glycemic & Cortisol Recovery',
+      description: sleepDesc,
+      badge: 'Sleep Deficit Protocol'
+    });
+  } else if (userSleep === 'More than 8 hours') {
+    lifestyleTips.push({
+      id: 'life-sleep-excess',
+      title: 'Optimize Waking Inertia & Melatonin Anchoring',
+      description: 'Averaging over 8 hours can sometimes indicate fragmented sleep or sleep inertia. Wake up immediately upon first arousal to prevent morning sluggishness. Seek direct outdoor sunlight (10,000+ lux) for 15 minutes within an hour of waking to suppress melatonin production and synchronize circadian hormone secretion.',
+      badge: 'Circadian Anchoring'
+    });
+  } else {
+    let sleepDesc = "Your sleep duration of 6 to 8 hours is moderate. To optimize sleep quality and transition to deeper REM and slow-wave stages, maintain a cool bedroom temperature (18°C / 65°F).";
+    if (hasGastro) {
+      sleepDesc += " Sleep on your left side to anatomically keep the gastric junction above stomach acid levels, preventing nocturnal GERD reflux.";
+    }
+    sleepDesc += " Ensure a completely dark room (or eye mask) to maximize pineal melatonin release, supporting blood-brain-barrier clearing during deep sleep.";
+    
+    lifestyleTips.push({
+      id: 'life-sleep-optimal',
+      title: 'Optimize Sleep Architecture & REM/Deep Phase',
+      description: sleepDesc,
+      badge: 'Sleep Quality'
     });
   }
 
-  if (profile.alcoholConsumption && profile.alcoholConsumption !== 'None') {
+  // B. Personalized Stress Management
+  if (userStress === 'High') {
+    let stressDesc = "Experiencing high chronic stress floods your blood with glucocorticoids, impairing digestion, raising heart rate, and stiffening arteries.";
+    if (hasGastro) {
+      stressDesc += " High stress stops normal gastric motility and triggers intestinal muscle spasms, exacerbating IBS and acid reflux. Practice deep breathing prior to each meal to signal safety to your enteric nervous system.";
+    }
+    if (hasHypertension || hasHeart) {
+      stressDesc += " Elevated catecholamines from stress prevent vascular relaxation. Implement slow-paced nasal breathing to directly decrease blood pressure.";
+    }
+    stressDesc += " Practice the double-inhale physiological sigh: take a deep breath in through your nose, take a second micro-inhale to fully dilate the alveoli, and release a slow sigh out through your mouth. Repeat 5 times to immediately trigger the parasympathetic brake.";
+    
     lifestyleTips.push({
-      id: 'life-alcohol',
-      title: 'Regulate Hepatic Stress',
-      description: 'Alcohol stalls lipid oxidation, disrupts deep REM sleep, and exacerbates GERD symptoms. Limit intake to a maximum of 2 units weekly.',
-      badge: 'Toxicology'
+      id: 'life-stress-high',
+      title: 'Downregulate Sympathetic Overdrive',
+      description: stressDesc,
+      badge: 'Autonomic Balance'
+    });
+  } else if (userStress === 'Moderate') {
+    lifestyleTips.push({
+      id: 'life-stress-moderate',
+      title: 'Proactive Cortisol Buffering & Stress Resiliency',
+      description: 'Your moderate stress levels are manageable but require proactive cellular buffering. Incorporate a 10-minute daily silent mindfulness scan or a walk in nature without screens. Ensure adequate dietary magnesium-rich whole foods (such as spinach, pumpkin seeds, and almonds) to offset high adrenal magnesium excretion.',
+      badge: 'Adrenal Resiliency'
+    });
+  } else {
+    lifestyleTips.push({
+      id: 'life-stress-low',
+      title: 'Sustain Nervous System Balance & Active Recovery',
+      description: 'Your low stress is a wonderful health asset. Maintain this state of nervous system balance by protecting your boundaries, pursuing creative hobbies, and ensuring you incorporate light active recovery days (like light stretching or leisure walks) to balance demanding cognitive or exercise schedules.',
+      badge: 'Nervous System Health'
     });
   }
 
-  if (hasDiabetes || bmiValue >= 25) {
+  // C. Physical Activity Strategy
+  if (profile.activityLevel === 'Sedentary') {
     lifestyleTips.push({
-      id: 'life-timing',
-      title: 'Implement 10-Minute Post-Meal Walks',
-      description: 'Perform a light 10-minute stroll immediately following your largest meal. This activates glucose transporters (GLUT-4) in leg muscles, drawing sugars directly out of blood vessels without relying heavily on insulin production.',
-      badge: 'Metabolic Hack'
+      id: 'life-activity-sedentary',
+      title: 'Break Sedentary Stagnation with "Exercise Snacks"',
+      description: 'A sedentary baseline causes a rapid decline in muscle capillary density and skeletal muscle insulin sensitivity. Set a desk timer to stand up every 60 minutes and perform 10 bodyweight air squats or a 2-minute brisk corridor walk. This opens glucose transport channels (GLUT-4) without requiring insulin secretion.',
+      badge: 'Metabolic Activity'
+    });
+  } else if (profile.activityLevel === 'Lightly Active') {
+    lifestyleTips.push({
+      id: 'life-activity-light',
+      title: 'Build Zone 2 Aerobic Base and Capillary Density',
+      description: 'Your light activity is a great starting point. Seek to build on this base by adding brisk walking or cycling at a pace where you can comfortably speak but not sing (Zone 2). Aim for 150 minutes weekly to stimulate mitochondrial biogenesis and significantly lower resting heart rate.',
+      badge: 'Aerobic Base'
+    });
+  } else if (profile.activityLevel === 'Moderately Active') {
+    lifestyleTips.push({
+      id: 'life-activity-moderate',
+      title: 'Structure Periodized Training & Skeletal Muscle Density',
+      description: 'With a moderately active routine, balance is key to preventing overtraining. Structure your week with 3 days of progressive resistance training to build lean contractile muscle (which acts as a metabolic storage sink for glycogen) and 2 days of cardiovascular endurance workouts.',
+      badge: 'Balanced Conditioning'
+    });
+  } else {
+    lifestyleTips.push({
+      id: 'life-activity-heavy',
+      title: 'Support High Performance with Strategic Recovery',
+      description: 'Being very active is excellent for metabolic health but requires deliberate recovery structures. Focus on glycogen replenishment with clean starches and ensure 1.6 to 2.2 grams of protein per kg of body weight. Track resting heart rate or heart rate variability (HRV) as indicators of nervous system fatigue.',
+      badge: 'Performance Recovery'
+    });
+  }
+
+  // D. Smoking Status Strategy
+  const currentSmoking = (profile.smokingStatus as string) || '';
+  if (currentSmoking === 'Active smoker' || currentSmoking === 'Yes') {
+    lifestyleTips.push({
+      id: 'life-smoking-active',
+      title: 'Protect Vascular Endothelial Elasticity',
+      description: 'Inhaling combustion products introduces heavy carbon monoxide, which binds to hemoglobin, depriving vital organs of oxygen. Smoking damages the endothelial lining, raising high-sensitivity C-reactive protein (hs-CRP). Focus on eating high-antioxidant foods (like blueberries and green tea) and consult a healthcare professional regarding structured cessation aids.',
+      badge: 'Endothelial Protection'
+    });
+  } else if (currentSmoking === 'Former smoker') {
+    lifestyleTips.push({
+      id: 'life-smoking-former',
+      title: 'Support Pulmonary Clearance and Alveolar Repair',
+      description: 'Congratulations on quitting! Your body continues to repair lung tissue. Support this repair with deep diaphragmatic yoga breathing (pranayama) to expand vital lung capacity and mobilize lower lobe cilia. Consume plenty of cruciferous vegetables (broccoli, Brussels sprouts) to assist phase II liver detoxification.',
+      badge: 'Pulmonary Restoration'
+    });
+  } else {
+    lifestyleTips.push({
+      id: 'life-smoking-never',
+      title: 'Preserve Mitochondrial Oxygen Delivery',
+      description: 'Maintaining a smoke-free life preserves optimal oxygen transport capacity and capillary integrity. Keep avoiding secondhand vapor or smoke exposure to ensure maximum cardiovascular efficiency, preserving lung elasticity and cellular respiration as you age.',
+      badge: 'Vascular Longevity'
+    });
+  }
+
+  // E. Alcohol Consumption Strategy
+  const currentAlcohol = (profile.alcoholConsumption as string) || '';
+  if (currentAlcohol === 'Heavy' || currentAlcohol === 'Regularly') {
+    lifestyleTips.push({
+      id: 'life-alcohol-heavy',
+      title: 'Reverse Hepatic Fat and Protect Sleep Quality',
+      description: 'Frequent or heavy alcohol consumption halts fatty acid oxidation in the liver, leading to hepatic fat deposits, and fragments sleep by blocking deep restorative stages. Establish a plan to taper consumption to zero. Support your liver with high-fiber grains and sulfur-rich foods (onions, garlic, eggs) to aid glutathione production.',
+      badge: 'Hepatic Recovery'
+    });
+  } else if (currentAlcohol === 'Moderate' || currentAlcohol === 'Socially') {
+    lifestyleTips.push({
+      id: 'life-alcohol-moderate',
+      title: 'Protect Gut Barrier & Overnight Cardiovascular Recovery',
+      description: 'Even moderate or social alcohol consumption triggers minor gut permeability (leaky gut) and raises sleeping heart rate, preventing optimal cardiovascular rest. Avoid drinking alcohol within 4 hours of your bedtime to allow your autonomic nervous system to enter deep parasympathetic recovery.',
+      badge: 'Gut & Sleep Defense'
+    });
+  } else if (currentAlcohol === 'Light' || currentAlcohol === 'Rarely') {
+    lifestyleTips.push({
+      id: 'life-alcohol-light',
+      title: 'Safeguard Cellular Hydration and Nutrient Status',
+      description: 'Your light/occasional consumption keeps toxic acetaldehyde exposure minimal. When you do choose to have a drink, consume 250ml of water containing electrolytes (sodium, potassium) alongside it to prevent mineral depletion and protect cellular hydration.',
+      badge: 'Hydration Buffer'
+    });
+  } else {
+    lifestyleTips.push({
+      id: 'life-alcohol-none',
+      title: 'Optimize Liver Function and Unfragmented Sleep Stages',
+      description: 'Abstaining from alcohol entirely allows your liver to fully dedicate its enzymatic pathways to carbohydrate and fat metabolism, keeps your gut lining intact, and allows your sleep architecture to progress through complete, natural sleep cycles for maximum mental clarity.',
+      badge: 'Toxic-Free Health'
+    });
+  }
+
+  // F. Additional Highly Conditional Lifestyle Hacks (Diabetes, Gastro, Heart Health)
+  if (hasDiabetes || isBloodSugarControl || bmiValue >= 25) {
+    lifestyleTips.push({
+      id: 'life-postmeal-walk',
+      title: 'Perform 10-Minute Post-Meal Strolls',
+      description: 'Walk slowly for exactly 10 minutes immediately following your largest meal. This triggers muscular glucose transporters (GLUT-4) to absorb sugars directly, sparing your pancreas from excessive insulin release.',
+      badge: 'Metabolic Support'
     });
   }
 
   if (hasGastro) {
     lifestyleTips.push({
-      id: 'life-gastro-chewing',
-      title: 'Practice Mindful 30-Chew Mastification',
-      description: 'Chew each mouthful of food at least 30 times. Saliva contains amylase enzymes that kickstart digestive breakups, taking massive workload off weak gastric acid layers and eliminating GERD flares.',
-      badge: 'Gastrokinetic Relief'
+      id: 'life-gastro-chewing-hack',
+      title: 'Implement the 30-Chew Mastification Drill',
+      description: 'Force yourself to chew every bite of food at least 30 times. Salivary amylase begins carbohydrate breakdown early, sparing your stomach lining from heavy digestive work and reducing acid reflux.',
+      badge: 'GI Preservation'
     });
     lifestyleTips.push({
-      id: 'life-gastro-spacing',
-      title: 'Fast 3 Hours Before Sleep',
-      description: 'Ensure your last calorie is consumed at least 180 minutes before lying flat to prevent mechanical backflow of stomach acids.',
-      badge: 'Reflux Prevention'
+      id: 'life-gastro-spacing-hack',
+      title: 'Maintain a 3-Hour Fasting Window Before Bed',
+      description: 'Complete your last calorie intake at least 180 minutes before lying down. This lets your stomach empty, mechanically preventing acid backflow and acid burn.',
+      badge: 'GERD Reflux Prevention'
+    });
+  }
+
+  if (isWeightLoss) {
+    lifestyleTips.push({
+      id: 'life-weightloss-satiety',
+      title: 'Practice Mindful Plate Partitioning',
+      description: 'Fill half of your plate with water-rich vegetables, a quarter with lean protein, and the remainder with complex carbs. Drink 300ml of water 15 minutes before the meal to prompt stretch receptors.',
+      badge: 'Satiety Strategy'
+    });
+  }
+  if (isWeightGain) {
+    lifestyleTips.push({
+      id: 'life-weightgain-meal-freq',
+      title: 'Structure 5-6 Micro-Meals Daily',
+      description: 'Instead of eating 3 huge meals that cause bloating and satiety fatigue, divide your caloric surplus target into smaller, calorie-dense portions spaced 3 hours apart.',
+      badge: 'Surplus Efficiency'
+    });
+  }
+  if (isMuscleGain) {
+    lifestyleTips.push({
+      id: 'life-musclegain-protein-timing',
+      title: 'Distribute Protein Intake Evenly',
+      description: 'Consume 25-35g of protein every 3-4 hours to continuously trigger muscle protein synthesis (MPS) spikes throughout the waking day, preventing muscle breakdown.',
+      badge: 'Anabolic Optimization'
+    });
+  }
+  if (isHeartHealth || hasHypertension) {
+    lifestyleTips.push({
+      id: 'life-hearthealth-nitric-oxide',
+      title: 'Boost Vascular Nitric Oxide Biosynthesis',
+      description: 'Squeeze dynamic physical activities or deep nasal breathing cycles during your day. Nasal breathing triggers systemic nitric oxide release, relaxing endothelial cells and lowering resting blood pressure.',
+      badge: 'Endothelial Relaxation'
     });
   }
 

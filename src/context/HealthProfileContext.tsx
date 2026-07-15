@@ -8,13 +8,55 @@ export interface HealthProfile {
   height: number | '';
   weight: number | '';
   activityLevel: 'Sedentary' | 'Lightly Active' | 'Moderately Active' | 'Very Active';
-  healthGoal: 'Lose Weight' | 'Maintain Weight' | 'Gain Weight' | 'Improve Overall Health';
+  healthGoal: 'Weight Loss' | 'Weight Gain' | 'Muscle Gain' | 'Improve Overall Health' | 'Heart Health' | 'Blood Sugar Control' | 'Lose Weight' | 'Maintain Weight' | 'Gain Weight';
   healthConditions: string[];
   foodAllergies: string[];
   dietaryPreference: string;
   currentMedications?: string;
   smokingStatus?: string;
   alcoholConsumption?: string;
+  sleepDuration?: 'Less than 6 hours' | '6 to 8 hours' | 'More than 8 hours';
+  stressLevel?: 'Low' | 'Moderate' | 'High';
+}
+
+function decodeProfile(profileData: any): HealthProfile {
+  const rawConditions = profileData.healthConditions || profileData.medicalConditions || [];
+  
+  let sleepDuration = profileData.sleepDuration || profileData.sleep_duration;
+  if (!sleepDuration) {
+    if (rawConditions.includes('sleep_less_6')) sleepDuration = 'Less than 6 hours';
+    else if (rawConditions.includes('sleep_6_8')) sleepDuration = '6 to 8 hours';
+    else if (rawConditions.includes('sleep_8_plus')) sleepDuration = 'More than 8 hours';
+    else sleepDuration = '6 to 8 hours';
+  }
+
+  let stressLevel = profileData.stressLevel || profileData.stress_level;
+  if (!stressLevel) {
+    if (rawConditions.includes('stress_low')) stressLevel = 'Low';
+    else if (rawConditions.includes('stress_moderate')) stressLevel = 'Moderate';
+    else if (rawConditions.includes('stress_high')) stressLevel = 'High';
+    else stressLevel = 'Moderate';
+  }
+
+  const filteredConditions = rawConditions.filter((c: string) => !c.startsWith('sleep_') && !c.startsWith('stress_'));
+
+  return {
+    fullName: profileData.fullName || profileData.full_name || '',
+    age: profileData.age !== undefined && profileData.age !== null ? Number(profileData.age) : '',
+    gender: profileData.gender || 'Other',
+    height: profileData.height !== undefined && profileData.height !== null ? Number(profileData.height) : '',
+    weight: profileData.weight !== undefined && profileData.weight !== null ? Number(profileData.weight) : '',
+    activityLevel: profileData.activityLevel || profileData.activity_level || 'Sedentary',
+    healthGoal: profileData.healthGoal || profileData.health_goal || 'Improve Overall Health',
+    healthConditions: filteredConditions,
+    foodAllergies: profileData.foodAllergies || profileData.allergies || [],
+    dietaryPreference: profileData.dietaryPreference || profileData.dietary_preference || 'None',
+    currentMedications: profileData.currentMedications || profileData.current_medications || '',
+    smokingStatus: profileData.smokingStatus || profileData.smoking_status || 'Never',
+    alcoholConsumption: profileData.alcoholConsumption || profileData.alcohol_consumption || 'None',
+    sleepDuration,
+    stressLevel,
+  };
 }
 
 interface HealthProfileContextType {
@@ -38,7 +80,11 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
   const [profile, setProfile] = useState<HealthProfile | null>(() => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return decodeProfile(parsed);
+      }
+      return null;
     } catch (e) {
       console.error('Error reading health profile from localStorage:', e);
       return null;
@@ -65,21 +111,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         console.log('[DEBUG_FRONTEND] fetchProfile response JSON result:', JSON.stringify(result, null, 2));
         if (result.status === 'success' && result.data?.profile) {
           const profileData = result.data.profile;
-          const fetchedProfile: HealthProfile = {
-            fullName: profileData.fullName || profileData.full_name || '',
-            age: profileData.age !== undefined && profileData.age !== null ? Number(profileData.age) : '',
-            gender: profileData.gender || 'Other',
-            height: profileData.height !== undefined && profileData.height !== null ? Number(profileData.height) : '',
-            weight: profileData.weight !== undefined && profileData.weight !== null ? Number(profileData.weight) : '',
-            activityLevel: profileData.activityLevel || profileData.activity_level || 'Sedentary',
-            healthGoal: profileData.healthGoal || profileData.health_goal || 'Improve Overall Health',
-            healthConditions: profileData.healthConditions || profileData.medicalConditions || [],
-            foodAllergies: profileData.foodAllergies || profileData.allergies || [],
-            dietaryPreference: profileData.dietaryPreference || profileData.dietary_preference || 'None',
-            currentMedications: profileData.currentMedications || profileData.current_medications || '',
-            smokingStatus: profileData.smokingStatus || profileData.smoking_status || 'Never',
-            alcoholConsumption: profileData.alcoholConsumption || profileData.alcohol_consumption || 'None',
-          };
+          const fetchedProfile = decodeProfile(profileData);
           console.log('[DEBUG_FRONTEND] fetchProfile mapping success. Setting profile state to:', JSON.stringify(fetchedProfile, null, 2));
           setProfile(fetchedProfile);
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fetchedProfile));
@@ -111,21 +143,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (stored) {
           const profileData = JSON.parse(stored);
-          const mappedProfile: HealthProfile = {
-            fullName: profileData.fullName || profileData.full_name || '',
-            age: profileData.age !== undefined && profileData.age !== null ? Number(profileData.age) : '',
-            gender: profileData.gender || 'Other',
-            height: profileData.height !== undefined && profileData.height !== null ? Number(profileData.height) : '',
-            weight: profileData.weight !== undefined && profileData.weight !== null ? Number(profileData.weight) : '',
-            activityLevel: profileData.activityLevel || profileData.activity_level || 'Sedentary',
-            healthGoal: profileData.healthGoal || profileData.health_goal || 'Improve Overall Health',
-            healthConditions: profileData.healthConditions || profileData.medicalConditions || [],
-            foodAllergies: profileData.foodAllergies || profileData.allergies || [],
-            dietaryPreference: profileData.dietaryPreference || profileData.dietary_preference || 'None',
-            currentMedications: profileData.currentMedications || profileData.current_medications || '',
-            smokingStatus: profileData.smokingStatus || profileData.smoking_status || 'Never',
-            alcoholConsumption: profileData.alcoholConsumption || profileData.alcohol_consumption || 'None',
-          };
+          const mappedProfile = decodeProfile(profileData);
           setProfile(mappedProfile);
           setIsProfileFetched(true);
           hasCache = true;
@@ -146,10 +164,26 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
 
   const saveProfile = async (newProfile: HealthProfile) => {
     const previousProfile = profile;
-    // Optimistic UI update
-    setProfile(newProfile);
+
+    // Encode sleep and stress into health conditions before saving to DB
+    const sleepTag = newProfile.sleepDuration === 'Less than 6 hours' ? 'sleep_less_6' 
+      : newProfile.sleepDuration === 'More than 8 hours' ? 'sleep_8_plus' : 'sleep_6_8';
+    
+    const stressTag = newProfile.stressLevel === 'Low' ? 'stress_low'
+      : newProfile.stressLevel === 'High' ? 'stress_high' : 'stress_moderate';
+    
+    const baseConditions = (newProfile.healthConditions || []).filter(c => !c.startsWith('sleep_') && !c.startsWith('stress_'));
+    
+    const profileToSave = {
+      ...newProfile,
+      healthConditions: [...baseConditions, sleepTag, stressTag]
+    };
+
+    // Optimistic UI update using decodeProfile(profileToSave) to make sure state is formatted identically
+    const decodedOptimisticProfile = decodeProfile(profileToSave);
+    setProfile(decodedOptimisticProfile);
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newProfile));
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(decodedOptimisticProfile));
     } catch (e) {
       console.error('Error saving health profile to localStorage:', e);
     }
@@ -159,7 +193,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         setLoadingProfile(true);
         const response = await fetchWithAuth('/api/profile', {
           method: 'POST',
-          body: JSON.stringify(newProfile),
+          body: JSON.stringify(profileToSave),
         });
         let result: any;
         try {
@@ -171,21 +205,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
           throw new Error(result?.message || 'Failed to save health profile to backend database.');
         }
         if (result.status === 'success' && result.data?.profile) {
-          const savedDbProfile: HealthProfile = {
-            fullName: result.data.profile.fullName || newProfile.fullName,
-            age: result.data.profile.age || newProfile.age,
-            gender: result.data.profile.gender || newProfile.gender || 'Other',
-            height: result.data.profile.height || newProfile.height,
-            weight: result.data.profile.weight || newProfile.weight,
-            activityLevel: result.data.profile.activityLevel || newProfile.activityLevel,
-            healthGoal: result.data.profile.healthGoal || newProfile.healthGoal,
-            healthConditions: result.data.profile.healthConditions || newProfile.healthConditions,
-            foodAllergies: result.data.profile.foodAllergies || newProfile.foodAllergies,
-            dietaryPreference: result.data.profile.dietaryPreference || newProfile.dietaryPreference,
-            currentMedications: result.data.profile.currentMedications || newProfile.currentMedications,
-            smokingStatus: result.data.profile.smokingStatus || newProfile.smokingStatus,
-            alcoholConsumption: result.data.profile.alcoholConsumption || newProfile.alcoholConsumption,
-          };
+          const savedDbProfile = decodeProfile(result.data.profile);
           setProfile(savedDbProfile);
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(savedDbProfile));
         } else {

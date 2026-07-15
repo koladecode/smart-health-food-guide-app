@@ -31,10 +31,12 @@ const ACTIVITY_LEVELS = [
 ] as const;
 
 const HEALTH_GOALS = [
-  { value: 'Lose Weight', label: 'Lose Weight', desc: 'Caloric deficit focused nutrition and fitness guidance' },
-  { value: 'Maintain Weight', label: 'Maintain Weight', desc: 'Energy balance and healthy nutrient metabolism' },
-  { value: 'Gain Weight', label: 'Gain Weight', desc: 'Caloric surplus, muscle-building nutrition and support' },
-  { value: 'Improve Overall Health', label: 'Improve Overall Health', desc: 'Micronutrient density, immunity, and chronic prevention' }
+  { value: 'Weight Loss', label: 'Weight Loss', desc: 'Caloric deficit focused nutrition and fitness guidance' },
+  { value: 'Weight Gain', label: 'Weight Gain', desc: 'Healthy caloric surplus, nutrient loading and growth' },
+  { value: 'Muscle Gain', label: 'Muscle Gain', desc: 'Protein synthesis, progressive load and strength training' },
+  { value: 'Improve Overall Health', label: 'Improve Overall Health', desc: 'Micronutrient density, immunity, and lifestyle alignment' },
+  { value: 'Heart Health', label: 'Heart Health', desc: 'Vascular elasticity, sodium management, and aerobic endurance' },
+  { value: 'Blood Sugar Control', label: 'Blood Sugar Control', desc: 'Glycemic stabilization, insulin sensitivity, and clean fibers' }
 ] as const;
 
 const HEALTH_CONDITIONS = [
@@ -90,6 +92,8 @@ export default function ProfileFormPage() {
   const [healthGoal, setHealthGoal] = useState<HealthProfile['healthGoal']>('Improve Overall Health');
   const [smokingStatus, setSmokingStatus] = useState('Non-smoker');
   const [alcoholConsumption, setAlcoholConsumption] = useState('None');
+  const [sleepDuration, setSleepDuration] = useState<'Less than 6 hours' | '6 to 8 hours' | 'More than 8 hours'>('6 to 8 hours');
+  const [stressLevel, setStressLevel] = useState<'Low' | 'Moderate' | 'High'>('Moderate');
 
   const [selectedConditions, setSelectedConditions] = useState<string[]>(['none']);
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>(['none']);
@@ -112,6 +116,8 @@ export default function ProfileFormPage() {
       setSelectedAllergens(profile.foodAllergies || ['none']);
       setDietaryPreference(profile.dietaryPreference || 'None');
       setCurrentMedications(profile.currentMedications || '');
+      setSleepDuration(profile.sleepDuration || '6 to 8 hours');
+      setStressLevel(profile.stressLevel || 'Moderate');
     }
   }, [profile]);
 
@@ -267,7 +273,9 @@ export default function ProfileFormPage() {
       dietaryPreference,
       currentMedications: currentMedications.trim() || undefined,
       smokingStatus: smokingStatus || undefined,
-      alcoholConsumption: alcoholConsumption || undefined
+      alcoholConsumption: alcoholConsumption || undefined,
+      sleepDuration,
+      stressLevel
     };
 
     setSaveError(null);
@@ -374,7 +382,7 @@ export default function ProfileFormPage() {
                   <Input
                     label="Full Name"
                     id="profile-fullName"
-                    placeholder="e.g. Jane Doe"
+                    placeholder="e.g. Alex Smith"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     error={errors.fullName}
@@ -536,6 +544,30 @@ export default function ProfileFormPage() {
                         { value: 'Rarely', label: 'Rarely / Occasional' },
                         { value: 'Socially', label: 'Social drinker' },
                         { value: 'Regularly', label: 'Regular consumption' }
+                      ]}
+                    />
+
+                    <Select
+                      label="Average Sleep Duration"
+                      id="profile-sleep"
+                      value={sleepDuration}
+                      onChange={(e) => setSleepDuration(e.target.value as any)}
+                      options={[
+                        { value: 'Less than 6 hours', label: 'Less than 6 hours' },
+                        { value: '6 to 8 hours', label: '6 to 8 hours' },
+                        { value: 'More than 8 hours', label: 'More than 8 hours' }
+                      ]}
+                    />
+
+                    <Select
+                      label="Daily Stress Level"
+                      id="profile-stress"
+                      value={stressLevel}
+                      onChange={(e) => setStressLevel(e.target.value as any)}
+                      options={[
+                        { value: 'Low', label: 'Low' },
+                        { value: 'Moderate', label: 'Moderate' },
+                        { value: 'High', label: 'High' }
                       ]}
                     />
                   </div>

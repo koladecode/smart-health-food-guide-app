@@ -7,7 +7,7 @@ import React from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { NavigationProvider, useNavigation } from './context/NavigationContext';
 import { HealthProfileProvider } from './context/HealthProfileContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -17,7 +17,23 @@ import ProfileSummaryPage from './pages/ProfileSummaryPage';
 import RecommendationsPage from './pages/RecommendationsPage';
 
 function AppContent() {
-  const { currentPage } = useNavigation();
+  const { currentPage, navigateTo } = useNavigation();
+  const { isAuthenticated, loading } = useAuth();
+
+  React.useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      const privatePages = ['profile-form', 'profile-summary', 'recommendations', 'dashboard'];
+      if (privatePages.includes(currentPage)) {
+        navigateTo('landing');
+      }
+    }
+  }, [isAuthenticated, loading, currentPage, navigateTo]);
+
+  // Strict rendering check to prevent flashes of private screens
+  const isPrivatePage = ['profile-form', 'profile-summary', 'recommendations', 'dashboard'].includes(currentPage);
+  if (!loading && !isAuthenticated && isPrivatePage) {
+    return <LandingPage />;
+  }
 
   switch (currentPage) {
     case 'login':

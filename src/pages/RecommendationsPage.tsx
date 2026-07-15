@@ -485,12 +485,56 @@ export default function RecommendationsPage() {
             <div className="flex flex-col gap-4">
               <h4 className="text-xs font-bold text-slate-450 uppercase tracking-widest font-mono">Suggested Micro-Routine</h4>
               <div className="flex flex-col gap-3" id="exercise-routines-list">
-                {recs.exercise.routine.map((item, idx) => (
-                  <div key={idx} className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex gap-3 items-start">
-                    <CornerDownRight className="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">{item}</p>
-                  </div>
-                ))}
+                {recs.exercise.routine.map((item, idx) => {
+                  try {
+                    const parsed = JSON.parse(item);
+                    return (
+                      <div key={idx} className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex flex-col gap-3 text-left">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex items-start gap-2.5 text-left">
+                            <CornerDownRight className="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0 mt-1" />
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{parsed.name}</h4>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
+                                <span className="font-bold text-slate-700 dark:text-slate-300">Safety Notes:</span> {parsed.safetyNotes}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end flex-shrink-0 text-right">
+                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                              ~{parsed.caloriesBurned} kcal
+                            </span>
+                            <span className="text-4xs font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                              Est. Burn
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-slate-850 text-2xs font-semibold">
+                          <div className="bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-850">
+                            <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono">Duration</span>
+                            <span className="text-slate-800 dark:text-slate-200 block truncate">{parsed.duration}</span>
+                          </div>
+                          <div className="bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-850">
+                            <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono">Frequency</span>
+                            <span className="text-slate-800 dark:text-slate-200 block truncate">{parsed.frequency}</span>
+                          </div>
+                          <div className="bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-850">
+                            <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono">Intensity</span>
+                            <span className="text-slate-800 dark:text-slate-200 block truncate">{parsed.intensity}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } catch (e) {
+                    return (
+                      <div key={idx} className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex gap-3 items-start text-left">
+                        <CornerDownRight className="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">{item}</p>
+                      </div>
+                    );
+                  }
+                })}
               </div>
             </div>
 
