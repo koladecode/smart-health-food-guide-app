@@ -100,28 +100,105 @@ export class RecommendationService {
     recs: Omit<PersonalizedRecommendations, 'createdAt'>
   ): Promise<PersonalizedRecommendations> {
     const supabase = getSupabaseAdminClient();
-    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Attempting to insert base recommendation for user:', userId);
+    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Attempting to upsert recommendation for user:', userId);
 
-    // 1. Insert base recommendation
-    const { data: rec, error } = await supabase
+    // Check if an existing recommendation already exists for this user
+    const { data: existingRecs, error: findError } = await supabase
       .from('recommendations')
-      .insert({
-        user_id: userId,
-        bmi_value: recs.bmiValue,
-        bmi_category: recs.bmiCategory,
-        water_liters: recs.waterIntake.liters,
-        water_cups: recs.waterIntake.cups,
-        water_description: recs.waterIntake.description,
-      })
-      .select()
-      .single();
+      .select('id')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to insert base recommendation:', error);
-      throw error;
+    if (findError) {
+      console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to query existing recommendations:', findError);
+      throw findError;
     }
 
-    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Base recommendation inserted successfully. ID:', rec.id);
+    let rec: any;
+
+    if (existingRecs && existingRecs.length > 0) {
+      const existingId = existingRecs[0].id;
+      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Found existing recommendation ID:', existingId, 'for user:', userId);
+
+      // Clean up other legacy/extra records for this user if any exist
+      if (existingRecs.length > 1) {
+        console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Cleaning up', existingRecs.length - 1, 'legacy extra rows for user:', userId);
+        const extraIds = existingRecs.slice(1).map(r => r.id);
+        const { error: cleanupError } = await supabase
+          .from('recommendations')
+          .delete()
+          .in('id', extraIds);
+        if (cleanupError) {
+          console.warn('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to clean up extra recommendations:', cleanupError);
+        }
+      }
+
+      // Update the base recommendation
+      const { data: updatedRec, error: updateError } = await supabase
+        .from('recommendations')
+        .update({
+          bmi_value: recs.bmiValue,
+          bmi_category: recs.bmiCategory,
+          water_liters: recs.waterIntake.liters,
+          water_cups: recs.waterIntake.cups,
+          water_description: recs.waterIntake.description,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to update base recommendation:', updateError);
+        throw updateError;
+      }
+
+      rec = updatedRec;
+
+      // Delete old exercises and foods associated with this recommendation_id to avoid unique constraints and duplicates
+      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Cleaning up existing exercises and foods for recommendation ID:', existingId);
+      const { error: delExError } = await supabase
+        .from('exercises')
+        .delete()
+        .eq('recommendation_id', existingId);
+      if (delExError) {
+        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to delete existing exercises:', delExError);
+        throw delExError;
+      }
+
+      const { error: delFoodsError } = await supabase
+        .from('foods')
+        .delete()
+        .eq('recommendation_id', existingId);
+      if (delFoodsError) {
+        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to delete existing foods:', delFoodsError);
+        throw delFoodsError;
+      }
+    } else {
+      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] No existing recommendation found. Inserting new one for user:', userId);
+      
+      const { data: insertedRec, error: insertError } = await supabase
+        .from('recommendations')
+        .insert({
+          user_id: userId,
+          bmi_value: recs.bmiValue,
+          bmi_category: recs.bmiCategory,
+          water_liters: recs.waterIntake.liters,
+          water_cups: recs.waterIntake.cups,
+          water_description: recs.waterIntake.description,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to insert new recommendation:', insertError);
+        throw insertError;
+      }
+
+      rec = insertedRec;
+    }
+
+    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Base recommendation row prepared. ID:', rec.id);
 
     // 2. Insert exercises
     console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Attempting to insert exercises for recommendation_id:', rec.id);

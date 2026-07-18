@@ -12,7 +12,7 @@ import Alert from '../components/Alert';
 export default function RegisterPage() {
   const { navigateTo } = useNavigation();
   const { register, isAuthenticated, loading: authLoading } = useAuth();
-  const { profile, loadingProfile } = useHealthProfile();
+  const { profile, loadingProfile, recsExist, isProfileSynced } = useHealthProfile();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,14 +23,21 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated && !authLoading && !loadingProfile) {
+    if (isAuthenticated && !authLoading && isProfileSynced) {
       if (profile) {
-        navigateTo('dashboard');
+        if (recsExist === null) {
+          return; // Wait for recommendations existence check to complete
+        }
+        if (recsExist) {
+          navigateTo('dashboard');
+        } else {
+          navigateTo('profile-summary');
+        }
       } else {
         navigateTo('profile-form');
       }
     }
-  }, [isAuthenticated, authLoading, profile, loadingProfile, navigateTo]);
+  }, [isAuthenticated, authLoading, profile, isProfileSynced, recsExist, navigateTo]);
 
   const goalOptions = [
     { value: 'general', label: 'General Health Awareness' },

@@ -66,6 +66,11 @@ interface HealthProfileContextType {
   loadingProfile: boolean;
   fetchProfile: () => Promise<void>;
   isProfileFetched: boolean;
+  recsExist: boolean | null;
+  justCreatedProfile: boolean;
+  setJustCreatedProfile: (val: boolean) => void;
+  checkRecommendationsExist: () => Promise<boolean>;
+  isProfileSynced: boolean;
 }
 
 const HealthProfileContext = createContext<HealthProfileContextType | undefined>(undefined);
@@ -76,7 +81,10 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
   const { isAuthenticated, token, fetchWithAuth } = useAuth();
   const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
   const [isProfileFetched, setIsProfileFetched] = useState<boolean>(false);
+  const [syncedToken, setSyncedToken] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
+  const [recsExist, setRecsExist] = useState<boolean | null>(null);
+  const [justCreatedProfile, setJustCreatedProfile] = useState<boolean>(false);
   const [profile, setProfile] = useState<HealthProfile | null>(() => {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -90,6 +98,22 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
       return null;
     }
   });
+
+  const checkRecommendationsExist = async (): Promise<boolean> => {
+    if (!isAuthenticated) return false;
+    try {
+      const response = await fetchWithAuth('/api/recommendations?check=true');
+      if (response.ok) {
+        const result = await response.json();
+        const exists = !!result.exists;
+        setRecsExist(exists);
+        return exists;
+      }
+    } catch (err) {
+      console.error('Error checking recommendations existence:', err);
+    }
+    return false;
+  };
 
   const fetchProfile = async () => {
     if (!isAuthenticated) {
@@ -115,14 +139,17 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
           console.log('[DEBUG_FRONTEND] fetchProfile mapping success. Setting profile state to:', JSON.stringify(fetchedProfile, null, 2));
           setProfile(fetchedProfile);
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fetchedProfile));
+          await checkRecommendationsExist();
         } else {
           console.log('[DEBUG_FRONTEND] fetchProfile result did not have status success or profile data. Setting profile to null.');
           setProfile(null);
+          setRecsExist(false);
         }
       } else {
         console.log('[DEBUG_FRONTEND] fetchProfile response.ok is false. Status:', response.status);
         if (response.status === 404) {
           setProfile(null);
+          setRecsExist(false);
           localStorage.removeItem(LOCAL_STORAGE_KEY);
         }
       }
@@ -147,6 +174,12 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
           setProfile(mappedProfile);
           setIsProfileFetched(true);
           hasCache = true;
+          fetchWithAuth('/api/recommendations?check=true')
+            .then(res => res.json())
+            .then(result => {
+              setRecsExist(!!result.exists);
+            })
+            .catch(() => setRecsExist(false));
         }
       } catch (e) {
         console.error('Error loading cached profile:', e);
@@ -154,16 +187,26 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
       if (!hasCache) {
         setIsProfileFetched(false);
       }
-      fetchProfile();
+      fetchProfile().then(() => {
+        setSyncedToken(token);
+      });
     } else if (!isAuthenticated) {
       setProfile(null);
       setIsProfileFetched(true);
+      setRecsExist(false);
+      setJustCreatedProfile(false);
+      setSyncedToken(null);
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   }, [isAuthenticated, token]);
 
   const saveProfile = async (newProfile: HealthProfile) => {
     const previousProfile = profile;
+    const isNew = !profile;
+
+    if (isNew) {
+      setJustCreatedProfile(true);
+    }
 
     // Encode sleep and stress into health conditions before saving to DB
     const sleepTag = newProfile.sleepDuration === 'Less than 6 hours' ? 'sleep_less_6' 
@@ -208,6 +251,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
           const savedDbProfile = decodeProfile(result.data.profile);
           setProfile(savedDbProfile);
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(savedDbProfile));
+          setRecsExist(true); // Generated automatically on save
         } else {
           throw new Error(result.message || 'Failed to save health profile to backend database.');
         }
@@ -215,6 +259,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         console.error('Error syncing saved profile with server:', err);
         // Rollback optimistic update on failure to maintain integrity
         setProfile(previousProfile);
+        setJustCreatedProfile(false);
         try {
           if (previousProfile) {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(previousProfile));
@@ -234,6 +279,8 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
   const clearProfile = () => {
     setProfile(null);
     setIsProfileFetched(true);
+    setRecsExist(false);
+    setJustCreatedProfile(false);
     try {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     } catch (e) {
@@ -241,9 +288,23 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
     }
   };
 
+  const isProfileSynced = isAuthenticated ? (syncedToken === token && !loadingProfile && isProfileFetched) : true;
+
   return (
     <HealthProfileContext.Provider
-      value={{ profile, saveProfile, clearProfile, loadingProfile, fetchProfile, isProfileFetched }}
+      value={{
+        profile,
+        saveProfile,
+        clearProfile,
+        loadingProfile,
+        fetchProfile,
+        isProfileFetched,
+        recsExist,
+        justCreatedProfile,
+        setJustCreatedProfile,
+        checkRecommendationsExist,
+        isProfileSynced
+      }}
       id="health-profile-provider-wrapper"
     >
       {children}

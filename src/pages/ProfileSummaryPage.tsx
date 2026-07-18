@@ -26,7 +26,7 @@ import ThemeToggle from '../components/ThemeToggle';
 
 export default function ProfileSummaryPage() {
   const { navigateTo } = useNavigation();
-  const { profile, loadingProfile } = useHealthProfile();
+  const { profile, loadingProfile, recsExist, justCreatedProfile } = useHealthProfile();
 
   // If profile is loading, show loading spinner
   if (loadingProfile) {
@@ -207,17 +207,31 @@ export default function ProfileSummaryPage() {
             >
               Edit Profile
             </Button>
-            <Button
-              variant="primary"
-              size="md"
-              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 border-none font-bold"
-              onClick={() => navigateTo('recommendations')}
-              id="summary-get-recs-btn"
-              icon={<Sparkles className="w-5 h-5" />}
-              iconPosition="right"
-            >
-              Get My Recommendations
-            </Button>
+            {recsExist && !justCreatedProfile ? (
+              <Button
+                variant="primary"
+                size="md"
+                className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 border-none font-bold"
+                onClick={() => navigateTo('dashboard')}
+                id="summary-go-dashboard-btn"
+                icon={<LayoutDashboard className="w-5 h-5" />}
+                iconPosition="right"
+              >
+                Go to Dashboard
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="md"
+                className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 border-none font-bold"
+                onClick={() => navigateTo('recommendations')}
+                id="summary-get-recs-btn"
+                icon={<Sparkles className="w-5 h-5" />}
+                iconPosition="right"
+              >
+                Get My Recommendations
+              </Button>
+            )}
           </div>
         </div>
 

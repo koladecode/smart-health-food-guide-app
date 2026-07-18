@@ -35,7 +35,7 @@ type ActiveTab = 'overview' | 'nutrition' | 'fitness' | 'medications';
 
 export default function DashboardPage() {
   const { navigateTo } = useNavigation();
-  const { profile, loadingProfile, isProfileFetched } = useHealthProfile();
+  const { profile, loadingProfile, isProfileFetched, isProfileSynced } = useHealthProfile();
   const { user, logout, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -53,10 +53,10 @@ export default function DashboardPage() {
 
   // Redirect to profile-form if profile doesn't exist
   React.useEffect(() => {
-    if (isProfileFetched && !loadingProfile && !loading && !profile) {
+    if (isProfileSynced && !loading && !profile) {
       navigateTo('profile-form');
     }
-  }, [profile, isProfileFetched, loadingProfile, loading, navigateTo]);
+  }, [profile, isProfileSynced, loading, navigateTo]);
 
   const userBio = {
     name: profile ? profile.fullName : (user?.email?.split('@')[0] || "User"),
@@ -115,7 +115,7 @@ export default function DashboardPage() {
 
   const allergenInfo = getAllergenWarningContent();
 
-  if (loading || !isProfileFetched || loadingProfile) {
+  if (loading || !isProfileSynced) {
     return (
       <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300" id="dashboard-loading">
         <header className="px-6 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950" id="loading-header">

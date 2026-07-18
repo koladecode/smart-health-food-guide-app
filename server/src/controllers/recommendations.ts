@@ -20,8 +20,21 @@ export const getRecommendations = async (req: AuthenticatedRequest, res: Respons
     const userId = req.user.id;
     console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] Checking cached recommendations for user:', userId);
 
+    const checkOnly = req.query.check === 'true';
+
     // 1. Check for cached recommendations
     let recs = await RecommendationService.getRecommendations(userId);
+
+    if (checkOnly) {
+      console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] Check-only request. Recommendations exist:', !!recs);
+      res.status(200).json({
+        success: true,
+        status: 'success',
+        exists: !!recs,
+        data: recs,
+      });
+      return;
+    }
 
     if (!recs) {
       console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] No cached recommendations found. Retrieving health profile for user:', userId);
