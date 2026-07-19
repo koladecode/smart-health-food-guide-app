@@ -23,6 +23,7 @@ export interface HealthProfile {
   currentMedications?: string;
   sleepDuration?: string;
   stressLevel?: string;
+  countryOrRegion?: string;
   createdAt: Date;
   updatedAt: Date;
 }

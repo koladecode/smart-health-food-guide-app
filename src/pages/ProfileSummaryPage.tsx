@@ -251,7 +251,7 @@ export default function ProfileSummaryPage() {
                   {profile.fullName}
                 </h3>
                 <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">
-                  {profile.age} Years Old • {profile.gender}
+                  {profile.age} Years Old • {profile.gender} • {profile.countryOrRegion || 'Global/Other'}
                 </p>
 
                 <div className="grid grid-cols-2 gap-4 w-full border-t border-slate-100 dark:border-slate-800 pt-5 mt-5">

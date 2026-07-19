@@ -20,8 +20,24 @@ import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/Card';
 import { Input, Select, Textarea } from '../components/Input';
+import { SearchableSelect } from '../components/SearchableSelect';
 import ThemeToggle from '../components/ThemeToggle';
 import Alert from '../components/Alert';
+
+const REGIONS = [
+  { value: 'Nigeria', label: 'Nigeria' },
+  { value: 'Ghana', label: 'Ghana' },
+  { value: 'Kenya', label: 'Kenya' },
+  { value: 'South Africa', label: 'South Africa' },
+  { value: 'USA', label: 'USA' },
+  { value: 'UK', label: 'UK' },
+  { value: 'Canada', label: 'Canada' },
+  { value: 'India', label: 'India' },
+  { value: 'China', label: 'China' },
+  { value: 'Australia', label: 'Australia' },
+  { value: 'Brazil', label: 'Brazil' },
+  { value: 'Global/Other', label: 'Global/Other' }
+];
 
 const ACTIVITY_LEVELS = [
   { value: 'Sedentary', label: 'Sedentary', desc: 'Little to no physical exercise, desk job' },
@@ -85,6 +101,7 @@ export default function ProfileFormPage() {
   const [fullName, setFullName] = useState('');
   const [age, setAge] = useState<number | ''>('');
   const [gender, setGender] = useState('');
+  const [countryOrRegion, setCountryOrRegion] = useState('Global/Other');
   const [height, setHeight] = useState<number | ''>('');
   const [weight, setWeight] = useState<number | ''>('');
   
@@ -106,6 +123,7 @@ export default function ProfileFormPage() {
       setFullName(profile.fullName || '');
       setAge(profile.age || '');
       setGender(profile.gender || '');
+      setCountryOrRegion(profile.countryOrRegion || 'Global/Other');
       setHeight(profile.height || '');
       setWeight(profile.weight || '');
       setActivityLevel(profile.activityLevel || 'Moderately Active');
@@ -275,7 +293,8 @@ export default function ProfileFormPage() {
       smokingStatus: smokingStatus || undefined,
       alcoholConsumption: alcoholConsumption || undefined,
       sleepDuration,
-      stressLevel
+      stressLevel,
+      countryOrRegion
     };
 
     setSaveError(null);
@@ -419,6 +438,14 @@ export default function ProfileFormPage() {
                       ]}
                     />
                   </div>
+
+                  <SearchableSelect
+                    label="Country / Region of Origin"
+                    value={countryOrRegion}
+                    onChange={(val) => setCountryOrRegion(val)}
+                    options={REGIONS}
+                    helperText="Generates locally-sourced, culturally specific healthy food suggestions."
+                  />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input

@@ -8,8 +8,11 @@ export class HealthProfileService {
    * Helper to map database structure to response format
    */
   public static mapDbProfileToResponse(profile: any, conditions: any[]): any {
+    const regionCond = conditions?.find((c) => c.type === 'condition' && c.name && c.name.startsWith('region:'));
+    const countryOrRegion = regionCond ? regionCond.name.replace('region:', '') : 'Global/Other';
+
     const healthConditions = conditions
-      ?.filter((c) => c.type === 'condition')
+      ?.filter((c) => c.type === 'condition' && c.name && !c.name.startsWith('region:'))
       .map((c) => c.name) || [];
     const foodAllergies = conditions
       ?.filter((c) => c.type === 'allergy')
@@ -52,6 +55,7 @@ export class HealthProfileService {
       alcoholConsumption: profile.alcohol_consumption || 'None',
       waterGoal: waterGoal,
       currentMedications: profile.current_medications || '',
+      countryOrRegion: countryOrRegion,
       createdAt: new Date(profile.created_at),
       updatedAt: new Date(profile.updated_at),
     };
@@ -154,7 +158,7 @@ export class HealthProfileService {
     const foodAllergies = profileData.foodAllergies || profileData.allergies || [];
 
     healthConditions.forEach((cond: string) => {
-      if (cond && cond !== 'none') {
+      if (cond && cond !== 'none' && !cond.startsWith('region:')) {
         conditionRecords.push({
           profile_id: profile.id,
           name: cond,
@@ -162,6 +166,14 @@ export class HealthProfileService {
         });
       }
     });
+
+    if (profileData.countryOrRegion) {
+      conditionRecords.push({
+        profile_id: profile.id,
+        name: `region:${profileData.countryOrRegion}`,
+        type: 'condition',
+      });
+    }
 
     foodAllergies.forEach((allergy: string) => {
       if (allergy && allergy !== 'none') {
@@ -263,7 +275,7 @@ export class HealthProfileService {
     const healthConditions = profileData.healthConditions || profileData.medicalConditions;
     const foodAllergies = profileData.foodAllergies || profileData.allergies;
 
-    if (healthConditions !== undefined || foodAllergies !== undefined) {
+    if (healthConditions !== undefined || foodAllergies !== undefined || profileData.countryOrRegion !== undefined) {
       // Clear old health_conditions
       console.log('[DEBUG_LOG] Preparing to delete existing health_conditions for profile_id:', existing.id);
       const deleteRes = await supabase
@@ -280,13 +292,20 @@ export class HealthProfileService {
       const activeAllergies = foodAllergies || [];
 
       activeConditions.forEach((cond: string) => {
-        if (cond && cond !== 'none') {
+        if (cond && cond !== 'none' && !cond.startsWith('region:')) {
           conditionRecords.push({
             profile_id: existing.id,
             name: cond,
             type: 'condition',
           });
         }
+      });
+
+      const selectedRegion = profileData.countryOrRegion || 'Global/Other';
+      conditionRecords.push({
+        profile_id: existing.id,
+        name: `region:${selectedRegion}`,
+        type: 'condition',
       });
 
       activeAllergies.forEach((allergy: string) => {

@@ -17,6 +17,7 @@ export interface HealthProfile {
   alcoholConsumption?: string;
   sleepDuration?: 'Less than 6 hours' | '6 to 8 hours' | 'More than 8 hours';
   stressLevel?: 'Low' | 'Moderate' | 'High';
+  countryOrRegion?: string;
 }
 
 function decodeProfile(profileData: any): HealthProfile {
@@ -38,7 +39,17 @@ function decodeProfile(profileData: any): HealthProfile {
     else stressLevel = 'Moderate';
   }
 
-  const filteredConditions = rawConditions.filter((c: string) => !c.startsWith('sleep_') && !c.startsWith('stress_'));
+  let countryOrRegion = profileData.countryOrRegion || profileData.country_or_region;
+  if (!countryOrRegion) {
+    const regionCond = rawConditions.find((c: string) => c && c.startsWith('region:'));
+    if (regionCond) {
+      countryOrRegion = regionCond.replace('region:', '');
+    } else {
+      countryOrRegion = 'Global/Other';
+    }
+  }
+
+  const filteredConditions = rawConditions.filter((c: string) => !c.startsWith('sleep_') && !c.startsWith('stress_') && !c.startsWith('region:'));
 
   return {
     fullName: profileData.fullName || profileData.full_name || '',
@@ -56,6 +67,7 @@ function decodeProfile(profileData: any): HealthProfile {
     alcoholConsumption: profileData.alcoholConsumption || profileData.alcohol_consumption || 'None',
     sleepDuration,
     stressLevel,
+    countryOrRegion,
   };
 }
 
