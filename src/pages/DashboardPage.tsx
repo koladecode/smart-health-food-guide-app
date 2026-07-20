@@ -17,6 +17,8 @@ import {
   ShieldAlert,
   Sparkles,
   TrendingUp,
+  TrendingDown,
+  History,
   User,
   X,
   Droplet,
@@ -39,6 +41,97 @@ import ThemeToggle from '../components/ThemeToggle';
 
 type ActiveTab = 'overview' | 'nutrition' | 'fitness' | 'medications';
 
+interface HistoryEntry {
+  date: string;
+  waterIntake: number;
+  waterTarget: number;
+  exerciseProgress: number;
+  exerciseTarget: number;
+  mealsCompleted: number;
+  mealsTarget: number;
+  wellnessScore: number;
+}
+
+const getTodayDateString = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getPrepopulatedHistory = (): HistoryEntry[] => {
+  const history = [];
+  const today = new Date();
+  
+  // We'll pre-populate 6 preceding days (day -6 to day -1)
+  for (let i = 6; i >= 1; i--) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    
+    // Vary progress realistically to show nice trends
+    let water, exercise, meals;
+    if (i === 6) { water = 1800; exercise = 15; meals = 2; }
+    else if (i === 5) { water = 1500; exercise = 20; meals = 1; }
+    else if (i === 4) { water = 2500; exercise = 45; meals = 3; }
+    else if (i === 3) { water = 2000; exercise = 10; meals = 2; }
+    else if (i === 2) { water = 2250; exercise = 30; meals = 3; }
+    else { water = 2600; exercise = 40; meals = 2; } // yesterday
+
+    const wT = 2500;
+    const eT = 30;
+    const mT = 3;
+
+    const wPct = Math.min(100, Math.round((water / wT) * 100));
+    const ePct = Math.min(100, Math.round((exercise / eT) * 100));
+    const mPct = Math.min(100, Math.round((meals / mT) * 100));
+    const score = Math.round((wPct * 0.3) + (ePct * 0.4) + (mPct * 0.3));
+
+    history.push({
+      date: dateStr,
+      waterIntake: water,
+      waterTarget: wT,
+      exerciseProgress: exercise,
+      exerciseTarget: eT,
+      mealsCompleted: meals,
+      mealsTarget: mT,
+      wellnessScore: score
+    });
+  }
+  return history;
+};
+
+const formatHistoryDate = (dateStr: string) => {
+  const todayStr = getTodayDateString();
+  
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+  
+  if (dateStr === todayStr) {
+    return 'Today';
+  }
+  if (dateStr === yesterdayStr) {
+    return 'Yesterday';
+  }
+  
+  try {
+    const parts = dateStr.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const d = new Date(year, month, day);
+    
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+  } catch (e) {
+    return dateStr;
+  }
+};
+
 export default function DashboardPage() {
   const { navigateTo } = useNavigation();
   const { profile, loadingProfile, isProfileFetched, isProfileSynced } = useHealthProfile();
@@ -52,6 +145,7 @@ export default function DashboardPage() {
   const [workoutDuration, setWorkoutDuration] = useState('30');
   const [workoutNotes, setWorkoutNotes] = useState('');
   const [isSavingWorkout, setIsSavingWorkout] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Allergen warning interaction states
   const [selectedAllergen, setSelectedAllergen] = useState('none');
@@ -123,6 +217,65 @@ export default function DashboardPage() {
     localStorage.setItem(MEAL_DINNER_KEY, mealDinner.toString());
   }, [mealDinner]);
 
+  // Daily Progress History State
+  const HISTORY_KEY = 'health_tracker_history';
+  const [history, setHistory] = useState<HistoryEntry[]>(() => {
+    const saved = localStorage.getItem(HISTORY_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse history", e);
+      }
+    }
+    return getPrepopulatedHistory();
+  });
+
+  // Effect to dynamically sync today's changes into the 7-day history list
+  React.useEffect(() => {
+    const todayStr = getTodayDateString();
+    
+    const waterPercent = Math.min(100, Math.round((waterIntake / waterTarget) * 100));
+    const exercisePercent = Math.min(100, Math.round((exerciseProgress / exerciseTarget) * 100));
+    const mealsCompleted = (mealBreakfast ? 1 : 0) + (mealLunch ? 1 : 0) + (mealDinner ? 1 : 0);
+    const mealsTarget = 3;
+    const mealsPercent = Math.min(100, Math.round((mealsCompleted / mealsTarget) * 100));
+    const dailyWellnessScore = Math.round((waterPercent * 0.3) + (exercisePercent * 0.4) + (mealsPercent * 0.3));
+
+    setHistory((prevHistory) => {
+      const existingIdx = prevHistory.findIndex(entry => entry.date === todayStr);
+      
+      const newEntry: HistoryEntry = {
+        date: todayStr,
+        waterIntake,
+        waterTarget,
+        exerciseProgress,
+        exerciseTarget,
+        mealsCompleted,
+        mealsTarget,
+        wellnessScore: dailyWellnessScore
+      };
+
+      let updated = [...prevHistory];
+      if (existingIdx >= 0) {
+        updated[existingIdx] = newEntry;
+      } else {
+        updated.push(newEntry);
+      }
+
+      // Sort chronologically
+      updated.sort((a, b) => a.date.localeCompare(b.date));
+
+      // Keep last 14 days maximum to cover the sliding 7-day history perfectly
+      if (updated.length > 14) {
+        updated = updated.slice(updated.length - 14);
+      }
+
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, [waterIntake, waterTarget, exerciseProgress, exerciseTarget, mealBreakfast, mealLunch, mealDinner]);
+
   // Redirect to profile-form if profile doesn't exist
   React.useEffect(() => {
     if (isProfileSynced && !loading && !profile) {
@@ -160,7 +313,8 @@ export default function DashboardPage() {
       setWorkoutName('');
       setWorkoutDuration('30');
       setWorkoutNotes('');
-      alert(`Mock Workout Session Saved! Added ${duration} minutes to your Daily Progress.`);
+      setToastMessage(`Success! Added ${duration} minutes to today's active progress tracker.`);
+      setTimeout(() => setToastMessage(null), 4000);
     }, 1200);
   };
 
@@ -779,6 +933,371 @@ export default function DashboardPage() {
                 );
               })()}
 
+              {/* Daily Progress History Section */}
+              {(() => {
+                const displayHistory = [...history].reverse().slice(0, 7);
+
+                return (
+                  <div className="flex flex-col gap-4 text-left mt-2" id="daily-progress-history-section">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div>
+                        <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                          <History className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          Wellness Progress History (Last 7 Days)
+                        </h3>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">
+                          Historical daily logs of your wellness performance, metrics, and trends.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-3xs font-extrabold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                          Interactive History
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3" id="history-cards-container">
+                      {displayHistory.map((entry) => {
+                        const originalIdx = history.findIndex(h => h.date === entry.date);
+                        
+                        // Calculate trend relative to previous day
+                        let trend: 'improving' | 'stable' | 'declining' = 'stable';
+                        if (originalIdx > 0) {
+                          const currentScore = history[originalIdx].wellnessScore;
+                          const previousScore = history[originalIdx - 1].wellnessScore;
+                          if (currentScore > previousScore) trend = 'improving';
+                          else if (currentScore < previousScore) trend = 'declining';
+                        }
+
+                        return (
+                          <Card key={entry.date} id={`history-card-${entry.date}`} className="border-slate-100 dark:border-slate-800 hover:shadow-xs transition-all duration-300 flex flex-col justify-between">
+                            <div className="p-3.5 flex flex-col gap-2.5 h-full text-left">
+                              {/* Card Header: Date & Trend */}
+                              <div className="flex flex-col gap-1">
+                                <span className="text-2xs font-extrabold text-slate-950 dark:text-white truncate">
+                                  {formatHistoryDate(entry.date)}
+                                </span>
+                                
+                                {/* Trend Indicator Badge */}
+                                {trend === 'improving' && (
+                                  <span className="inline-flex items-center gap-0.5 text-4xs font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-md border border-emerald-500/10 w-fit">
+                                    <TrendingUp className="w-2.5 h-2.5" /> Improving
+                                  </span>
+                                )}
+                                {trend === 'stable' && (
+                                  <span className="inline-flex items-center gap-0.5 text-4xs font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 w-fit">
+                                    <Minus className="w-2.5 h-2.5" /> Stable
+                                  </span>
+                                )}
+                                {trend === 'declining' && (
+                                  <span className="inline-flex items-center gap-0.5 text-4xs font-black uppercase bg-orange-500/10 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-md border border-orange-500/15 w-fit">
+                                    <TrendingDown className="w-2.5 h-2.5" /> Declining
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Wellness Score Badge / Circle */}
+                              <div className="flex items-center gap-2 py-1 border-t border-b border-slate-50 dark:border-slate-900/40 my-0.5">
+                                <div className="text-xl font-black text-slate-900 dark:text-white">
+                                  {entry.wellnessScore}
+                                </div>
+                                <div className="flex flex-col leading-none">
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider">Score</span>
+                                  <span className="text-3xs font-semibold text-slate-500 dark:text-slate-400">
+                                    {entry.wellnessScore >= 80 ? 'Excellent' : entry.wellnessScore >= 50 ? 'Good' : 'Incomplete'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Daily Metrics breakdown */}
+                              <div className="flex flex-col gap-1.5 text-3xs text-slate-500 dark:text-slate-400 font-semibold mt-auto">
+                                {/* Water */}
+                                <div className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Droplet className="w-3.5 h-3.5 text-blue-500" />
+                                    <span>Hydration</span>
+                                  </span>
+                                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                                    {Math.round(entry.waterIntake / 100) / 10}L
+                                  </span>
+                                </div>
+                                
+                                {/* Exercise */}
+                                <div className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Flame className="w-3.5 h-3.5 text-orange-500" />
+                                    <span>Fitness</span>
+                                  </span>
+                                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                                    {entry.exerciseProgress}m
+                                  </span>
+                                </div>
+
+                                {/* Meals */}
+                                <div className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Utensils className="w-3.5 h-3.5 text-emerald-500" />
+                                    <span>Nutrition</span>
+                                  </span>
+                                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                                    {entry.mealsCompleted}/{entry.mealsTarget}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Weekly Health Insights Section */}
+              {(() => {
+                const last7Days = history.slice(-7);
+                if (last7Days.length === 0) return null;
+
+                // Calculate averages and percentages
+                const totalWater = last7Days.reduce((acc, curr) => acc + curr.waterIntake, 0);
+                const totalWaterTarget = last7Days.reduce((acc, curr) => acc + curr.waterTarget, 0);
+                const avgWater = Math.round(totalWater / last7Days.length);
+                const waterMetDays = last7Days.filter(curr => curr.waterIntake >= curr.waterTarget).length;
+                const waterPercentage = totalWaterTarget > 0 ? Math.round((totalWater / totalWaterTarget) * 100) : 0;
+
+                const totalExercise = last7Days.reduce((acc, curr) => acc + curr.exerciseProgress, 0);
+                const totalExerciseTarget = last7Days.reduce((acc, curr) => acc + curr.exerciseTarget, 0);
+                const avgExercise = Math.round(totalExercise / last7Days.length);
+                const exerciseMetDays = last7Days.filter(curr => curr.exerciseProgress >= curr.exerciseTarget).length;
+                const activeDays = last7Days.filter(curr => curr.exerciseProgress > 0).length;
+                const exercisePercentage = totalExerciseTarget > 0 ? Math.round((totalExercise / totalExerciseTarget) * 100) : 0;
+
+                const totalMeals = last7Days.reduce((acc, curr) => acc + curr.mealsCompleted, 0);
+                const totalMealsTarget = last7Days.reduce((acc, curr) => acc + curr.mealsTarget, 0);
+                const avgMeals = Math.round((totalMeals / last7Days.length) * 10) / 10;
+                const mealsMetDays = last7Days.filter(curr => curr.mealsCompleted >= curr.mealsTarget).length;
+                const mealsPercentage = totalMealsTarget > 0 ? Math.round((totalMeals / totalMealsTarget) * 100) : 0;
+
+                const avgWellnessScore = Math.round(last7Days.reduce((acc, curr) => acc + curr.wellnessScore, 0) / last7Days.length);
+                const maxWellnessScore = Math.max(...last7Days.map(d => d.wellnessScore));
+
+                // Determine weakest area
+                const areas = [
+                  { name: 'Hydration', pct: waterPercentage },
+                  { name: 'Fitness', pct: exercisePercentage },
+                  { name: 'Nutrition', pct: mealsPercentage }
+                ];
+                areas.sort((a, b) => a.pct - b.pct);
+                const weakestArea = areas[0];
+
+                // Dynamic Achievements list
+                const achievements: string[] = [];
+                if (waterMetDays >= 4) {
+                  achievements.push(`Met your daily water intake target on ${waterMetDays} out of 7 days.`);
+                } else if (waterPercentage >= 80) {
+                  achievements.push(`Averaged ${waterPercentage}% of your target weekly water goals.`);
+                }
+
+                if (activeDays >= 5) {
+                  achievements.push(`Logged physical activity on ${activeDays} days this week, keeping energy high.`);
+                } else if (exerciseMetDays >= 3) {
+                  achievements.push(`Completed your target fitness time on ${exerciseMetDays} days this week.`);
+                }
+
+                if (mealsMetDays >= 4) {
+                  achievements.push(`Hit your meal nutrition target on ${mealsMetDays} days this week.`);
+                } else if (avgMeals >= 2) {
+                  achievements.push(`Averaged ${avgMeals} healthy, balanced meals per day over the week.`);
+                }
+
+                if (maxWellnessScore >= 85) {
+                  achievements.push(`Reached an exceptional peak wellness score of ${maxWellnessScore}%!`);
+                }
+
+                if (achievements.length < 2) {
+                  achievements.push("Regularly tracked your metrics to build a reliable health baseline.");
+                  achievements.push(`Achieved an average weekly wellness score of ${avgWellnessScore}%.`);
+                }
+
+                // Dynamic Consistency message
+                let consistencyMessage = "";
+                let consistencySubtitle = "";
+                if (avgWellnessScore >= 80) {
+                  consistencyMessage = "Excellent Habits";
+                  consistencySubtitle = "Your wellness scores reflect highly consistent discipline. Keeping this pace maximizes metabolic and cognitive vitality.";
+                } else if (avgWellnessScore >= 50) {
+                  consistencyMessage = "Consistent Effort";
+                  consistencySubtitle = "You have established a solid baseline of weekly habits. Focus on small step-ups to solidify daily health loops.";
+                } else {
+                  consistencyMessage = "Building Momentum";
+                  consistencySubtitle = "You are laying vital groundwork. Choose one tracker to focus on this week and watch your scores rise.";
+                }
+
+                // Dynamic Areas for Improvement
+                const improvements: string[] = [];
+                if (waterMetDays < 5) {
+                  improvements.push(`Hydration: Missed daily water targets on ${7 - waterMetDays} days.`);
+                }
+                if (exerciseMetDays < 4) {
+                  improvements.push(`Fitness: Exercise goals were incomplete on ${7 - exerciseMetDays} days.`);
+                }
+                if (mealsMetDays < 5) {
+                  improvements.push(`Nutrition: Less than 3 healthy meals logged on ${7 - mealsMetDays} days.`);
+                }
+
+                if (improvements.length === 0) {
+                  improvements.push("No major gaps! Outstanding discipline across all tracked metrics.");
+                }
+
+                // Dynamic health tip based on weakest area
+                let tipTitle = "General Wellness";
+                let tipBody = "Even minor gains in hydration, activity, and diet multiply your cumulative vitality. Small, steady increments lead to lasting lifestyle gains.";
+
+                if (weakestArea) {
+                  if (weakestArea.name === 'Hydration') {
+                    tipTitle = "Optimize Hydration";
+                    tipBody = "Place a clear flask of water at your desk or bedside. Hydrating immediately upon waking up kickstarts cellular metabolism and clarity.";
+                  } else if (weakestArea.name === 'Fitness') {
+                    tipTitle = "Boost Daily Activity";
+                    tipBody = "If dedicated sessions feel heavy, try micro-bursts of movement: standing stretches, a 10-minute walk after meals, or taking stairs.";
+                  } else if (weakestArea.name === 'Nutrition') {
+                    tipTitle = "Nourish Intentionally";
+                    tipBody = "Pre-stage easy, safe whole snacks (washed berries, raw almonds). Planning key meals prevents blood sugar dips and impulse eating.";
+                  }
+                }
+
+                return (
+                  <div className="flex flex-col gap-4 text-left mt-2" id="weekly-health-insights-section">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                      <div>
+                        <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                          <Award className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          Weekly Health Insights & Recommendations
+                        </h3>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">
+                          Data-driven feedback, habit consistency analysis, and targeted suggestions based on the last 7 days.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-3xs font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                          Weekly Report
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="insights-cards-container">
+                      
+                      {/* Card 1: Achievements */}
+                      <Card className="border-slate-100 dark:border-slate-800">
+                        <CardContent className="p-5 flex flex-col gap-4 h-full text-left">
+                          <div className="flex items-start justify-between">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Success Milestones</span>
+                              <span className="text-sm font-bold text-slate-900 dark:text-white">Weekly Achievements</span>
+                            </div>
+                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                              <Award className="w-5 h-5" />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2.5 flex-1">
+                            {achievements.map((ach, idx) => (
+                              <div key={idx} className="flex gap-2 items-start">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                                <span className="text-2xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                                  {ach}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 2: Habit Consistency */}
+                      <Card className="border-slate-100 dark:border-slate-800">
+                        <CardContent className="p-5 flex flex-col gap-4 h-full text-left">
+                          <div className="flex items-start justify-between">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Habit Quality</span>
+                              <span className="text-sm font-bold text-slate-900 dark:text-white">Consistency Matrix</span>
+                            </div>
+                            <div className="p-2.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-2xl">
+                              <Activity className="w-5 h-5" />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-3 flex-1">
+                            <div className="flex items-center gap-3">
+                              <div className="px-3 py-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl font-black text-sm">
+                                {avgWellnessScore}%
+                              </div>
+                              <div className="flex flex-col leading-tight">
+                                <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200">{consistencyMessage}</span>
+                                <span className="text-3xs text-slate-400 dark:text-slate-500">Avg Wellness Score</span>
+                              </div>
+                            </div>
+                            <p className="text-2xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                              {consistencySubtitle}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 3: Areas for Improvement */}
+                      <Card className="border-slate-100 dark:border-slate-800">
+                        <CardContent className="p-5 flex flex-col gap-4 h-full text-left">
+                          <div className="flex items-start justify-between">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Optimization</span>
+                              <span className="text-sm font-bold text-slate-900 dark:text-white">Opportunity Gaps</span>
+                            </div>
+                            <div className="p-2.5 bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 rounded-2xl">
+                              <AlertTriangle className="w-5 h-5" />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2.5 flex-1 justify-center">
+                            {improvements.map((imp, idx) => (
+                              <div key={idx} className="flex gap-2 items-start">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 flex-shrink-0" />
+                                <span className="text-2xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                                  {imp}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 4: Actionable Tip */}
+                      <Card className="border-slate-100 dark:border-slate-800 bg-gradient-to-br from-indigo-500/5 to-purple-500/10 dark:from-indigo-950/10 dark:to-purple-950/20">
+                        <CardContent className="p-5 flex flex-col gap-4 h-full text-left">
+                          <div className="flex items-start justify-between">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Habit Builder</span>
+                              <span className="text-sm font-bold text-slate-900 dark:text-white">Daily Wellness Tip</span>
+                            </div>
+                            <div className="p-2.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl">
+                              <Sparkles className="w-5 h-5" />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5 flex-1">
+                            <span className="text-2xs font-extrabold text-indigo-700 dark:text-indigo-300">
+                              {tipTitle}
+                            </span>
+                            <p className="text-2xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                              {tipBody}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Bio Grid Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" id="overview-bio-grid">
                 
@@ -1042,6 +1561,19 @@ export default function DashboardPage() {
           />
         </form>
       </Modal>
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div 
+          className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-5 py-3 rounded-2xl shadow-xl border border-slate-800 dark:border-slate-100 flex items-center gap-3 transition-all duration-300 transform translate-y-0 animate-fade-in font-semibold text-xs cursor-pointer hover:scale-[1.02]"
+          onClick={() => setToastMessage(null)}
+          id="toast-notification"
+        >
+          <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+          <span>{toastMessage}</span>
+          <button className="text-slate-400 hover:text-slate-200 dark:text-slate-500 dark:hover:text-slate-700 font-extrabold text-sm ml-2">×</button>
+        </div>
+      )}
 
     </div>
   );
