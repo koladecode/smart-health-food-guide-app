@@ -21,7 +21,9 @@ import {
   Dumbbell,
   Scale,
   Pencil,
-  Plus
+  Plus,
+  Coffee,
+  CupSoda
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
@@ -135,6 +137,26 @@ export default function RecommendationsPage() {
       default:
         return 'bg-slate-50 text-slate-600 border-slate-100';
     }
+  };
+
+  // Helper to parse description with optional clinical reason
+  const renderDescriptionWithClinicalReason = (description: string) => {
+    if (description.includes('\n\n• Clinical Reason: ')) {
+      const [desc, clinical] = description.split('\n\n• Clinical Reason: ');
+      return (
+        <div className="flex flex-col gap-2.5">
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{desc}</p>
+          <div className="p-3 rounded-2xl bg-teal-500/5 dark:bg-teal-500/10 border border-teal-500/20 text-2xs text-teal-700 dark:text-teal-300 flex items-start gap-2 font-semibold leading-relaxed">
+            <Activity className="w-4 h-4 text-teal-500 dark:text-teal-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-extrabold text-teal-600 dark:text-teal-400">Clinical Reason: </span>
+              {clinical}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{description}</p>;
   };
 
   return (
@@ -300,27 +322,117 @@ export default function RecommendationsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" id="eat-items-list">
-              {recs.foodsToEat.map((food) => (
-                <div 
-                  key={food.id} 
-                  className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/30 transition-all group"
-                >
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                      {food.badge && (
-                        <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
-                          {food.badge}
+            {recs.foodsToEat.some(f => f.category) ? (
+              <div className="flex flex-col gap-8" id="eat-items-list-grouped">
+                {(['Breakfast', 'Lunch', 'Dinner', 'Healthy Snacks', 'Drinks'] as const).map((category) => {
+                  const categoryFoods = recs.foodsToEat.filter((f) => f.category === category);
+                  if (categoryFoods.length === 0) return null;
+                  
+                  const getCategoryIcon = (cat: string) => {
+                    switch (cat) {
+                      case 'Breakfast':
+                        return <Coffee className="w-4 h-4 text-amber-500" />;
+                      case 'Lunch':
+                        return <Utensils className="w-4 h-4 text-emerald-500" />;
+                      case 'Dinner':
+                        return <Flame className="w-4 h-4 text-orange-500" />;
+                      case 'Healthy Snacks':
+                        return <Apple className="w-4 h-4 text-rose-500" />;
+                      case 'Drinks':
+                        return <CupSoda className="w-4 h-4 text-blue-500" />;
+                      default:
+                        return <CheckCircle2 className="w-4 h-4 text-slate-400" />;
+                    }
+                  };
+
+                  return (
+                    <div key={category} className="flex flex-col gap-3.5" id={`category-block-${category.toLowerCase().replace(' ', '-')}`}>
+                      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                        {getCategoryIcon(category)}
+                        <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">{category}</h3>
+                        <span className="text-4xs px-2 py-0.5 font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono">
+                          {categoryFoods.length} selected
                         </span>
-                      )}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {categoryFoods.map((food) => (
+                          <div 
+                            key={food.id} 
+                            className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/30 transition-all group"
+                          >
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                            <div className="flex flex-col gap-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
+                                {food.badge && (
+                                  <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
+                                    {food.badge}
+                                  </span>
+                                )}
+                              </div>
+                              {renderDescriptionWithClinicalReason(food.description)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{food.description}</p>
+                  );
+                })}
+
+                {/* Handle any uncategorized foods just in case */}
+                {recs.foodsToEat.filter((f) => !f.category).length > 0 && (
+                  <div className="flex flex-col gap-3" id="category-block-uncategorized">
+                    <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <CheckCircle2 className="w-4 h-4 text-slate-400" />
+                      <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Other Suggestions</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {recs.foodsToEat.filter((f) => !f.category).map((food) => (
+                        <div 
+                          key={food.id} 
+                          className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/30 transition-all group"
+                        >
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                          <div className="flex flex-col gap-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
+                              {food.badge && (
+                                <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
+                                  {food.badge}
+                                </span>
+                              )}
+                            </div>
+                            {renderDescriptionWithClinicalReason(food.description)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" id="eat-items-list">
+                {recs.foodsToEat.map((food) => (
+                  <div 
+                    key={food.id} 
+                    className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/30 transition-all group"
+                  >
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
+                        {food.badge && (
+                          <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
+                            {food.badge}
+                          </span>
+                        )}
+                      </div>
+                      {renderDescriptionWithClinicalReason(food.description)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

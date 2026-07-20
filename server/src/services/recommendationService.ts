@@ -2,6 +2,105 @@ import { getSupabaseAdminClient } from './supabase';
 import { PersonalizedRecommendations, HealthProfile } from '../types';
 import { generateRecommendations } from '../utils/recommendationEngine';
 
+function getFoodCategory(title: string, badge?: string): 'Breakfast' | 'Lunch' | 'Dinner' | 'Healthy Snacks' | 'Drinks' | undefined {
+  const t = title.toLowerCase();
+  const b = badge ? badge.toLowerCase() : '';
+  
+  if (
+    b.includes('breakfast') || 
+    t.includes('moin moin') || 
+    t.includes('akara') || 
+    t.includes('koko') || 
+    t.includes('porridge') || 
+    t.includes('oat') || 
+    t.includes('egg') || 
+    t.includes('pancake') ||
+    b.includes('metabolic starter') ||
+    b.includes('vitamin boost')
+  ) {
+    return 'Breakfast';
+  }
+  if (
+    b.includes('lunch') || 
+    t.includes('efo riro') || 
+    t.includes('ofada') || 
+    t.includes('jollof') || 
+    t.includes('rice') || 
+    t.includes('fufu') || 
+    t.includes('ewedu') || 
+    t.includes('egusi') || 
+    t.includes('okra') || 
+    t.includes('gbegiri') || 
+    t.includes('amala') ||
+    b.includes('glycemic shield') ||
+    b.includes('prebiotic mucilage') ||
+    b.includes('smooth digestion') ||
+    b.includes('satiety champion')
+  ) {
+    return 'Lunch';
+  }
+  if (
+    b.includes('dinner') || 
+    t.includes('pepper soup') || 
+    t.includes('tilapia') || 
+    t.includes('mackerel') || 
+    t.includes('sea bass') || 
+    t.includes('fish') || 
+    t.includes('cod') || 
+    t.includes('chicken') || 
+    t.includes('turkey') || 
+    t.includes('bison') || 
+    t.includes('broth') || 
+    t.includes('soup') || 
+    t.includes('stew') ||
+    b.includes('liver cleanser') ||
+    b.includes('cardiac omega') ||
+    b.includes('vascular tone') ||
+    b.includes('thyroid selenium')
+  ) {
+    return 'Dinner';
+  }
+  if (
+    b.includes('snack') || 
+    t.includes('garden egg') || 
+    t.includes('corn') || 
+    t.includes('coconut') || 
+    t.includes('groundnut') || 
+    t.includes('peanut') || 
+    t.includes('cashew') || 
+    t.includes('tiger nut') || 
+    t.includes('biltong') || 
+    t.includes('avocado') || 
+    t.includes('salad') ||
+    t.includes('apple') ||
+    t.includes('agbalumo') ||
+    t.includes('soursop') ||
+    b.includes('satiety core') ||
+    b.includes('beta-carotene fuel') ||
+    b.includes('resistant starch') ||
+    b.includes('vitamin c shield')
+  ) {
+    return 'Healthy Snacks';
+  }
+  if (
+    b.includes('drink') || 
+    b.includes('beverage') || 
+    t.includes('zobo') || 
+    t.includes('kunun') || 
+    t.includes('tea') || 
+    t.includes('juice') || 
+    t.includes('drink') || 
+    t.includes('infusion') ||
+    b.includes('ace inhibitor') ||
+    b.includes('dairy-free cream') ||
+    b.includes('bloating relief') ||
+    b.includes('inflammation shield')
+  ) {
+    return 'Drinks';
+  }
+  return undefined;
+}
+
 /**
  * Service for managing recommendations in Supabase PostgreSQL
  */
@@ -48,7 +147,13 @@ export class RecommendationService {
 
     const foodsToEat = foods
       ?.filter((f) => f.type === 'eat')
-      .map((f) => ({ id: f.id, title: f.title, description: f.description, badge: f.badge || undefined })) || [];
+      .map((f) => ({ 
+        id: f.id, 
+        title: f.title, 
+        description: f.description, 
+        badge: f.badge || undefined,
+        category: getFoodCategory(f.title, f.badge || undefined)
+      })) || [];
 
     const foodsToAvoid = foods
       ?.filter((f) => f.type === 'avoid')

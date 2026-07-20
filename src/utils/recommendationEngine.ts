@@ -5,6 +5,7 @@ export interface RecommendationItem {
   title: string;
   description: string;
   badge?: string;
+  category?: 'Breakfast' | 'Lunch' | 'Dinner' | 'Healthy Snacks' | 'Drinks';
 }
 
 export interface WaterIntakeRecommendation {
@@ -1831,12 +1832,33 @@ export function generateRecommendations(profile: HealthProfile): PersonalizedRec
     });
   }
 
+  // Prepend region-specific recommendations if applicable
+  let finalFoodsToEat = [...foodsToEat];
+  let finalCombinations = [...healthyCombinations];
+
+  const rawRegion = profile.countryOrRegion || (profile.healthConditions || []).find((c) => c && c.startsWith('region:'))?.replace('region:', '') || 'Global/Other';
+
+  if (rawRegion && rawRegion !== 'Global/Other') {
+    const regional = getRegionalRecommendations(rawRegion, profile, bmiValue, bmiCategory);
+    if (regional) {
+      if (regional.foodsToEat && regional.foodsToEat.length > 0) {
+        finalFoodsToEat = [...regional.foodsToEat, ...foodsToEat];
+      }
+      if (regional.healthyCombinations && regional.healthyCombinations.length > 0) {
+        finalCombinations = [...regional.healthyCombinations, ...healthyCombinations];
+      }
+    }
+  }
+
+  // Deduplicate and filter foods to avoid
+  const uniqueAvoids = Array.from(new Map(foodsToAvoid.map(item => [item.title, item])).values());
+
   return {
     bmiValue,
     bmiCategory,
-    foodsToEat,
-    foodsToAvoid,
-    healthyCombinations,
+    foodsToEat: finalFoodsToEat,
+    foodsToAvoid: uniqueAvoids,
+    healthyCombinations: finalCombinations,
     waterIntake: {
       liters: totalWaterLiters,
       cups: totalWaterCups,
@@ -1854,4 +1876,839 @@ export function generateRecommendations(profile: HealthProfile): PersonalizedRec
     },
     lifestyleTips
   };
+}
+
+function getRegionalRecommendations(
+  region: string,
+  profile: HealthProfile,
+  bmiValue: number,
+  bmiCategory: string
+): { foodsToEat: RecommendationItem[]; healthyCombinations: RecommendationItem[] } | null {
+  const goal = profile.healthGoal || 'Improve Overall Health';
+  const conditions = (profile.healthConditions || []).map(c => c.toLowerCase());
+  const allergies = (profile.foodAllergies || []).map(a => a.toLowerCase());
+  const diet = profile.dietaryPreference || 'None';
+
+  const isWeightLoss = goal === 'Weight Loss' || goal === 'Lose Weight';
+  const isWeightGain = goal === 'Weight Gain' || goal === 'Gain Weight';
+  const isMuscleGain = goal === 'Muscle Gain';
+  const isHeartHealth = goal === 'Heart Health';
+  const isBloodSugarControl = goal === 'Blood Sugar Control';
+
+  const hasDiabetes = conditions.includes('diabetes');
+  const hasHypertension = conditions.includes('hypertension');
+  const hasCholesterol = conditions.includes('cholesterol');
+  const hasHeart = conditions.includes('heart');
+  const hasKidney = conditions.includes('kidney');
+  const hasAsthma = conditions.includes('asthma');
+  const hasGastro = conditions.includes('gastro');
+
+  const isVeg = diet === 'Vegetarian' || diet === 'Vegan';
+  const isVegan = diet === 'Vegan';
+  const isKeto = diet === 'Keto';
+  const isPaleo = diet === 'Paleo';
+
+  // Generate personalized medical rationale sentence for food explanation
+  let rationale = '';
+  if (hasDiabetes || isBloodSugarControl) {
+    rationale = 'its low-glycemic nature assists in preventing sharp blood glucose surges and moderates insulin spikes.';
+  } else if (hasHypertension || hasHeart || isHeartHealth) {
+    rationale = 'it has natural cardioprotective minerals, is low in sodium, and optimizes vascular elasticity and circulation.';
+  } else if (hasCholesterol) {
+    rationale = 'it is rich in soluble fibers/healthy lipids that actively bind and help clear excessive circulating LDL cholesterol.';
+  } else if (isWeightLoss) {
+    rationale = 'its high nutrient density and low glycemic load support healthy caloric deficits while preserving lean tissues.';
+  } else if (isMuscleGain || isWeightGain) {
+    rationale = 'its clean amino acid structure and calorie-efficient density promote lean tissue protein synthesis and energy recovery.';
+  } else if (hasGastro) {
+    rationale = 'it is extremely soothing, low in gastrointestinal irritants, and highly easy to digest, preserving intestinal integrity.';
+  } else if (hasKidney) {
+    rationale = 'its balanced micro-mineral profile is safe for renal filtration, limiting unnecessary nitrogenous waste load.';
+  } else {
+    rationale = 'it is loaded with essential bioavailable micronutrients, reinforcing antioxidant defense and physical vitality.';
+  }
+
+  // Define database of regional foods with optional categories and tags for profile mapping
+  const regionalDatabase: Record<string, { 
+    foods: { id: string; title: string; desc: string; badge: string; tags: string[]; category?: 'Breakfast' | 'Lunch' | 'Dinner' | 'Healthy Snacks' | 'Drinks' }[]; 
+    combos: { id: string; title: string; desc: string; badge: string; tags: string[] }[] 
+  }> = {
+    'Nigeria': {
+      foods: [
+        // Breakfast items (converted into complete meal plans)
+        {
+          id: 'ng-meal-moinmoin-koko',
+          title: 'Steamed Honey-Bean Moin Moin with Warm Spiced Millet Koko',
+          desc: 'A complete protein-spiced breakfast plan. Savory steamed honey-bean pudding made with red bell peppers and onions, paired with a hot cup of probiotic fermented millet porridge infused with fresh ginger and cloves.',
+          badge: 'Satiety & Gut Care',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'weight-loss', 'heart-health', 'soluble-fiber', 'gastro-safe', 'kidney-safe'],
+          category: 'Breakfast'
+        },
+        {
+          id: 'ng-meal-tombrown-soy',
+          title: 'Tom Brown Multi-Grain Porridge topped with Ground Almonds',
+          desc: 'A nutrient-dense restorative porridge made of roasted local guinea corn, yellow millet, and yellow corn, fortified with high-protein soybeans and topped with a light sprinkle of crushed almonds.',
+          badge: 'B-Vitamin & Protein Boost',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'weight-gain', 'blood-sugar', 'low-glycemic', 'gastro-safe', 'high-protein'],
+          category: 'Breakfast'
+        },
+        {
+          id: 'ng-meal-akara-pap',
+          title: 'Oven-Baked Akara (Bean Cakes) served with Date-Sweetened Pap',
+          desc: 'A healthy twist on a Nigerian classic. Light, airy honey-bean cakes baked with minimal oil to preserve cardiovascular health, served with fresh unrefined corn custard sweetened naturally with date powder.',
+          badge: 'Cardiac Safe Classic',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'heart-health', 'weight-loss'],
+          category: 'Breakfast'
+        },
+        {
+          id: 'ng-meal-gardenegg-eggwhites',
+          title: 'Steamed Garden Eggs with Herb-Scrambled Egg Whites & Sautéed Ugu',
+          desc: 'A low-calorie, low-glycemic fat-burning plate. Tender steamed native green garden eggs sliced thin, accompanied by fluffy scrambled egg whites seasoned with local herbs and a side of quick-sautéed fluted pumpkin leaves (Ugu).',
+          badge: 'Low-Carb Metabolic Starter',
+          tags: ['non-vegan', 'veg', 'keto', 'paleo', 'weight-loss', 'blood-sugar', 'low-glycemic', 'heart-health', 'kidney-safe'],
+          category: 'Breakfast'
+        },
+        // Lunch items (converted into complete meal plans)
+        {
+          id: 'ng-meal-ofada-eforiro',
+          title: 'Unpolished Ofada Brown Rice served with Rich Efo Riro Spinach Stew',
+          desc: 'Bran-fiber rich local wild brown Ofada rice paired with a savory, low-oil stew of sautéed local spinach, fluted pumpkin leaves (Ugu), onions, and bell peppers, topped with slow-grilled mackerel or high-protein organic tofu.',
+          badge: 'Vascular Cleansing Plate',
+          tags: ['keto', 'paleo', 'heart-health', 'blood-sugar', 'low-glycemic', 'weight-loss', 'weight-gain', 'high-protein', 'low-sodium'],
+          category: 'Lunch'
+        },
+        {
+          id: 'ng-meal-oatswallow-ewedu',
+          title: 'Fiber-Rich Oat Swallow served with Slippery Ewedu Soup & Tilapia Stew',
+          desc: 'A perfect glycemic buffer meal. Smooth whole-grain oat swallow fufu paired with slippery, vitamin-dense Ewedu (jute leaves) soup and grilled lake tilapia or tofu stewed in a mild tomato-capsicum reduction.',
+          badge: 'Glycemic Shield Swallow',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'heart-health', 'gastro-safe', 'weight-loss'],
+          category: 'Lunch'
+        },
+        {
+          id: 'ng-meal-okrasoup-oatfufu',
+          title: 'Prebiotic Okra Ila Alasepo with Oat Swallow & Herb-Grilled Chicken',
+          desc: 'A digestive-friendly lunch plan. Freshly chopped okra pods simmered with fermented locust beans (iru), fish, and prawns, paired with a portion of fiber-heavy oat swallow fufu and tender grilled skinless chicken breast.',
+          badge: 'Gut Prebiotic Mucilage',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo', 'gastro-safe', 'blood-sugar', 'low-glycemic', 'heart-health', 'weight-loss', 'high-protein'],
+          category: 'Lunch'
+        },
+        {
+          id: 'ng-meal-gbegiri-ewedu-ofada',
+          title: 'Creamy Gbegiri Bean Soup & Ewedu Layer over unpolished Ofada Rice',
+          desc: 'A complete plant-powered Yoruba culinary plan. Smooth, slow-simmered cream of peeled honey beans (gbegiri) layered over slippery Ewedu jute leaves, served with unpolished local Ofada brown rice for long-lasting energy.',
+          badge: 'Digestive Relief & Satiety',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'gastro-safe', 'weight-loss', 'blood-sugar', 'low-glycemic', 'heart-health'],
+          category: 'Lunch'
+        },
+        // Dinner items (converted into complete meal plans)
+        {
+          id: 'ng-meal-catfish-peppersoup',
+          title: 'Aromatic Catfish Pepper Soup with Boiled Green Plantains & Scent Leaves',
+          desc: 'A restorative, high-protein evening plan. Fresh catfish simmered in a warm, medicinal pepper broth spiced with ginger, garlic, calabash nutmeg, and fresh scent leaves, paired with slow-burning boiled unripe green plantains.',
+          badge: 'Endothelial Activation',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo', 'heart-health', 'weight-loss', 'low-glycemic', 'high-protein', 'spicy'],
+          category: 'Dinner'
+        },
+        {
+          id: 'ng-meal-grilledtilapia-ugu',
+          title: 'Lemon-Grilled Lake Tilapia with Steamed Ugu Greens & Sweet Potato',
+          desc: 'An excellent recovery dinner. Whole fresh tilapia rubbed with garlic, ginger, and scent leaves, grilled cleanly and paired with steamed fluted pumpkin leaves (Ugu) and baked unpeeled orange sweet potato wedges.',
+          badge: 'Cardiac Omega-3 Recovery',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo', 'heart-health', 'blood-sugar', 'low-glycemic', 'weight-loss', 'high-protein'],
+          category: 'Dinner'
+        },
+        {
+          id: 'ng-meal-plantainporridge-mackerel',
+          title: 'Unripe Green Plantain Porridge slow-cooked with Flaked Mackerel',
+          desc: 'A savory, iron-loaded one-pot meal. Diced green plantains simmered with onions, fresh tomatoes, scent leaves, ground crayfish, and pieces of flaked wild mackerel for healthy cardiovascular fats and steady energy.',
+          badge: 'Vascular Tone & Iron Load',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'heart-health'],
+          category: 'Dinner'
+        },
+        {
+          id: 'ng-meal-bitterleaf-goat',
+          title: 'Thoroughly Washed Bitterleaf Soup (Ofe Onugbu) with Lean Goat Meat',
+          desc: 'A cellular-detox dinner plan. Deeply nutritive local bitterleaf leaves thoroughly washed to maintain a pleasant sweet-savory herbal finish, slow-boiled with lean goat meat and fermented locust beans (iru), served with a side of steamed vegetables.',
+          badge: 'Hepatic Cleanse & Iron',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo', 'blood-sugar', 'low-glycemic', 'heart-health', 'high-protein'],
+          category: 'Dinner'
+        },
+        // Healthy Snacks items (converted into complete meal plans)
+        {
+          id: 'ng-meal-gardeneggs-peanutpaste',
+          title: 'Crispy Sliced Garden Eggs with Pure Unsweetened Peanut Paste',
+          desc: 'A fiber-rich satiety booster snack. Fresh organic green garden eggs sliced into wheels, served with a clean spread of pure, stone-ground unsweetened roasted peanut butter for healthy monounsaturated fats.',
+          badge: 'Satiety & Lipid Control',
+          tags: ['vegan', 'veg', 'keto', 'paleo', 'weight-loss', 'blood-sugar', 'low-glycemic', 'heart-health'],
+          category: 'Healthy Snacks'
+        },
+        {
+          id: 'ng-meal-sweetpotato-avocado',
+          title: 'Steam-Baked Sweet Potato Wedges with Creamy Avocado-Scent Leaf Dip',
+          desc: 'A vitamin-heavy snack combination. Steam-baked unpeeled sweet potato wedges served with a fresh dip of mashed avocado, lemon juice, and finely chopped scent leaves (African basil) for cardiovascular health.',
+          badge: 'Beta-Carotene Fuel',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'weight-gain', 'gastro-safe', 'heart-health'],
+          category: 'Healthy Snacks'
+        },
+        {
+          id: 'ng-meal-tigernuts-coconut',
+          title: 'Raw Tiger Nuts (Ofio) mixed with Shaved Coconut Flakes',
+          desc: 'A prebiotic digestive support snack. A simple, crunchy mixture of raw organic tiger nuts and fresh shaved coconut meat, offering exceptional levels of gut-healthy resistant starch, vitamin E, and dietary fiber.',
+          badge: 'Prebiotic Resistant Starch',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'weight-loss', 'heart-health'],
+          category: 'Healthy Snacks'
+        },
+        // Drinks items (converted into complete meal plans)
+        {
+          id: 'ng-meal-zobo-ginger',
+          title: 'Unsweetened Red Hibiscus Zobo Infused with Ginger & Date Purée',
+          desc: 'A cold-brewed vascular health tonic. Deep-red Hibiscus sabdariffa sepals simmered with freshly crushed ginger root, cloves, and sweetened lightly with a touch of date fruit purée. Supports natural blood pressure relaxation.',
+          badge: 'Cardiac ACE Relaxer',
+          tags: ['vegan', 'veg', 'keto', 'paleo', 'heart-health', 'blood-sugar', 'low-glycemic', 'weight-loss', 'low-sodium'],
+          category: 'Drinks'
+        },
+        {
+          id: 'ng-meal-kununaya-coconut',
+          title: 'Kunun Aya (Tiger Nut Coconut Milk) fortified with dates',
+          desc: 'A rich, lactose-free plant milk plan. Creamy beverage made by cold-pressing soaked tiger nuts, fresh coconut meat, and dried dates. Extremely soothing for gastrointestinal lining and packed with prebiotic lipids.',
+          badge: 'Dairy-Free Digestive Cream',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'gastro-safe', 'weight-gain', 'heart-health'],
+          category: 'Drinks'
+        },
+        {
+          id: 'ng-meal-scentleaf-ginger-tea',
+          title: 'Warm Scent Leaf (Efinrin) & Crushed Ginger Anti-Bloat Tea',
+          desc: 'A restorative herbal digestive tea plan. Freshly plucked scent leaves and ginger root steeped in hot water, releasing essential eugenols that immediately soothe intestinal bloating and support liver recovery.',
+          badge: 'Intestinal Anti-Bloat Infusion',
+          tags: ['vegan', 'veg', 'keto', 'paleo', 'gastro-safe', 'low-glycemic', 'heart-health', 'low-sodium'],
+          category: 'Drinks'
+        }
+      ],
+      combos: [
+        {
+          id: 'ng-comb-ewedu',
+          title: 'Oat Fufu served with Ewedu Jute Leaves & Fish Stew',
+          desc: 'Finely milled oats fufu with dynamic slippery Ewedu soup. Ewedu is high in vitamins A, C, and E, which perfectly slows down digestion and binds bile acids.',
+          badge: 'Glycemic Buffer',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'ng-comb-jollof',
+          title: 'Brown Rice Jollof served with Sautéed Ugu Leaves & Grilled Chicken/Tofu',
+          desc: 'Sustained-energy brown rice cooked with tomato-pepper blend, served with iron-rich fluted pumpkin leaves and clean proteins.',
+          badge: 'Complete Nutrient Meal',
+          tags: ['non-keto', 'non-paleo']
+        }
+      ]
+    },
+    'Ghana': {
+      foods: [
+        {
+          id: 'gh-red-red',
+          title: 'Red Red (Slow-Simmered Cowpea Stew)',
+          desc: 'Nutty black-eyed peas stewed with tomatoes, ginger, and garlic, served with baked plantain slices.',
+          badge: 'Satiety Powerhouse',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'gh-kontomire',
+          title: 'Kontomire Stew (Cocoyam Leaf Stew)',
+          desc: 'Highly alkaline leafy cocoyam greens cooked with onions, peppers, and clean mackerel or tofu.',
+          badge: 'Alkaline Green',
+          tags: ['keto', 'paleo']
+        },
+        {
+          id: 'gh-garden-egg',
+          title: 'Garden Egg Stew',
+          desc: 'Local Ghanaian baby eggplants stewed with onions, fresh tomatoes, and ginger.',
+          badge: 'High Soluble Fiber',
+          tags: ['vegan', 'veg', 'keto', 'paleo']
+        },
+        {
+          id: 'gh-millet-koko',
+          title: 'Spiced Millet Porridge (Hausa Koko)',
+          desc: 'Fermented whole grain millet porridge spiced with ginger and cloves, supporting gut microflora.',
+          badge: 'Digestive Comfort',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'gh-comb-plantain',
+          title: 'Boiled Unripe Plantain paired with Kontomire & Egg Whites/Tofu',
+          desc: 'Slow-burning carbohydrate starch from unripe plantains matched with iron-dense cocoyam leaves and lean protein.',
+          badge: 'Fat-Burning Synergy',
+          tags: ['non-keto', 'non-paleo']
+        },
+        {
+          id: 'gh-comb-waakye',
+          title: 'Brown Waakye with Sorghum Leaves & Steamed Tofu/Fish',
+          desc: 'Traditional rice and black-eyed beans cooked with red sorghum leaf sheaths for a high load of active polyphenols.',
+          badge: 'Polyphenol Recovery',
+          tags: ['non-keto', 'non-paleo']
+        }
+      ]
+    },
+    'Kenya': {
+      foods: [
+        {
+          id: 'ke-sukuma',
+          title: 'Sukuma Wiki (Sautéed Collard Greens)',
+          desc: 'Finely sliced local collard greens quickly sautéed with fresh tomatoes, garlic, onions, and cold-pressed oils.',
+          badge: 'Lutein Protective',
+          tags: ['vegan', 'veg', 'keto', 'paleo']
+        },
+        {
+          id: 'ke-githeri',
+          title: 'Githeri (Traditional Maize & Bean Stew)',
+          desc: 'A simple, nutrient-dense blend of soft dry corn kernels and red kidney beans simmered in a light vegetable broth.',
+          badge: 'Fiber Heavyweight',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'ke-tilapia',
+          title: 'Oven-Grilled Fresh Lake Tilapia',
+          desc: 'Whole tilapia seasoned with minced ginger, garlic, and fresh lemon juice, grilled cleanly to retain essential fatty acids.',
+          badge: 'Cardio Lipid Aid',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'ke-irio',
+          title: 'Irio (Mashed Potatoes, Peas & Sweet Corn)',
+          desc: 'Comforting mash of sweet green peas, skin-on sweet potatoes, and organic corn kernels.',
+          badge: 'Mineral Fuel',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'ke-comb-ugali',
+          title: 'Whole Wheat Ugali paired with Sukuma Wiki & Grilled Tilapia/Tofu',
+          desc: 'A classic Kenyan power meal. The high fiber of Sukuma Wiki regulates the glycemic release of Whole grain Ugali.',
+          badge: 'Kenyan Power Plate',
+          tags: ['non-keto', 'non-paleo']
+        }
+      ]
+    },
+    'South Africa': {
+      foods: [
+        {
+          id: 'za-biltong',
+          title: 'Lean Beef Biltong (Coriander & Vinegar Cured)',
+          desc: 'Premium lean grass-fed beef air-dried with sea salt, vinegar, and ground coriander, providing clean proteins.',
+          badge: 'High-Density Protein',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'za-chakalaka',
+          title: 'Spicy Vegetable Chakalaka',
+          desc: 'Relish made of carrots, green peppers, onions, baked beans, chili, and anti-inflammatory turmeric.',
+          badge: 'Turmeric Enhanced',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'za-sweetpotato',
+          title: 'Savoury Baked Sweet Potato Mash',
+          desc: 'Savoury baked sweet potato mash loaded with vitamin A, manganese, and potassium.',
+          badge: 'Antioxidant Carb',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'za-kingklip',
+          title: 'Pan-Seared Lean Kingklip Fish',
+          desc: 'Native wild white fish, incredibly clean and tender, seasoned with fresh parsley and lemon.',
+          badge: 'Hypoallergenic Marine',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'za-comb-bobotie',
+          title: 'Lentil Bobotie served with Yellow Basmati Brown Rice',
+          desc: 'A healthy plant-based take on the South African classic, baked with lentils, raisins, curry spices, and savory turmeric.',
+          badge: 'Synergistic Cardio Plate',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        }
+      ]
+    },
+    'USA': {
+      foods: [
+        {
+          id: 'us-salmon',
+          title: 'Wild-Caught Pacific Salmon',
+          desc: 'Cold-water salmon loaded with marine Omega-3 fatty acids (EPA/DHA) and high-density proteins.',
+          badge: 'Omega-3 Power',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'us-chicken',
+          title: 'Herb-Grilled Chicken Breast',
+          desc: 'Lean pasture-raised chicken breast marinated in rosemary, oregano, garlic, and fresh olive oil.',
+          badge: 'Thermogenic Protein',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'us-quinoa',
+          title: 'Multi-Color Quinoa & Avocado Salad',
+          desc: 'Gluten-free organic quinoa tossed with fresh cucumbers, cherry tomatoes, and diced avocados.',
+          badge: 'Supergrain Amino',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'us-squash',
+          title: 'Roasted Spaghetti Squash',
+          desc: 'Fibers of spaghetti squash baked and pulled, rich in vitamins C and B6 with minimal carb load.',
+          badge: 'Low-Carb Fiber',
+          tags: ['vegan', 'veg', 'keto', 'paleo']
+        },
+        {
+          id: 'us-oats',
+          title: 'Steel-Cut Oats with Berries',
+          desc: 'Slow-cooked whole steel-cut oats rich in beta-glucan fibers, topped with fresh blackberries.',
+          badge: 'Beta-Glucan Cleanse',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'us-comb-fitness',
+          title: 'Grilled Salmon paired with Steamed Asparagus & Quinoa Bowl',
+          desc: 'Provides a spectacular blend of cardiovascular lipids, vascular minerals, and complete proteins for cellular performance.',
+          badge: 'Clean Cardio Plate',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo']
+        }
+      ]
+    },
+    'UK': {
+      foods: [
+        {
+          id: 'uk-cod',
+          title: 'Oven-Baked Cod Fillet',
+          desc: 'Fresh Atlantic cod fillet baked clean with lemon juice, fresh dill, and cracked black pepper.',
+          badge: 'Iodine Protective',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'uk-barley',
+          title: 'Scotch Barley & Root Vegetable Broth',
+          desc: 'A slow-cooked pearl barley soup with parsnips, leeks, carrots, and sweet garden peas.',
+          badge: 'Soluble Beta-Glucan',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'uk-shepherds',
+          title: 'Lean Turkey Shepherd\'s Pie',
+          desc: 'Ground lean turkey and garden herbs topped with an elegant mashed sweet potato cover.',
+          badge: 'Active Glycemic Fuel',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'uk-mackerel',
+          title: 'Steamed Smoked Mackerel',
+          desc: 'Sustainably caught cold-water oily mackerel, loaded with bone-supportive Vitamin D and Omega-3 lipids.',
+          badge: 'Vascular Joint Guard',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'uk-comb-cod',
+          title: 'Baked Cod served with Minted Mushy Peas & Steamed Asparagus',
+          desc: 'Combines thyroid-supportive lean marine proteins with gut-protective peas and active kidney filtration minerals.',
+          badge: 'British Clean Plate',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        }
+      ]
+    },
+    'Canada': {
+      foods: [
+        {
+          id: 'ca-salmon',
+          title: 'Wild Maple-Glazed Salmon Fillet',
+          desc: 'Fresh caught salmon baked with a light glaze of pure Canadian maple syrup and coarse sea salt.',
+          badge: 'Heart-Healthy Fats',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'ca-wildrice',
+          title: 'Savoury Wild Rice Pilaf',
+          desc: 'Canadian wild long grain rice slow-simmered with organic portobello mushrooms, onions, and parsley.',
+          badge: 'Zinc and Iron Rich',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'ca-bison',
+          title: 'Grilled Bison Tenderloin Strips',
+          desc: 'Ultra-lean, organic Canadian bison meat, packed with bioavailable iron, B12, and lean structural proteins.',
+          badge: 'Iron Supercharge',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'ca-splitpea',
+          title: 'Comforting Split Yellow Pea Soup',
+          desc: 'Thick yellow split pea soup cooked slow with leeks, carrots, and celery, providing high soluble fibers.',
+          badge: 'Soluble Satiety',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'ca-comb-bison',
+          title: 'Grilled Bison Fillet served with Wild Rice Pilaf & Brussels Sprouts',
+          desc: 'Delivers massive cellular restoration, high-purity minerals, and sustained glucose releasing starches.',
+          badge: 'Canadian Recovery Plate',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo']
+        }
+      ]
+    },
+    'India': {
+      foods: [
+        {
+          id: 'in-dal',
+          title: 'Yellow Dal Palak (Lentil Spinach Soup)',
+          desc: 'Split yellow mung lentils cooked with fresh spinach, active turmeric (curcumin), fresh ginger, and garlic.',
+          badge: 'Curcumin Infused',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'in-baingan',
+          title: 'Baingan Bharta (Smoked Eggplant Mash)',
+          desc: 'Clay-oven smoked eggplants cooked clean with tomatoes, onions, green chilies, and fresh coriander leaves.',
+          badge: 'High Cellular Antioxidant',
+          tags: ['vegan', 'veg', 'keto', 'paleo']
+        },
+        {
+          id: 'in-tandoori',
+          title: 'Tandoori-Style Skinless Chicken Breast',
+          desc: 'Lean chicken breast marinated in yogurt and aromatic Indian spices, grilled cleanly with coriander.',
+          badge: 'Anabolic Herb Protein',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'in-paneer',
+          title: 'Seasoned Tofu or Paneer Bhurji',
+          desc: 'Scrambled organic tofu or paneer tossed with turmeric, ginger, onions, tomatoes, and bell peppers.',
+          badge: 'Clean Calcium Source',
+          tags: ['veg', 'keto']
+        },
+        {
+          id: 'in-khichdi',
+          title: 'Moong Dal Khichdi with Brown Rice',
+          desc: 'A light, extremely comforting porridge of yellow mung dal and brown rice, ideal for gastro comfort.',
+          badge: 'Gastro Soother',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'in-comb-dal',
+          title: 'Yellow Moong Dal paired with Cauliflower Sabzi & Brown Rice',
+          desc: 'Provides a clean complete vegetarian amino-acid matrix alongside liver-supportive cruciferous nutrients.',
+          badge: 'Classic Ayurvedic Plate',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        }
+      ]
+    },
+    'China': {
+      foods: [
+        {
+          id: 'cn-bass',
+          title: 'Steamed Sea Bass with Scallion & Ginger',
+          desc: 'Fresh sea bass steamed gently with fresh scallions, slivered ginger root, and a splash of light soy sauce.',
+          badge: 'Thyroid Selenium Aid',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'cn-bokchoy',
+          title: 'Stir-Fried Garlic Baby Bok Choy',
+          desc: 'Crispy baby bok choy quickly stir-fried with fresh minced garlic, scallions, and high-purity sesame oil.',
+          badge: 'Calcium Dense Leafy',
+          tags: ['vegan', 'veg', 'keto', 'paleo']
+        },
+        {
+          id: 'cn-mapotofu',
+          title: 'Mapo Tofu (Vegetarian Silken Style)',
+          desc: 'Silken tofu cubes simmered in a spiced black bean and pepper sauce, garnished with scallions.',
+          badge: 'Isoflavone Protection',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'cn-congee',
+          title: 'Soothing Millet or Brown Rice Congee',
+          desc: 'Very slow simmered rice congee cooked with ginger, serving as an exceptional gastrointestinal cushion.',
+          badge: 'GI Mucosa Support',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'cn-comb-bass',
+          title: 'Steamed Sea Bass with Garlic Bok Choy & Jasmine Brown Rice',
+          desc: 'Combines iodine-dense sea fish with calcium-dense bok choy greens over slow-release complex brown rice starch.',
+          badge: 'Eastern Longevity Plate',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo']
+        }
+      ]
+    },
+    'Australia': {
+      foods: [
+        {
+          id: 'au-barramundi',
+          title: 'Grilled Barramundi Fillet',
+          desc: 'Barramundi grilled to absolute perfection, packed with clean cardiovascular Omega-3 fatty acids.',
+          badge: 'Coastal Marine Protein',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'au-kangaroo',
+          title: 'Lean Grilled Kangaroo Fillet',
+          desc: 'Ultra-lean native Australian red meat, exceptionally high in iron and energy-regulating CLA lipids.',
+          badge: 'Ultra-Lean Iron Source',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'au-sourdough',
+          title: 'Smashed Avocado on Fermented Sourdough',
+          desc: 'Creamy smashed fresh avocado seasoned with lemon juice and parsley, served over toasted organic sourdough.',
+          badge: 'Healthy Monounsaturated Fats',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'au-beetroot',
+          title: 'Macadamia and Roasted Beetroot Salad',
+          desc: 'Nitrate-rich roasted red beetroots tossed with baby spinach leaves and native roasted macadamia nuts.',
+          badge: 'Nitric Oxide Booster',
+          tags: ['vegan', 'veg', 'paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'au-comb-barramundi',
+          title: 'Grilled Barramundi served with Warrigal Greens & Sautéed Pumpkin',
+          desc: 'A nutrient-loaded coastal plate that delivers complete physical replenishment and supports vascular integrity.',
+          badge: 'Australian Bush Power',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo']
+        }
+      ]
+    },
+    'Brazil': {
+      foods: [
+        {
+          id: 'br-moqueca',
+          title: 'Moqueca de Peixe (Bahian Fish Stew)',
+          desc: 'Sustainable fish fillets stewed in coconut milk, fresh garlic, sliced tomatoes, onions, coriander, and yellow peppers.',
+          badge: 'Brazilian Coastal Stew',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+        },
+        {
+          id: 'br-feijoada',
+          title: 'Feijoada Light (Black Bean Stew)',
+          desc: 'Lean black beans stewed slowly with lean pork loin chops, bay leaves, fresh garlic, and spring onion.',
+          badge: 'Iron & Fiber Rich',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo']
+        },
+        {
+          id: 'br-couve',
+          title: 'Couve a Mineira (Sautéed Garlic Collard Greens)',
+          desc: 'Very finely shredded collard greens flash-fried with roasted golden garlic cloves and a dash of olive oil.',
+          badge: 'Vitamins K & C Heavyweight',
+          tags: ['vegan', 'veg', 'keto', 'paleo']
+        },
+        {
+          id: 'br-acai',
+          title: 'Pure Unsweetened Organic Açaí Bowl',
+          desc: 'Antioxidant-dense unsweetened premium açaí pulp blended with banana and topped with raw seeds.',
+          badge: 'Anthocyanin Shield',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+        }
+      ],
+      combos: [
+        {
+          id: 'br-comb-feijoada',
+          title: 'Feijoada Light with Sautéed Couve & Toasted Cassava Flour (Farofa)',
+          desc: 'Combines iron-heavy slow-burning black beans with calcium-dense collards and prebiotic cassava fiber.',
+          badge: 'Samba Glycemic Control',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo']
+        }
+      ]
+    }
+  };
+
+  const db = regionalDatabase[region];
+  if (!db) return null;
+
+  const rawFoods: any[] = [];
+  const rawCombos: any[] = [];
+
+  // Helper to filter and format item
+  const processItem = (item: { id: string; title: string; desc: string; badge: string; tags: string[]; category?: string }, isCombo: boolean) => {
+    // Check allergy safety
+    const titleLower = item.title.toLowerCase();
+    const descLower = item.desc.toLowerCase();
+
+    for (const allergy of allergies) {
+      if (allergy === 'none') continue;
+      if (allergy === 'peanuts' && (titleLower.includes('peanut') || descLower.includes('peanut') || titleLower.includes('groundnut') || descLower.includes('groundnut'))) return null;
+      if (allergy === 'gluten' && (titleLower.includes('sourdough') || titleLower.includes('wheat') || titleLower.includes('rye') || titleLower.includes('barley') || descLower.includes('sourdough') || descLower.includes('wheat') || descLower.includes('rye') || descLower.includes('barley'))) return null;
+      if (allergy === 'dairy' && (titleLower.includes('paneer') || titleLower.includes('cheese') || titleLower.includes('yogurt') || titleLower.includes('milk') || titleLower.includes('butter') || titleLower.includes('cream') || descLower.includes('paneer') || descLower.includes('cheese') || descLower.includes('yogurt') || descLower.includes('milk') || descLower.includes('butter') || descLower.includes('cream'))) return null;
+      if (allergy === 'soy' && (titleLower.includes('tofu') || titleLower.includes('tempeh') || titleLower.includes('soy') || descLower.includes('tofu') || descLower.includes('tempeh') || descLower.includes('soy'))) return null;
+      if (allergy === 'shellfish' && (titleLower.includes('shrimp') || titleLower.includes('shellfish') || titleLower.includes('crab') || titleLower.includes('lobster') || titleLower.includes('prawn') || titleLower.includes('oyster') || titleLower.includes('periwinkle') || descLower.includes('shrimp') || descLower.includes('shellfish') || descLower.includes('crab') || descLower.includes('lobster') || descLower.includes('prawn') || descLower.includes('oyster') || descLower.includes('periwinkle'))) return null;
+      if (allergy === 'tree_nuts' && (titleLower.includes('macadamia') || titleLower.includes('nut') || titleLower.includes('almond') || titleLower.includes('walnut') || titleLower.includes('cashew') || descLower.includes('macadamia') || descLower.includes('nut') || descLower.includes('almond') || descLower.includes('walnut') || descLower.includes('cashew'))) return null;
+      if (allergy === 'eggs' && (titleLower.includes('egg') || descLower.includes('egg'))) return null;
+    }
+
+    // Check dietary constraints
+    if (isVegan) {
+      if (item.tags.includes('non-vegan')) return null;
+      if (titleLower.includes('chicken') || titleLower.includes('turkey') || titleLower.includes('beef') || titleLower.includes('pork') || titleLower.includes('bison') || titleLower.includes('fish') || titleLower.includes('salmon') || titleLower.includes('cod') || titleLower.includes('mackerel') || titleLower.includes('bass') || titleLower.includes('tilapia') || titleLower.includes('barramundi') || titleLower.includes('kingklip') || titleLower.includes('egg') || titleLower.includes('paneer') || titleLower.includes('yogurt') || titleLower.includes('milk') || titleLower.includes('butter') || titleLower.includes('broth') || titleLower.includes('collagen') || titleLower.includes('goat')) return null;
+      if (descLower.includes('chicken') || descLower.includes('turkey') || descLower.includes('beef') || descLower.includes('pork') || descLower.includes('bison') || descLower.includes('fish') || descLower.includes('salmon') || descLower.includes('cod') || descLower.includes('mackerel') || descLower.includes('bass') || descLower.includes('tilapia') || descLower.includes('barramundi') || descLower.includes('kingklip') || descLower.includes('egg') || descLower.includes('paneer') || descLower.includes('yogurt') || descLower.includes('milk') || descLower.includes('butter') || descLower.includes('broth') || descLower.includes('collagen') || descLower.includes('goat')) return null;
+    } else if (isVeg) {
+      if (item.tags.includes('non-veg')) return null;
+      if (titleLower.includes('chicken') || titleLower.includes('turkey') || titleLower.includes('beef') || titleLower.includes('pork') || titleLower.includes('bison') || titleLower.includes('fish') || titleLower.includes('salmon') || titleLower.includes('cod') || titleLower.includes('mackerel') || titleLower.includes('bass') || titleLower.includes('tilapia') || titleLower.includes('barramundi') || titleLower.includes('kingklip') || titleLower.includes('broth') || titleLower.includes('collagen') || titleLower.includes('goat')) return null;
+      if (descLower.includes('chicken') || descLower.includes('turkey') || descLower.includes('beef') || descLower.includes('pork') || descLower.includes('bison') || descLower.includes('fish') || descLower.includes('salmon') || descLower.includes('cod') || descLower.includes('mackerel') || descLower.includes('bass') || descLower.includes('tilapia') || descLower.includes('barramundi') || descLower.includes('kingklip') || descLower.includes('broth') || descLower.includes('collagen') || descLower.includes('goat')) return null;
+    }
+
+    if (isKeto) {
+      if (item.tags.includes('non-keto')) return null;
+    }
+
+    if (isPaleo) {
+      if (item.tags.includes('non-paleo')) return null;
+    }
+
+    const tags = item.tags || [];
+
+    // Core Medical Exclusions (Safe Foods Only!)
+    if (hasDiabetes || isBloodSugarControl) {
+      if (tags.includes('high-glycemic')) return null;
+    }
+    if (hasGastro) {
+      if (tags.includes('spicy') || tags.includes('irritant') || tags.includes('heavy-fat')) return null;
+    }
+    if (hasKidney) {
+      if (tags.includes('high-potassium') || tags.includes('high-protein-renal-risk')) return null;
+    }
+    if (hasHypertension || hasCholesterol || isHeartHealth) {
+      if (tags.includes('high-sodium') || tags.includes('trans-fat')) return null;
+    }
+
+    // Suitability scoring
+    let score = 2; // Baseline score
+    
+    if (isWeightLoss || bmiCategory === 'Obese' || bmiCategory === 'Overweight') {
+      if (tags.includes('weight-loss')) score += 3;
+      if (tags.includes('high-calorie') || tags.includes('high-glycemic')) score -= 2;
+    }
+    
+    if (isWeightGain || isMuscleGain || bmiCategory === 'Underweight') {
+      if (tags.includes('weight-gain') || tags.includes('high-protein')) score += 3;
+      if (tags.includes('very-low-calorie')) score -= 1;
+    }
+    
+    if (hasDiabetes || isBloodSugarControl) {
+      if (tags.includes('blood-sugar') || tags.includes('low-glycemic')) score += 3;
+    }
+    
+    if (hasHypertension || hasCholesterol || isHeartHealth) {
+      if (tags.includes('heart-health') || tags.includes('low-sodium') || tags.includes('soluble-fiber')) score += 3;
+    }
+    
+    if (hasGastro) {
+      if (tags.includes('gastro-safe')) score += 3;
+    }
+    
+    if (hasKidney) {
+      if (tags.includes('kidney-safe')) score += 2;
+    }
+
+    // Assemble final explanation describing why it is recommended for that user's health profile
+    let finalDescription = '';
+    if (region === 'Nigeria') {
+      const condList = (profile.healthConditions || []).filter((c: string) => c && c.toLowerCase() !== 'none');
+      const allergyList = (profile.foodAllergies || []).filter((a: string) => a && a.toLowerCase() !== 'none').map((a: string) => a.replace('_', ' '));
+      
+      let explanationParts: string[] = [];
+
+      // Health conditions clause
+      if (condList.length > 0) {
+        const condsUpper = condList.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1)).join(', ');
+        if (condList.some((c: string) => ['diabetes', 'blood sugar'].includes(c.toLowerCase()))) {
+          explanationParts.push(`In managing your ${condsUpper}, this complete meal combination's low-glycemic structure is specifically safe to maintain glycemic stability, reducing insulin strain.`);
+        } else if (condList.some((c: string) => ['hypertension', 'cholesterol', 'heart'].includes(c.toLowerCase()))) {
+          explanationParts.push(`To protect your cardiovascular health and address ${condsUpper}, this combination is high in natural potassium, low in sodium, and loaded with soluble fibers to aid LDL cholesterol clearance.`);
+        } else if (condList.some((c: string) => ['gastro', 'stomach', 'acid', 'digestive'].includes(c.toLowerCase()))) {
+          explanationParts.push(`For your sensitive digestion and ${condsUpper} conditions, this meal leverages highly soothing, non-irritant ingredients to prevent GI inflammation.`);
+        } else if (condList.some((c: string) => ['kidney', 'renal'].includes(c.toLowerCase()))) {
+          explanationParts.push(`Considering your ${condsUpper} conditions, this meal utilizes balanced mineral loads and high-quality, controlled proteins to reduce unnecessary renal filtration strain.`);
+        } else {
+          explanationParts.push(`Perfectly calibrated to be fully compatible with your registered health indicators (${condsUpper}) for cellular repair and metabolic safety.`);
+        }
+      } else {
+        explanationParts.push("Formulated with therapeutic-grade, anti-inflammatory whole foods to support robust daily metabolic baseline levels.");
+      }
+
+      // Goal and BMI clause
+      if (isWeightLoss || bmiCategory === 'Obese' || bmiCategory === 'Overweight') {
+        explanationParts.push(`Given your BMI of ${bmiValue} (${bmiCategory}) and goal of ${goal}, this nutrient-dense meal plan encourages fat oxidation while offering exceptional satiety to sustain a healthy caloric deficit.`);
+      } else if (isWeightGain || isMuscleGain || bmiCategory === 'Underweight') {
+        explanationParts.push(`In support of your BMI of ${bmiValue} (${bmiCategory}) and focus on ${goal}, this provides calorie-efficient, highly bioavailable proteins to accelerate muscle synthesis and energy recovery.`);
+      } else {
+        explanationParts.push(`Perfectly aligned with your goal of ${goal} and optimal healthy BMI of ${bmiValue}, this meal helps sustain physical performance and structural muscle tone.`);
+      }
+
+      // Dietary Preference and Allergens clause
+      if (diet !== 'None' || allergyList.length > 0) {
+        let dText = diet !== 'None' ? `your ${diet} dietary strategy` : '';
+        let aText = allergyList.length > 0 ? `the complete omission of your flagged allergens (${allergyList.join(', ')})` : '';
+        let joining = (dText && aText) ? ' and ' : '';
+        explanationParts.push(`It strictly respects ${dText}${joining}${aText} for complete peace of mind.`);
+      }
+
+      finalDescription = `${item.desc}\n\n• Clinical Reason: ${explanationParts.join(' ')}`;
+    } else {
+      finalDescription = `${item.desc} Highly recommended for your health profile because ${rationale}`;
+    }
+
+    return {
+      id: item.id,
+      title: item.title,
+      description: finalDescription,
+      badge: item.badge,
+      category: item.category,
+      score: score
+    };
+  };
+
+  db.foods.forEach(f => {
+    const processed = processItem(f, false);
+    if (processed) rawFoods.push(processed);
+  });
+
+  db.combos.forEach(c => {
+    const processed = processItem(c, true);
+    if (processed) rawCombos.push(processed);
+  });
+
+  let selectedFoods: RecommendationItem[] = [];
+
+  if (region === 'Nigeria') {
+    // Group by category and sort to find the absolute most appropriate safe recommendations!
+    const categories: ('Breakfast' | 'Lunch' | 'Dinner' | 'Healthy Snacks' | 'Drinks')[] = ['Breakfast', 'Lunch', 'Dinner', 'Healthy Snacks', 'Drinks'];
+    categories.forEach(cat => {
+      const catFoods = rawFoods.filter(f => f.category === cat);
+      // Sort by computed suitability score descending
+      catFoods.sort((a, b) => (b.score || 0) - (a.score || 0));
+      // Squeeze results down to the top 3 items per category (ensures we do not flood the screen, but recommend best matches)
+      const topFoods = catFoods.slice(0, 3).map(({ score, ...rest }) => rest);
+      selectedFoods.push(...topFoods);
+    });
+  } else {
+    // For other countries/regions, map processed foods without score
+    selectedFoods = rawFoods.map(({ score, ...rest }) => rest);
+  }
+
+  const selectedCombos = rawCombos.map(({ score, ...rest }) => rest);
+
+  return { foodsToEat: selectedFoods, healthyCombinations: selectedCombos };
 }

@@ -33,6 +33,7 @@ export interface RecommendationItem {
   title: string;
   description: string;
   badge?: string;
+  category?: 'Breakfast' | 'Lunch' | 'Dinner' | 'Healthy Snacks' | 'Drinks';
 }
 
 export interface WaterIntakeRecommendation {

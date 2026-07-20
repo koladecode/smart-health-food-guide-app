@@ -1670,44 +1670,161 @@ function getRegionalRecommendations(
     rationale = 'it is loaded with essential bioavailable micronutrients, reinforcing antioxidant defense and physical vitality.';
   }
 
-  // Define database of regional foods
-  const regionalDatabase: Record<string, { foods: { id: string; title: string; desc: string; badge: string; tags: string[] }[]; combos: { id: string; title: string; desc: string; badge: string; tags: string[] }[] }> = {
+  // Define database of regional foods with optional categories and tags for profile mapping
+  const regionalDatabase: Record<string, { 
+    foods: { id: string; title: string; desc: string; badge: string; tags: string[]; category?: 'Breakfast' | 'Lunch' | 'Dinner' | 'Healthy Snacks' | 'Drinks' }[]; 
+    combos: { id: string; title: string; desc: string; badge: string; tags: string[] }[] 
+  }> = {
     'Nigeria': {
       foods: [
+        // Breakfast items (converted into complete meal plans)
         {
-          id: 'ng-moin-moin',
-          title: 'Steamed Moin Moin (Bean Pudding)',
-          desc: 'A rich steamed bean cake made of pureed honey beans, bell peppers, onions, and light spices.',
-          badge: 'Nigerian Superfood',
-          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+          id: 'ng-meal-moinmoin-koko',
+          title: 'Steamed Honey-Bean Moin Moin with Warm Spiced Millet Koko',
+          desc: 'A complete protein-spiced breakfast plan. Savory steamed honey-bean pudding made with red bell peppers and onions, paired with a hot cup of probiotic fermented millet porridge infused with fresh ginger and cloves.',
+          badge: 'Satiety & Gut Care',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'weight-loss', 'heart-health', 'soluble-fiber', 'gastro-safe', 'kidney-safe'],
+          category: 'Breakfast'
         },
         {
-          id: 'ng-plantain',
-          title: 'Savoury Green Plantain / Amala',
-          desc: 'Green unripe plantain prepared cleanly, packed with resistant starch, iron, and potassium.',
-          badge: 'Potassium Rich',
-          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+          id: 'ng-meal-tombrown-soy',
+          title: 'Tom Brown Multi-Grain Porridge topped with Ground Almonds',
+          desc: 'A nutrient-dense restorative porridge made of roasted local guinea corn, yellow millet, and yellow corn, fortified with high-protein soybeans and topped with a light sprinkle of crushed almonds.',
+          badge: 'B-Vitamin & Protein Boost',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'weight-gain', 'blood-sugar', 'low-glycemic', 'gastro-safe', 'high-protein'],
+          category: 'Breakfast'
         },
         {
-          id: 'ng-efo-riro',
-          title: 'Efo Riro Stew (Sautéed Spinach & Tofu/Fish)',
-          desc: 'Sautéed fluted pumpkin leaves (Ugu) and spinach stew simmered in a light capsicum broth with tofu or mackerel.',
-          badge: 'Vascular Cleanse',
-          tags: ['keto', 'paleo']
+          id: 'ng-meal-akara-pap',
+          title: 'Oven-Baked Akara (Bean Cakes) served with Date-Sweetened Pap',
+          desc: 'A healthy twist on a Nigerian classic. Light, airy honey-bean cakes baked with minimal oil to preserve cardiovascular health, served with fresh unrefined corn custard sweetened naturally with date powder.',
+          badge: 'Cardiac Safe Classic',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'heart-health', 'weight-loss'],
+          category: 'Breakfast'
         },
         {
-          id: 'ng-beans',
-          title: 'Ewa Riro (Savoury Honey Beans Stew)',
-          desc: 'Slow-simmered local honey beans seasoned with ginger, onions, and cold-pressed red palm fruit oil.',
-          badge: 'Prebiotic Power',
-          tags: ['vegan', 'veg', 'non-keto', 'non-paleo']
+          id: 'ng-meal-gardenegg-eggwhites',
+          title: 'Steamed Garden Eggs with Herb-Scrambled Egg Whites & Sautéed Ugu',
+          desc: 'A low-calorie, low-glycemic fat-burning plate. Tender steamed native green garden eggs sliced thin, accompanied by fluffy scrambled egg whites seasoned with local herbs and a side of quick-sautéed fluted pumpkin leaves (Ugu).',
+          badge: 'Low-Carb Metabolic Starter',
+          tags: ['non-vegan', 'veg', 'keto', 'paleo', 'weight-loss', 'blood-sugar', 'low-glycemic', 'heart-health', 'kidney-safe'],
+          category: 'Breakfast'
+        },
+        // Lunch items (converted into complete meal plans)
+        {
+          id: 'ng-meal-ofada-eforiro',
+          title: 'Unpolished Ofada Brown Rice served with Rich Efo Riro Spinach Stew',
+          desc: 'Bran-fiber rich local wild brown Ofada rice paired with a savory, low-oil stew of sautéed local spinach, fluted pumpkin leaves (Ugu), onions, and bell peppers, topped with slow-grilled mackerel or high-protein organic tofu.',
+          badge: 'Vascular Cleansing Plate',
+          tags: ['keto', 'paleo', 'heart-health', 'blood-sugar', 'low-glycemic', 'weight-loss', 'weight-gain', 'high-protein', 'low-sodium'],
+          category: 'Lunch'
         },
         {
-          id: 'ng-tilapia',
-          title: 'Grilled Tilapia Fish with Local Herbs',
-          desc: 'Fresh lake tilapia grilled with minced fresh ginger, scent leaf (basil), onions, and green chilies.',
-          badge: 'Lean Amino Acid',
-          tags: ['non-vegan', 'non-veg', 'keto', 'paleo']
+          id: 'ng-meal-oatswallow-ewedu',
+          title: 'Fiber-Rich Oat Swallow served with Slippery Ewedu Soup & Tilapia Stew',
+          desc: 'A perfect glycemic buffer meal. Smooth whole-grain oat swallow fufu paired with slippery, vitamin-dense Ewedu (jute leaves) soup and grilled lake tilapia or tofu stewed in a mild tomato-capsicum reduction.',
+          badge: 'Glycemic Shield Swallow',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'heart-health', 'gastro-safe', 'weight-loss'],
+          category: 'Lunch'
+        },
+        {
+          id: 'ng-meal-okrasoup-oatfufu',
+          title: 'Prebiotic Okra Ila Alasepo with Oat Swallow & Herb-Grilled Chicken',
+          desc: 'A digestive-friendly lunch plan. Freshly chopped okra pods simmered with fermented locust beans (iru), fish, and prawns, paired with a portion of fiber-heavy oat swallow fufu and tender grilled skinless chicken breast.',
+          badge: 'Gut Prebiotic Mucilage',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo', 'gastro-safe', 'blood-sugar', 'low-glycemic', 'heart-health', 'weight-loss', 'high-protein'],
+          category: 'Lunch'
+        },
+        {
+          id: 'ng-meal-gbegiri-ewedu-ofada',
+          title: 'Creamy Gbegiri Bean Soup & Ewedu Layer over unpolished Ofada Rice',
+          desc: 'A complete plant-powered Yoruba culinary plan. Smooth, slow-simmered cream of peeled honey beans (gbegiri) layered over slippery Ewedu jute leaves, served with unpolished local Ofada brown rice for long-lasting energy.',
+          badge: 'Digestive Relief & Satiety',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'gastro-safe', 'weight-loss', 'blood-sugar', 'low-glycemic', 'heart-health'],
+          category: 'Lunch'
+        },
+        // Dinner items (converted into complete meal plans)
+        {
+          id: 'ng-meal-catfish-peppersoup',
+          title: 'Aromatic Catfish Pepper Soup with Boiled Green Plantains & Scent Leaves',
+          desc: 'A restorative, high-protein evening plan. Fresh catfish simmered in a warm, medicinal pepper broth spiced with ginger, garlic, calabash nutmeg, and fresh scent leaves, paired with slow-burning boiled unripe green plantains.',
+          badge: 'Endothelial Activation',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo', 'heart-health', 'weight-loss', 'low-glycemic', 'high-protein', 'spicy'],
+          category: 'Dinner'
+        },
+        {
+          id: 'ng-meal-grilledtilapia-ugu',
+          title: 'Lemon-Grilled Lake Tilapia with Steamed Ugu Greens & Sweet Potato',
+          desc: 'An excellent recovery dinner. Whole fresh tilapia rubbed with garlic, ginger, and scent leaves, grilled cleanly and paired with steamed fluted pumpkin leaves (Ugu) and baked unpeeled orange sweet potato wedges.',
+          badge: 'Cardiac Omega-3 Recovery',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo', 'heart-health', 'blood-sugar', 'low-glycemic', 'weight-loss', 'high-protein'],
+          category: 'Dinner'
+        },
+        {
+          id: 'ng-meal-plantainporridge-mackerel',
+          title: 'Unripe Green Plantain Porridge slow-cooked with Flaked Mackerel',
+          desc: 'A savory, iron-loaded one-pot meal. Diced green plantains simmered with onions, fresh tomatoes, scent leaves, ground crayfish, and pieces of flaked wild mackerel for healthy cardiovascular fats and steady energy.',
+          badge: 'Vascular Tone & Iron Load',
+          tags: ['non-vegan', 'non-veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'heart-health'],
+          category: 'Dinner'
+        },
+        {
+          id: 'ng-meal-bitterleaf-goat',
+          title: 'Thoroughly Washed Bitterleaf Soup (Ofe Onugbu) with Lean Goat Meat',
+          desc: 'A cellular-detox dinner plan. Deeply nutritive local bitterleaf leaves thoroughly washed to maintain a pleasant sweet-savory herbal finish, slow-boiled with lean goat meat and fermented locust beans (iru), served with a side of steamed vegetables.',
+          badge: 'Hepatic Cleanse & Iron',
+          tags: ['non-vegan', 'non-veg', 'keto', 'paleo', 'blood-sugar', 'low-glycemic', 'heart-health', 'high-protein'],
+          category: 'Dinner'
+        },
+        // Healthy Snacks items (converted into complete meal plans)
+        {
+          id: 'ng-meal-gardeneggs-peanutpaste',
+          title: 'Crispy Sliced Garden Eggs with Pure Unsweetened Peanut Paste',
+          desc: 'A fiber-rich satiety booster snack. Fresh organic green garden eggs sliced into wheels, served with a clean spread of pure, stone-ground unsweetened roasted peanut butter for healthy monounsaturated fats.',
+          badge: 'Satiety & Lipid Control',
+          tags: ['vegan', 'veg', 'keto', 'paleo', 'weight-loss', 'blood-sugar', 'low-glycemic', 'heart-health'],
+          category: 'Healthy Snacks'
+        },
+        {
+          id: 'ng-meal-sweetpotato-avocado',
+          title: 'Steam-Baked Sweet Potato Wedges with Creamy Avocado-Scent Leaf Dip',
+          desc: 'A vitamin-heavy snack combination. Steam-baked unpeeled sweet potato wedges served with a fresh dip of mashed avocado, lemon juice, and finely chopped scent leaves (African basil) for cardiovascular health.',
+          badge: 'Beta-Carotene Fuel',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'weight-gain', 'gastro-safe', 'heart-health'],
+          category: 'Healthy Snacks'
+        },
+        {
+          id: 'ng-meal-tigernuts-coconut',
+          title: 'Raw Tiger Nuts (Ofio) mixed with Shaved Coconut Flakes',
+          desc: 'A prebiotic digestive support snack. A simple, crunchy mixture of raw organic tiger nuts and fresh shaved coconut meat, offering exceptional levels of gut-healthy resistant starch, vitamin E, and dietary fiber.',
+          badge: 'Prebiotic Resistant Starch',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'blood-sugar', 'low-glycemic', 'weight-loss', 'heart-health'],
+          category: 'Healthy Snacks'
+        },
+        // Drinks items (converted into complete meal plans)
+        {
+          id: 'ng-meal-zobo-ginger',
+          title: 'Unsweetened Red Hibiscus Zobo Infused with Ginger & Date Purée',
+          desc: 'A cold-brewed vascular health tonic. Deep-red Hibiscus sabdariffa sepals simmered with freshly crushed ginger root, cloves, and sweetened lightly with a touch of date fruit purée. Supports natural blood pressure relaxation.',
+          badge: 'Cardiac ACE Relaxer',
+          tags: ['vegan', 'veg', 'keto', 'paleo', 'heart-health', 'blood-sugar', 'low-glycemic', 'weight-loss', 'low-sodium'],
+          category: 'Drinks'
+        },
+        {
+          id: 'ng-meal-kununaya-coconut',
+          title: 'Kunun Aya (Tiger Nut Coconut Milk) fortified with dates',
+          desc: 'A rich, lactose-free plant milk plan. Creamy beverage made by cold-pressing soaked tiger nuts, fresh coconut meat, and dried dates. Extremely soothing for gastrointestinal lining and packed with prebiotic lipids.',
+          badge: 'Dairy-Free Digestive Cream',
+          tags: ['vegan', 'veg', 'non-keto', 'non-paleo', 'gastro-safe', 'weight-gain', 'heart-health'],
+          category: 'Drinks'
+        },
+        {
+          id: 'ng-meal-scentleaf-ginger-tea',
+          title: 'Warm Scent Leaf (Efinrin) & Crushed Ginger Anti-Bloat Tea',
+          desc: 'A restorative herbal digestive tea plan. Freshly plucked scent leaves and ginger root steeped in hot water, releasing essential eugenols that immediately soothe intestinal bloating and support liver recovery.',
+          badge: 'Intestinal Anti-Bloat Infusion',
+          tags: ['vegan', 'veg', 'keto', 'paleo', 'gastro-safe', 'low-glycemic', 'heart-health', 'low-sodium'],
+          category: 'Drinks'
         }
       ],
       combos: [
@@ -2163,22 +2280,22 @@ function getRegionalRecommendations(
   const db = regionalDatabase[region];
   if (!db) return null;
 
-  const outFoods: RecommendationItem[] = [];
-  const outCombos: RecommendationItem[] = [];
+  const rawFoods: any[] = [];
+  const rawCombos: any[] = [];
 
   // Helper to filter and format item
-  const processItem = (item: { id: string; title: string; desc: string; badge: string; tags: string[] }, isCombo: boolean) => {
+  const processItem = (item: { id: string; title: string; desc: string; badge: string; tags: string[]; category?: string }, isCombo: boolean) => {
     // Check allergy safety
     const titleLower = item.title.toLowerCase();
     const descLower = item.desc.toLowerCase();
 
     for (const allergy of allergies) {
       if (allergy === 'none') continue;
-      if (allergy === 'peanuts' && (titleLower.includes('peanut') || descLower.includes('peanut'))) return null;
+      if (allergy === 'peanuts' && (titleLower.includes('peanut') || descLower.includes('peanut') || titleLower.includes('groundnut') || descLower.includes('groundnut'))) return null;
       if (allergy === 'gluten' && (titleLower.includes('sourdough') || titleLower.includes('wheat') || titleLower.includes('rye') || titleLower.includes('barley') || descLower.includes('sourdough') || descLower.includes('wheat') || descLower.includes('rye') || descLower.includes('barley'))) return null;
       if (allergy === 'dairy' && (titleLower.includes('paneer') || titleLower.includes('cheese') || titleLower.includes('yogurt') || titleLower.includes('milk') || titleLower.includes('butter') || titleLower.includes('cream') || descLower.includes('paneer') || descLower.includes('cheese') || descLower.includes('yogurt') || descLower.includes('milk') || descLower.includes('butter') || descLower.includes('cream'))) return null;
       if (allergy === 'soy' && (titleLower.includes('tofu') || titleLower.includes('tempeh') || titleLower.includes('soy') || descLower.includes('tofu') || descLower.includes('tempeh') || descLower.includes('soy'))) return null;
-      if (allergy === 'shellfish' && (titleLower.includes('shrimp') || titleLower.includes('shellfish') || titleLower.includes('crab') || titleLower.includes('lobster') || titleLower.includes('prawn') || titleLower.includes('oyster') || descLower.includes('shrimp') || descLower.includes('shellfish') || descLower.includes('crab') || descLower.includes('lobster') || descLower.includes('prawn') || descLower.includes('oyster'))) return null;
+      if (allergy === 'shellfish' && (titleLower.includes('shrimp') || titleLower.includes('shellfish') || titleLower.includes('crab') || titleLower.includes('lobster') || titleLower.includes('prawn') || titleLower.includes('oyster') || titleLower.includes('periwinkle') || descLower.includes('shrimp') || descLower.includes('shellfish') || descLower.includes('crab') || descLower.includes('lobster') || descLower.includes('prawn') || descLower.includes('oyster') || descLower.includes('periwinkle'))) return null;
       if (allergy === 'tree_nuts' && (titleLower.includes('macadamia') || titleLower.includes('nut') || titleLower.includes('almond') || titleLower.includes('walnut') || titleLower.includes('cashew') || descLower.includes('macadamia') || descLower.includes('nut') || descLower.includes('almond') || descLower.includes('walnut') || descLower.includes('cashew'))) return null;
       if (allergy === 'eggs' && (titleLower.includes('egg') || descLower.includes('egg'))) return null;
     }
@@ -2186,12 +2303,12 @@ function getRegionalRecommendations(
     // Check dietary constraints
     if (isVegan) {
       if (item.tags.includes('non-vegan')) return null;
-      if (titleLower.includes('chicken') || titleLower.includes('turkey') || titleLower.includes('beef') || titleLower.includes('pork') || titleLower.includes('bison') || titleLower.includes('fish') || titleLower.includes('salmon') || titleLower.includes('cod') || titleLower.includes('mackerel') || titleLower.includes('bass') || titleLower.includes('tilapia') || titleLower.includes('barramundi') || titleLower.includes('kingklip') || titleLower.includes('egg') || titleLower.includes('paneer') || titleLower.includes('yogurt') || titleLower.includes('milk') || titleLower.includes('butter') || titleLower.includes('broth') || titleLower.includes('collagen')) return null;
-      if (descLower.includes('chicken') || descLower.includes('turkey') || descLower.includes('beef') || descLower.includes('pork') || descLower.includes('bison') || descLower.includes('fish') || descLower.includes('salmon') || descLower.includes('cod') || descLower.includes('mackerel') || descLower.includes('bass') || descLower.includes('tilapia') || descLower.includes('barramundi') || descLower.includes('kingklip') || descLower.includes('egg') || descLower.includes('paneer') || descLower.includes('yogurt') || descLower.includes('milk') || descLower.includes('butter') || descLower.includes('broth') || descLower.includes('collagen')) return null;
+      if (titleLower.includes('chicken') || titleLower.includes('turkey') || titleLower.includes('beef') || titleLower.includes('pork') || titleLower.includes('bison') || titleLower.includes('fish') || titleLower.includes('salmon') || titleLower.includes('cod') || titleLower.includes('mackerel') || titleLower.includes('bass') || titleLower.includes('tilapia') || titleLower.includes('barramundi') || titleLower.includes('kingklip') || titleLower.includes('egg') || titleLower.includes('paneer') || titleLower.includes('yogurt') || titleLower.includes('milk') || titleLower.includes('butter') || titleLower.includes('broth') || titleLower.includes('collagen') || titleLower.includes('goat')) return null;
+      if (descLower.includes('chicken') || descLower.includes('turkey') || descLower.includes('beef') || descLower.includes('pork') || descLower.includes('bison') || descLower.includes('fish') || descLower.includes('salmon') || descLower.includes('cod') || descLower.includes('mackerel') || descLower.includes('bass') || descLower.includes('tilapia') || descLower.includes('barramundi') || descLower.includes('kingklip') || descLower.includes('egg') || descLower.includes('paneer') || descLower.includes('yogurt') || descLower.includes('milk') || descLower.includes('butter') || descLower.includes('broth') || descLower.includes('collagen') || descLower.includes('goat')) return null;
     } else if (isVeg) {
       if (item.tags.includes('non-veg')) return null;
-      if (titleLower.includes('chicken') || titleLower.includes('turkey') || titleLower.includes('beef') || titleLower.includes('pork') || titleLower.includes('bison') || titleLower.includes('fish') || titleLower.includes('salmon') || titleLower.includes('cod') || titleLower.includes('mackerel') || titleLower.includes('bass') || titleLower.includes('tilapia') || titleLower.includes('barramundi') || titleLower.includes('kingklip') || titleLower.includes('broth') || titleLower.includes('collagen')) return null;
-      if (descLower.includes('chicken') || descLower.includes('turkey') || descLower.includes('beef') || descLower.includes('pork') || descLower.includes('bison') || descLower.includes('fish') || descLower.includes('salmon') || descLower.includes('cod') || descLower.includes('mackerel') || descLower.includes('bass') || descLower.includes('tilapia') || descLower.includes('barramundi') || descLower.includes('kingklip') || descLower.includes('broth') || descLower.includes('collagen')) return null;
+      if (titleLower.includes('chicken') || titleLower.includes('turkey') || titleLower.includes('beef') || titleLower.includes('pork') || titleLower.includes('bison') || titleLower.includes('fish') || titleLower.includes('salmon') || titleLower.includes('cod') || titleLower.includes('mackerel') || titleLower.includes('bass') || titleLower.includes('tilapia') || titleLower.includes('barramundi') || titleLower.includes('kingklip') || titleLower.includes('broth') || titleLower.includes('collagen') || titleLower.includes('goat')) return null;
+      if (descLower.includes('chicken') || descLower.includes('turkey') || descLower.includes('beef') || descLower.includes('pork') || descLower.includes('bison') || descLower.includes('fish') || descLower.includes('salmon') || descLower.includes('cod') || descLower.includes('mackerel') || descLower.includes('bass') || descLower.includes('tilapia') || descLower.includes('barramundi') || descLower.includes('kingklip') || descLower.includes('broth') || descLower.includes('collagen') || descLower.includes('goat')) return null;
     }
 
     if (isKeto) {
@@ -2202,26 +2319,138 @@ function getRegionalRecommendations(
       if (item.tags.includes('non-paleo')) return null;
     }
 
+    const tags = item.tags || [];
+
+    // Core Medical Exclusions (Safe Foods Only!)
+    if (hasDiabetes || isBloodSugarControl) {
+      if (tags.includes('high-glycemic')) return null;
+    }
+    if (hasGastro) {
+      if (tags.includes('spicy') || tags.includes('irritant') || tags.includes('heavy-fat')) return null;
+    }
+    if (hasKidney) {
+      if (tags.includes('high-potassium') || tags.includes('high-protein-renal-risk')) return null;
+    }
+    if (hasHypertension || hasCholesterol || isHeartHealth) {
+      if (tags.includes('high-sodium') || tags.includes('trans-fat')) return null;
+    }
+
+    // Suitability scoring
+    let score = 2; // Baseline score
+    
+    if (isWeightLoss || bmiCategory === 'Obese' || bmiCategory === 'Overweight') {
+      if (tags.includes('weight-loss')) score += 3;
+      if (tags.includes('high-calorie') || tags.includes('high-glycemic')) score -= 2;
+    }
+    
+    if (isWeightGain || isMuscleGain || bmiCategory === 'Underweight') {
+      if (tags.includes('weight-gain') || tags.includes('high-protein')) score += 3;
+      if (tags.includes('very-low-calorie')) score -= 1;
+    }
+    
+    if (hasDiabetes || isBloodSugarControl) {
+      if (tags.includes('blood-sugar') || tags.includes('low-glycemic')) score += 3;
+    }
+    
+    if (hasHypertension || hasCholesterol || isHeartHealth) {
+      if (tags.includes('heart-health') || tags.includes('low-sodium') || tags.includes('soluble-fiber')) score += 3;
+    }
+    
+    if (hasGastro) {
+      if (tags.includes('gastro-safe')) score += 3;
+    }
+    
+    if (hasKidney) {
+      if (tags.includes('kidney-safe')) score += 2;
+    }
+
     // Assemble final explanation describing why it is recommended for that user's health profile
-    const finalDescription = `${item.desc} Highly recommended for your health profile because ${rationale}`;
+    let finalDescription = '';
+    if (region === 'Nigeria') {
+      const condList = (profile.healthConditions || []).filter((c: string) => c && c.toLowerCase() !== 'none');
+      const allergyList = (profile.foodAllergies || []).filter((a: string) => a && a.toLowerCase() !== 'none').map((a: string) => a.replace('_', ' '));
+      
+      let explanationParts: string[] = [];
+
+      // Health conditions clause
+      if (condList.length > 0) {
+        const condsUpper = condList.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1)).join(', ');
+        if (condList.some((c: string) => ['diabetes', 'blood sugar'].includes(c.toLowerCase()))) {
+          explanationParts.push(`In managing your ${condsUpper}, this complete meal combination's low-glycemic structure is specifically safe to maintain glycemic stability, reducing insulin strain.`);
+        } else if (condList.some((c: string) => ['hypertension', 'cholesterol', 'heart'].includes(c.toLowerCase()))) {
+          explanationParts.push(`To protect your cardiovascular health and address ${condsUpper}, this combination is high in natural potassium, low in sodium, and loaded with soluble fibers to aid LDL cholesterol clearance.`);
+        } else if (condList.some((c: string) => ['gastro', 'stomach', 'acid', 'digestive'].includes(c.toLowerCase()))) {
+          explanationParts.push(`For your sensitive digestion and ${condsUpper} conditions, this meal leverages highly soothing, non-irritant ingredients to prevent GI inflammation.`);
+        } else if (condList.some((c: string) => ['kidney', 'renal'].includes(c.toLowerCase()))) {
+          explanationParts.push(`Considering your ${condsUpper} conditions, this meal utilizes balanced mineral loads and high-quality, controlled proteins to reduce unnecessary renal filtration strain.`);
+        } else {
+          explanationParts.push(`Perfectly calibrated to be fully compatible with your registered health indicators (${condsUpper}) for cellular repair and metabolic safety.`);
+        }
+      } else {
+        explanationParts.push("Formulated with therapeutic-grade, anti-inflammatory whole foods to support robust daily metabolic baseline levels.");
+      }
+
+      // Goal and BMI clause
+      if (isWeightLoss || bmiCategory === 'Obese' || bmiCategory === 'Overweight') {
+        explanationParts.push(`Given your BMI of ${bmiValue} (${bmiCategory}) and goal of ${goal}, this nutrient-dense meal plan encourages fat oxidation while offering exceptional satiety to sustain a healthy caloric deficit.`);
+      } else if (isWeightGain || isMuscleGain || bmiCategory === 'Underweight') {
+        explanationParts.push(`In support of your BMI of ${bmiValue} (${bmiCategory}) and focus on ${goal}, this provides calorie-efficient, highly bioavailable proteins to accelerate muscle synthesis and energy recovery.`);
+      } else {
+        explanationParts.push(`Perfectly aligned with your goal of ${goal} and optimal healthy BMI of ${bmiValue}, this meal helps sustain physical performance and structural muscle tone.`);
+      }
+
+      // Dietary Preference and Allergens clause
+      if (diet !== 'None' || allergyList.length > 0) {
+        let dText = diet !== 'None' ? `your ${diet} dietary strategy` : '';
+        let aText = allergyList.length > 0 ? `the complete omission of your flagged allergens (${allergyList.join(', ')})` : '';
+        let joining = (dText && aText) ? ' and ' : '';
+        explanationParts.push(`It strictly respects ${dText}${joining}${aText} for complete peace of mind.`);
+      }
+
+      finalDescription = `${item.desc}\n\n• Clinical Reason: ${explanationParts.join(' ')}`;
+    } else {
+      finalDescription = `${item.desc} Highly recommended for your health profile because ${rationale}`;
+    }
 
     return {
       id: item.id,
       title: item.title,
       description: finalDescription,
-      badge: item.badge
+      badge: item.badge,
+      category: item.category,
+      score: score
     };
   };
 
   db.foods.forEach(f => {
     const processed = processItem(f, false);
-    if (processed) outFoods.push(processed);
+    if (processed) rawFoods.push(processed);
   });
 
   db.combos.forEach(c => {
     const processed = processItem(c, true);
-    if (processed) outCombos.push(processed);
+    if (processed) rawCombos.push(processed);
   });
 
-  return { foodsToEat: outFoods, healthyCombinations: outCombos };
+  let selectedFoods: RecommendationItem[] = [];
+
+  if (region === 'Nigeria') {
+    // Group by category and sort to find the absolute most appropriate safe recommendations!
+    const categories: ('Breakfast' | 'Lunch' | 'Dinner' | 'Healthy Snacks' | 'Drinks')[] = ['Breakfast', 'Lunch', 'Dinner', 'Healthy Snacks', 'Drinks'];
+    categories.forEach(cat => {
+      const catFoods = rawFoods.filter(f => f.category === cat);
+      // Sort by computed suitability score descending
+      catFoods.sort((a, b) => (b.score || 0) - (a.score || 0));
+      // Squeeze results down to the top 3 items per category (ensures we do not flood the screen, but recommend best matches)
+      const topFoods = catFoods.slice(0, 3).map(({ score, ...rest }) => rest);
+      selectedFoods.push(...topFoods);
+    });
+  } else {
+    // For other countries/regions, map processed foods without score
+    selectedFoods = rawFoods.map(({ score, ...rest }) => rest);
+  }
+
+  const selectedCombos = rawCombos.map(({ score, ...rest }) => rest);
+
+  return { foodsToEat: selectedFoods, healthyCombinations: selectedCombos };
 }
