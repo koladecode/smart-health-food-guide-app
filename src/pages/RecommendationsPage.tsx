@@ -58,13 +58,27 @@ export default function RecommendationsPage() {
     }
   }, [isAuthenticated, profile, fetchWithAuth]);
 
+  // Smooth scroll handler for quick navigation
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const headerOffset = 145; // Height of navbar + sticky quick links bar
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   // 0. If profile is loading, show loading spinner
   if (loadingProfile) {
     return (
       <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300" id="recs-profile-loading">
         <header className="px-4 py-4 md:px-8 border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex justify-between items-center" id="loading-recs-header">
           <div className="flex items-center gap-2">
-            <div className="p-1 bg-emerald-600 rounded-lg text-white">
+            <div className="p-1.5 bg-emerald-600 rounded-lg text-white">
               <Heart className="w-5 h-5" />
             </div>
             <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
@@ -139,31 +153,87 @@ export default function RecommendationsPage() {
     }
   };
 
-  // Helper to parse description with optional clinical reason
-  const renderDescriptionWithClinicalReason = (description: string) => {
-    if (description.includes('\n\n• Clinical Reason: ')) {
-      const [desc, clinical] = description.split('\n\n• Clinical Reason: ');
-      return (
-        <div className="flex flex-col gap-2.5">
-          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{desc}</p>
-          <div className="p-3 rounded-2xl bg-teal-500/5 dark:bg-teal-500/10 border border-teal-500/20 text-2xs text-teal-700 dark:text-teal-300 flex items-start gap-2 font-semibold leading-relaxed">
+  // Helper to compute horizontal BMI marker position (from BMI 15 to 35)
+  const getBmiPercent = (bmi: number) => {
+    const minBmi = 15;
+    const maxBmi = 35;
+    const percent = ((bmi - minBmi) / (maxBmi - minBmi)) * 100;
+    return Math.min(Math.max(percent, 0), 100);
+  };
+
+  // Helper to parse description with optional clinical reason into short, high-scannability sentences
+  const renderDescriptionText = (text: string) => {
+    if (!text) return null;
+    
+    let mainText = text;
+    let clinicalReason = '';
+    
+    if (text.includes('\n\n• Clinical Reason: ')) {
+      [mainText, clinicalReason] = text.split('\n\n• Clinical Reason: ');
+    } else if (text.includes('• Clinical Reason: ')) {
+      [mainText, clinicalReason] = text.split('• Clinical Reason: ');
+    }
+    
+    // Clear bullet/list decorations
+    const cleanedText = mainText.replace(/^[•\s\-\*]+/g, '').trim();
+    
+    // Split sentences dynamically on punctuation
+    const sentences = cleanedText
+      .split(/(?<=[.!?])\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+      
+    const highlightWords = (sentence: string) => {
+      const words = sentence.split(' ');
+      if (words.length > 2) {
+        const boldPart = words.slice(0, 2).join(' ');
+        const restPart = words.slice(2).join(' ');
+        return (
+          <>
+            <span className="font-bold text-slate-800 dark:text-slate-150">{boldPart}</span> {restPart}
+          </>
+        );
+      }
+      return sentence;
+    };
+
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
+          {sentences.map((sentence, idx) => (
+            <p key={idx} className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+              {highlightWords(sentence)}
+            </p>
+          ))}
+        </div>
+        
+        {clinicalReason && (
+          <div className="mt-1.5 p-3 rounded-2xl bg-teal-500/5 dark:bg-teal-500/10 border border-teal-500/15 dark:border-teal-500/20 text-3xs text-teal-700 dark:text-teal-300 flex items-start gap-2 font-semibold leading-relaxed">
             <Activity className="w-4 h-4 text-teal-500 dark:text-teal-400 flex-shrink-0 mt-0.5" />
             <div>
-              <span className="font-extrabold text-teal-600 dark:text-teal-400">Clinical Reason: </span>
-              {clinical}
+              <span className="font-extrabold text-teal-600 dark:text-teal-400 uppercase tracking-widest text-4xs block mb-0.5">Clinical Rationale</span>
+              {clinicalReason}
             </div>
           </div>
-        </div>
-      );
-    }
-    return <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{description}</p>;
+        )}
+      </div>
+    );
   };
+
+  const navigationSections = [
+    { id: 'card-foods-to-eat', label: 'Foods to Eat', icon: Apple, color: 'text-emerald-500' },
+    { id: 'card-foods-to-avoid', label: 'Foods to Avoid', icon: ShieldAlert, color: 'text-amber-500' },
+    { id: 'card-food-combinations', label: 'Combinations', icon: Sparkles, color: 'text-purple-500' },
+    { id: 'card-hydration', label: 'Hydration', icon: Droplet, color: 'text-blue-500' },
+    { id: 'card-exercise', label: 'Exercise', icon: Dumbbell, color: 'text-orange-500' },
+    { id: 'card-lifestyle', label: 'Lifestyle Tips', icon: Lightbulb, color: 'text-teal-500' },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 animate-fade-in" id="recommendations-root">
       
       {/* Navbar Header */}
-      <header className="px-4 py-4 md:px-8 border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950/80 backdrop-blur-md flex justify-between items-center sticky top-0 z-30" id="recs-header">
+      <header className="px-4 py-4 md:px-8 border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950/85 backdrop-blur-md flex justify-between items-center sticky top-0 z-30" id="recs-header">
         <button
           id="recs-back-btn"
           onClick={() => navigateTo('profile-summary')}
@@ -187,14 +257,39 @@ export default function RecommendationsPage() {
         </div>
       </header>
 
+      {/* Sticky Quick-Navigation Category Bar (Desktop / Tablet Only) */}
+      <div className="sticky top-[73px] bg-white/90 dark:bg-slate-950/90 backdrop-blur-md z-20 border-b border-slate-100 dark:border-slate-900/60 py-3 px-4 md:px-8 hidden md:block" id="recs-sticky-nav">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1">
+            <span className="text-4xs font-bold text-slate-400 uppercase tracking-widest mr-3">Jump to:</span>
+            {navigationSections.map((sect) => {
+              const IconComp = sect.icon;
+              return (
+                <button
+                  key={sect.id}
+                  onClick={() => scrollToSection(sect.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100/80 dark:hover:bg-slate-900/60 transition-all cursor-pointer"
+                >
+                  <IconComp className={`w-3.5 h-3.5 ${sect.color}`} />
+                  <span>{sect.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <span className="text-4xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+            Real-Time Bio Sync
+          </span>
+        </div>
+      </div>
+
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 flex flex-col gap-6 text-left" id="recs-main">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 flex flex-col gap-8 text-left" id="recs-main">
         
         {/* Welcome Header Hero */}
         <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-lg shadow-emerald-600/10" id="recs-welcome">
-          <div className="flex flex-col gap-2 max-w-2xl">
+          <div className="flex flex-col gap-2 max-w-3xl">
             <span className="bg-white/10 px-3 py-1 rounded-full text-2xs font-bold uppercase tracking-wider w-fit flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>Bio-Calculated Recommendation Engine</span>
             </span>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
@@ -205,542 +300,582 @@ export default function RecommendationsPage() {
               Age <strong className="text-white">{profile.age}</strong>, Goal <strong className="text-white">{profile.healthGoal}</strong>, Diet Strategy <strong className="text-white">{profile.dietaryPreference || 'Standard'}</strong>, and Chronic Flags <strong className="text-white">({profile.healthConditions.filter(c => c !== 'none').length || 'None'})</strong>.
             </p>
           </div>
-          <div className="flex gap-2 w-full md:w-auto">
+          <div className="flex gap-2 w-full md:w-auto self-end md:self-center">
             <Button
               variant="secondary"
-              className="bg-white/10 text-white hover:bg-white/20 border-white/15 whitespace-nowrap font-bold flex-1 md:flex-none text-xs flex items-center justify-center gap-2"
+              className="bg-white/10 text-white hover:bg-white/20 border-white/15 whitespace-nowrap font-bold text-xs flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl w-full sm:w-auto"
               onClick={() => navigateTo('profile-form')}
               id="recs-edit-profile-top"
             >
               <Pencil className="w-3.5 h-3.5" />
-              <span>Edit Profile</span>
+              <span>Edit Health Profile</span>
             </Button>
           </div>
         </div>
 
-        {/* Dynamic Bio-Indicator Panel */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6" id="recs-indicators-panel">
+        {/* Master Two-Column Grid (Layout inspired by Linear & Apple Health) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start" id="recs-grid-wrapper">
           
-          {/* Calculated BMI Meter Card */}
-          <Card className="md:col-span-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800" id="bmi-calculator-card">
-            <CardContent className="p-5 flex flex-col gap-4">
-              <div className="flex justify-between items-center">
-                <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black flex items-center gap-1.5">
-                  <Scale className="w-4 h-4 text-emerald-600" />
-                  <span>Calculated Body Mass Index</span>
-                </span>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-bold border ${getBmiBadgeStyle(recs.bmiCategory)}`}>
-                  {recs.bmiCategory}
-                </span>
-              </div>
-              
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black tracking-tight text-slate-900 dark:text-white font-mono">
-                  {recs.bmiValue || '--'}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">kg/m²</span>
-              </div>
-
-              {/* BMI Bar indicator */}
-              <div className="flex flex-col gap-1.5 mt-2">
-                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex" id="bmi-range-bar">
-                  <div className="h-full bg-blue-400" style={{ width: '20%' }} title="Underweight" />
-                  <div className="h-full bg-emerald-500" style={{ width: '30%' }} title="Normal" />
-                  <div className="h-full bg-amber-500" style={{ width: '25%' }} title="Overweight" />
-                  <div className="h-full bg-red-500" style={{ width: '25%' }} title="Obese" />
-                </div>
-                <div className="flex justify-between text-2xs text-slate-400 dark:text-slate-500 font-mono">
-                  <span>&lt; 18.5</span>
-                  <span>18.5 - 24.9</span>
-                  <span>25.0 - 29.9</span>
-                  <span>30.0+</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                {recs.bmiCategory === 'Healthy Weight' ? (
-                  "Your weight lies within the healthy clinical range. Our meal suggestions prioritize longevity, micronutrient loading, and energetic sustainability."
-                ) : recs.bmiCategory === 'Underweight' ? (
-                  "Your weight falls slightly below the healthy average. Recommendations focus on muscle preservation and calorie-dense nutrition complexes."
-                ) : (
-                  "Our recommendations optimize glycemic load, satiety thresholds, and steady cardiovascular output to assist in natural metabolic efficiency."
-                )}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Quick Clinical Profile Summary Card */}
-          <Card className="md:col-span-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800" id="clinical-summary-panel">
-            <CardContent className="p-5 flex flex-col justify-between h-full gap-4">
-              <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black flex items-center gap-1.5">
-                <User className="w-4 h-4 text-emerald-600" />
-                <span>Clinical Profile Overview</span>
-              </span>
-
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850">
-                  <span className="text-2xs text-slate-400 block font-semibold mb-0.5">Activity Factor</span>
-                  <span className="font-bold text-slate-900 dark:text-white truncate block">{profile.activityLevel}</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850">
-                  <span className="text-2xs text-slate-400 block font-semibold mb-0.5">Diet Preference</span>
-                  <span className="font-bold text-slate-900 dark:text-white truncate block">{profile.dietaryPreference || 'None'}</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850">
-                  <span className="text-2xs text-slate-400 block font-semibold mb-0.5">Primary Goal</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 truncate block font-bold">{profile.healthGoal}</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850">
-                  <span className="text-2xs text-slate-400 block font-semibold mb-0.5">Allergens</span>
-                  <span className={`truncate block font-bold ${profile.foodAllergies.includes('none') ? 'text-slate-500' : 'text-amber-600 dark:text-amber-400'}`}>
-                    {profile.foodAllergies.includes('none') ? 'None' : `${profile.foodAllergies.length} Flagged`}
+          {/* LEFT SIDEBAR (BMI & Clinical Indicators) */}
+          <div className="lg:col-span-4 flex flex-col gap-6 sticky lg:top-[160px]" id="recs-left-sidebar">
+            
+            {/* Calculated BMI Meter Card */}
+            <Card className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl" id="bmi-calculator-card">
+              <CardContent className="p-6 flex flex-col gap-5">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold flex items-center gap-1.5">
+                    <Scale className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>Body Mass Index</span>
+                  </span>
+                  <span className={`text-3xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border ${getBmiBadgeStyle(recs.bmiCategory)}`}>
+                    {recs.bmiCategory}
                   </span>
                 </div>
-              </div>
-
-              {profile.currentMedications && (
-                <div className="p-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-2xs leading-relaxed text-slate-500 dark:text-slate-400">
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">Active RX: </span>
-                  {profile.currentMedications}
+                
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white font-mono">
+                    {recs.bmiValue || '--'}
+                  </span>
+                  <span className="text-xs text-slate-400 font-bold font-mono">kg/m²</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* SECTION 1: FOODS TO EAT */}
-        <Card className="border border-slate-100 dark:border-slate-800 shadow-xs" id="card-foods-to-eat">
-          <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-emerald-50/10 dark:bg-emerald-950/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                <Apple className="w-5 h-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-black text-slate-900 dark:text-white">Foods to Eat</CardTitle>
-                <CardDescription>Target ingredients optimized for your metabolic rate and wellness goals.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            {recs.foodsToEat.some(f => f.category) ? (
-              <div className="flex flex-col gap-8" id="eat-items-list-grouped">
-                {(['Breakfast', 'Lunch', 'Dinner', 'Healthy Snacks', 'Drinks'] as const).map((category) => {
-                  const categoryFoods = recs.foodsToEat.filter((f) => f.category === category);
-                  if (categoryFoods.length === 0) return null;
+                {/* Highly visual horizontal progress tick bar */}
+                <div className="flex flex-col gap-2 mt-1">
+                  <div className="relative pt-4 pb-1">
+                    {/* Floating BMI Pin Indicator */}
+                    <div 
+                      className="absolute top-0 flex flex-col items-center -translate-x-1/2 transition-all duration-700" 
+                      style={{ left: `${getBmiPercent(recs.bmiValue)}%` }}
+                    >
+                      <span className="text-4xs font-bold text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
+                        {recs.bmiValue}
+                      </span>
+                      <div className="w-1.5 h-1.5 bg-emerald-600 dark:bg-emerald-400 rounded-full mt-1.5 animate-ping absolute" />
+                      <div className="w-1.5 h-1.5 bg-emerald-600 dark:bg-emerald-400 rounded-full mt-1.5" />
+                    </div>
+                    
+                    {/* Range Gradient Bar */}
+                    <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex" id="bmi-range-bar">
+                      <div className="h-full bg-blue-400/90" style={{ width: '17.5%' }} title="Underweight (< 18.5)" />
+                      <div className="h-full bg-emerald-500/90" style={{ width: '32.5%' }} title="Healthy (18.5 - 24.9)" />
+                      <div className="h-full bg-amber-500/90" style={{ width: '25%' }} title="Overweight (25.0 - 29.9)" />
+                      <div className="h-full bg-red-500/90" style={{ width: '25%' }} title="Obese (30.0+)" />
+                    </div>
+                  </div>
                   
-                  const getCategoryIcon = (cat: string) => {
-                    switch (cat) {
-                      case 'Breakfast':
-                        return <Coffee className="w-4 h-4 text-amber-500" />;
-                      case 'Lunch':
-                        return <Utensils className="w-4 h-4 text-emerald-500" />;
-                      case 'Dinner':
-                        return <Flame className="w-4 h-4 text-orange-500" />;
-                      case 'Healthy Snacks':
-                        return <Apple className="w-4 h-4 text-rose-500" />;
-                      case 'Drinks':
-                        return <CupSoda className="w-4 h-4 text-blue-500" />;
-                      default:
-                        return <CheckCircle2 className="w-4 h-4 text-slate-400" />;
-                    }
-                  };
+                  <div className="flex justify-between text-4xs text-slate-400 dark:text-slate-500 font-mono font-bold uppercase tracking-wider px-1">
+                    <span>Under (&lt;18.5)</span>
+                    <span>Healthy (18.5)</span>
+                    <span>Over (25.0)</span>
+                    <span>Obese (30+)</span>
+                  </div>
+                </div>
 
-                  return (
-                    <div key={category} className="flex flex-col gap-3.5" id={`category-block-${category.toLowerCase().replace(' ', '-')}`}>
-                      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-                        {getCategoryIcon(category)}
-                        <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">{category}</h3>
-                        <span className="text-4xs px-2 py-0.5 font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono">
-                          {categoryFoods.length} selected
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {categoryFoods.map((food) => (
-                          <div 
-                            key={food.id} 
-                            className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/30 transition-all group"
-                          >
-                            <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                            <div className="flex flex-col gap-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                                {food.badge && (
-                                  <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
-                                    {food.badge}
-                                  </span>
-                                )}
-                              </div>
-                              {renderDescriptionWithClinicalReason(food.description)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium pt-2 border-t border-slate-100 dark:border-slate-800/60">
+                  {recs.bmiCategory === 'Healthy Weight' ? (
+                    "Your weight lies within the healthy clinical range. Our meal suggestions prioritize longevity, micronutrient loading, and energetic sustainability."
+                  ) : recs.bmiCategory === 'Underweight' ? (
+                    "Your weight falls slightly below the healthy average. Recommendations focus on muscle preservation and calorie-dense nutrition complexes."
+                  ) : (
+                    "Our recommendations optimize glycemic load, satiety thresholds, and steady cardiovascular output to assist in natural metabolic efficiency."
+                  )}
+                </p>
+              </CardContent>
+            </Card>
 
-                {/* Handle any uncategorized foods just in case */}
-                {recs.foodsToEat.filter((f) => !f.category).length > 0 && (
-                  <div className="flex flex-col gap-3" id="category-block-uncategorized">
-                    <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
-                      <CheckCircle2 className="w-4 h-4 text-slate-400" />
-                      <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Other Suggestions</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {recs.foodsToEat.filter((f) => !f.category).map((food) => (
-                        <div 
-                          key={food.id} 
-                          className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/30 transition-all group"
-                        >
-                          <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                          <div className="flex flex-col gap-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                              {food.badge && (
-                                <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
-                                  {food.badge}
-                                </span>
-                              )}
-                            </div>
-                            {renderDescriptionWithClinicalReason(food.description)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+            {/* Quick Clinical Profile Summary Card */}
+            <Card className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl" id="clinical-summary-panel">
+              <CardContent className="p-6 flex flex-col gap-5">
+                <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold flex items-center gap-1.5">
+                  <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Clinical Profile Summary</span>
+                </span>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-800/60">
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Activity Factor</span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200 block truncate text-xs">{profile.activityLevel}</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-800/60">
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Diet Preference</span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-200 block truncate text-xs">{profile.dietaryPreference || 'Standard'}</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-800/60">
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Primary Goal</span>
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 block truncate text-xs">{profile.healthGoal}</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-800/60">
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Allergens</span>
+                    <span className={`truncate block text-xs font-extrabold ${profile.foodAllergies.includes('none') ? 'text-slate-500' : 'text-amber-600 dark:text-amber-400'}`}>
+                      {profile.foodAllergies.includes('none') ? 'None' : `${profile.foodAllergies.length} Flagged`}
+                    </span>
+                  </div>
+                </div>
+
+                {profile.currentMedications && (
+                  <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-2xs leading-relaxed text-slate-500 dark:text-slate-400 font-medium">
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest text-4xs mr-1 block mb-0.5">Active Prescriptions:</span>
+                    {profile.currentMedications}
                   </div>
                 )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" id="eat-items-list">
-                {recs.foodsToEat.map((food) => (
-                  <div 
-                    key={food.id} 
-                    className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/30 transition-all group"
-                  >
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                    <div className="flex flex-col gap-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                        {food.badge && (
-                          <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
-                            {food.badge}
-                          </span>
-                        )}
-                      </div>
-                      {renderDescriptionWithClinicalReason(food.description)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* SECTION 2: FOODS TO AVOID */}
-        <Card className="border border-slate-100 dark:border-slate-800 shadow-xs" id="card-foods-to-avoid">
-          <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-amber-50/10 dark:bg-amber-950/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 rounded-xl">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-black text-slate-900 dark:text-white">Foods to Avoid</CardTitle>
-                <CardDescription>Potentially inflammatory, high-glycemic, or reactive dietary items to exclude.</CardDescription>
-              </div>
+            <div className="hidden lg:flex items-center gap-2 p-4 bg-slate-100/50 dark:bg-slate-900/30 rounded-2xl border border-slate-200/40 dark:border-slate-800/50">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <span className="text-4xs font-bold text-slate-400 uppercase tracking-wider">
+                Clinical data isolated to active session.
+              </span>
             </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" id="avoid-items-list">
-              {recs.foodsToAvoid.map((food) => (
-                <div 
-                  key={food.id} 
-                  className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-amber-500/30 transition-all group"
-                >
-                  <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                      {food.badge && (
-                        <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-mono">
-                          {food.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{food.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* SECTION 3: HEALTHY FOOD COMBINATIONS */}
-        <Card className="border border-slate-100 dark:border-slate-800 shadow-xs" id="card-food-combinations">
-          <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-purple-50/10 dark:bg-purple-950/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 rounded-xl">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-black text-slate-900 dark:text-white">Healthy Food Combinations</CardTitle>
-                <CardDescription>Synergistic nutrition pairings designed to elevate bioavailability and suppress glycemic curves.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" id="combinations-items-list">
-              {recs.healthyCombinations.map((comb) => (
-                <div 
-                  key={comb.id} 
-                  className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-purple-500/30 transition-all group"
-                >
-                  <Heart className="w-5 h-5 text-purple-500 dark:text-purple-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{comb.title}</h4>
-                      {comb.badge && (
-                        <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono">
-                          {comb.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{comb.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* SECTION 4: DAILY WATER INTAKE & HYDRATION */}
-        <Card className="border border-slate-100 dark:border-slate-800 shadow-xs" id="card-hydration">
-          <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-blue-50/10 dark:bg-blue-950/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-xl">
-                <Droplet className="w-5 h-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-black text-slate-900 dark:text-white">Daily Water Intake</CardTitle>
-                <CardDescription>Calculated hydration thresholds adjusted for body mass and routine fluid excretion.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6 flex flex-col gap-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-5 bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/10 border border-blue-100/40 dark:border-blue-900/20 rounded-2xl" id="water-stat-banner">
-              <div className="flex flex-col gap-1 max-w-xl">
-                <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300">Hydration Baseline Overview</h4>
-                <p className="text-xs text-blue-700/80 dark:text-blue-400/90 leading-relaxed font-medium">{recs.waterIntake.description}</p>
-              </div>
-              <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-5 py-4 rounded-xl border border-blue-200/50 dark:border-blue-900/40 shadow-xs flex-shrink-0 w-full sm:w-auto justify-center">
-                <div className="text-center">
-                  <span className="text-3xl font-black text-blue-600 dark:text-blue-400 font-mono">{recs.waterIntake.liters}</span>
-                  <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider mt-0.5">Liters / Day</span>
-                </div>
-                <div className="h-8 w-px bg-slate-200 dark:bg-slate-800" />
-                <div className="text-center">
-                  <span className="text-3xl font-black text-blue-600 dark:text-blue-400 font-mono">{recs.waterIntake.cups}</span>
-                  <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider mt-0.5">Cups / Day</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <h4 className="text-xs font-bold text-slate-450 uppercase tracking-widest font-mono">Therapeutic Hydration Tips</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4" id="water-tips-list">
-                {recs.waterIntake.tips.map((tip, idx) => (
-                  <div key={idx} className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-850 rounded-xl flex items-start gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-mono font-black text-2xs flex-shrink-0 mt-0.5">
-                      {idx + 1}
-                    </span>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{tip}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* SECTION 5: EXERCISE RECOMMENDATIONS */}
-        <Card className="border border-slate-100 dark:border-slate-800 shadow-xs" id="card-exercise">
-          <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-orange-50/10 dark:bg-orange-950/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 rounded-xl">
-                <Dumbbell className="w-5 h-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-black text-slate-900 dark:text-white">Exercise Recommendations</CardTitle>
-                <CardDescription>Skeletal motion and cardiac base training custom-tailored to your clinical fitness level.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6 flex flex-col gap-6">
+          {/* RIGHT CONTAINER (Recommendation Details) */}
+          <div className="lg:col-span-8 flex flex-col gap-8" id="recs-right-content">
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850">
-                <span className="text-3xs text-slate-400 block font-bold uppercase tracking-wider mb-0.5">Strategy Type</span>
-                <span className="text-xs font-black text-slate-950 dark:text-white block truncate">{recs.exercise.type}</span>
-              </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850">
-                <span className="text-3xs text-slate-400 block font-bold uppercase tracking-wider mb-0.5">Weekly Freq</span>
-                <span className="text-xs font-black text-slate-950 dark:text-white block truncate">{recs.exercise.frequency}</span>
-              </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850">
-                <span className="text-3xs text-slate-400 block font-bold uppercase tracking-wider mb-0.5">Session Limit</span>
-                <span className="text-xs font-black text-slate-950 dark:text-white block truncate">{recs.exercise.duration}</span>
-              </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850">
-                <span className="text-3xs text-slate-400 block font-bold uppercase tracking-wider mb-0.5">Target Intensity</span>
-                <span className="text-xs font-black text-slate-950 dark:text-white block truncate">{recs.exercise.intensity}</span>
-              </div>
-            </div>
+            {/* SECTION 1: FOODS TO EAT */}
+            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-foods-to-eat">
+              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-emerald-50/15 dark:bg-emerald-950/10 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                    <Apple className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Foods to Eat</CardTitle>
+                    <CardDescription className="text-xs mt-0.5">Target ingredients optimized for your metabolic rate and wellness goals.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {recs.foodsToEat.some(f => f.category) ? (
+                  <div className="flex flex-col gap-8" id="eat-items-list-grouped">
+                    {(['Breakfast', 'Lunch', 'Dinner', 'Healthy Snacks', 'Drinks'] as const).map((category) => {
+                      const categoryFoods = recs.foodsToEat.filter((f) => f.category === category);
+                      if (categoryFoods.length === 0) return null;
+                      
+                      const getCategoryIcon = (cat: string) => {
+                        switch (cat) {
+                          case 'Breakfast':
+                            return <Coffee className="w-4 h-4 text-amber-500" />;
+                          case 'Lunch':
+                            return <Utensils className="w-4 h-4 text-emerald-500" />;
+                          case 'Dinner':
+                            return <Flame className="w-4 h-4 text-orange-500" />;
+                          case 'Healthy Snacks':
+                            return <Apple className="w-4 h-4 text-rose-500" />;
+                          case 'Drinks':
+                            return <CupSoda className="w-4 h-4 text-blue-500" />;
+                          default:
+                            return <CheckCircle2 className="w-4 h-4 text-slate-400" />;
+                        }
+                      };
 
-            <div className="flex flex-col gap-4">
-              <h4 className="text-xs font-bold text-slate-450 uppercase tracking-widest font-mono">Suggested Micro-Routine</h4>
-              <div className="flex flex-col gap-3" id="exercise-routines-list">
-                {recs.exercise.routine.map((item, idx) => {
-                  try {
-                    const parsed = JSON.parse(item);
-                    return (
-                      <div key={idx} className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex flex-col gap-3 text-left">
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex items-start gap-2.5 text-left">
-                            <CornerDownRight className="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0 mt-1" />
-                            <div>
-                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{parsed.name}</h4>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
-                                <span className="font-bold text-slate-700 dark:text-slate-300">Safety Notes:</span> {parsed.safetyNotes}
-                              </p>
+                      return (
+                        <div key={category} className="flex flex-col gap-4" id={`category-block-${category.toLowerCase().replace(' ', '-')}`}>
+                          <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                            <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100/60 dark:border-slate-800/40">
+                              {getCategoryIcon(category)}
+                            </div>
+                            <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">{category}</h3>
+                            <span className="text-4xs px-2 py-0.5 font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono ml-auto">
+                              {categoryFoods.length} selected
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {categoryFoods.map((food) => (
+                              <div 
+                                key={food.id} 
+                                className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                              >
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                                <div className="flex flex-col gap-1.5 flex-1">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
+                                    {food.badge && (
+                                      <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
+                                        {food.badge}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {renderDescriptionText(food.description)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Uncategorized Fallback */}
+                    {recs.foodsToEat.filter((f) => !f.category).length > 0 && (
+                      <div className="flex flex-col gap-4" id="category-block-uncategorized">
+                        <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                          <CheckCircle2 className="w-4 h-4 text-slate-400" />
+                          <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">Other Suggestions</h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {recs.foodsToEat.filter((f) => !f.category).map((food) => (
+                            <div 
+                              key={food.id} 
+                              className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                            >
+                              <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                              <div className="flex flex-col gap-1.5 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
+                                  {food.badge && (
+                                    <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
+                                      {food.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                {renderDescriptionText(food.description)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="eat-items-list">
+                    {recs.foodsToEat.map((food) => (
+                      <div 
+                        key={food.id} 
+                        className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                      >
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                        <div className="flex flex-col gap-1.5 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
+                            {food.badge && (
+                              <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
+                                {food.badge}
+                              </span>
+                            )}
+                          </div>
+                          {renderDescriptionText(food.description)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* SECTION 2: FOODS TO AVOID */}
+            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-foods-to-avoid">
+              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-amber-50/15 dark:bg-amber-950/10 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-2xl">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Foods to Avoid</CardTitle>
+                    <CardDescription className="text-xs mt-0.5">Potentially inflammatory, high-glycemic, or reactive items to exclude.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="avoid-items-list">
+                  {recs.foodsToAvoid.map((food) => (
+                    <div 
+                      key={food.id} 
+                      className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-amber-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                    >
+                      <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                      <div className="flex flex-col gap-1.5 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
+                          {food.badge && (
+                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono">
+                              {food.badge}
+                            </span>
+                          )}
+                        </div>
+                        {renderDescriptionText(food.description)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SECTION 3: HEALTHY FOOD COMBINATIONS */}
+            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-food-combinations">
+              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-purple-50/15 dark:bg-purple-950/10 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 rounded-2xl">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Healthy Food Combinations</CardTitle>
+                    <CardDescription className="text-xs mt-0.5">Synergistic nutrition pairings designed to elevate bioavailability and suppress glycemic curves.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="combinations-items-list">
+                  {recs.healthyCombinations.map((comb) => (
+                    <div 
+                      key={comb.id} 
+                      className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-purple-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                    >
+                      <Heart className="w-5 h-5 text-purple-500 dark:text-purple-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                      <div className="flex flex-col gap-1.5 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{comb.title}</h4>
+                          {comb.badge && (
+                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono">
+                              {comb.badge}
+                            </span>
+                          )}
+                        </div>
+                        {renderDescriptionText(comb.description)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SECTION 4: DAILY WATER INTAKE & HYDRATION */}
+            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-hydration">
+              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-blue-50/15 dark:bg-blue-950/10 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-2xl">
+                    <Droplet className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Daily Water Intake</CardTitle>
+                    <CardDescription className="text-xs mt-0.5">Calculated hydration thresholds adjusted for body mass and routine fluid excretion.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 flex flex-col gap-6">
+                
+                {/* Premium Stat banner */}
+                <div className="flex flex-col md:flex-row items-stretch justify-between gap-6 p-5 bg-gradient-to-br from-blue-500/5 to-indigo-500/10 dark:from-blue-950/15 dark:to-indigo-950/10 border border-blue-100/40 dark:border-blue-900/25 rounded-2xl" id="water-stat-banner">
+                  <div className="flex flex-col gap-1 max-w-lg justify-center">
+                    <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300">Hydration Baseline Overview</h4>
+                    <p className="text-xs text-blue-700/85 dark:text-blue-400/85 leading-relaxed font-medium">
+                      {recs.waterIntake.description}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-blue-200/50 dark:border-blue-900/40 shadow-xs justify-center md:self-center">
+                    <div className="text-center">
+                      <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 font-mono">{recs.waterIntake.liters}</span>
+                      <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-widest mt-0.5">Liters / Day</span>
+                    </div>
+                    <div className="h-8 w-px bg-slate-200 dark:bg-slate-800" />
+                    <div className="text-center">
+                      <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 font-mono">{recs.waterIntake.cups}</span>
+                      <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-widest mt-0.5">Cups / Day</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Therapeutic Hydration Tips</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" id="water-tips-list">
+                    {recs.waterIntake.tips.map((tip, idx) => (
+                      <div key={idx} className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-2.5">
+                        <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-mono font-bold text-2xs flex-shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <p className="text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">{tip}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SECTION 5: EXERCISE RECOMMENDATIONS */}
+            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-exercise">
+              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-orange-50/15 dark:bg-orange-950/10 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 rounded-2xl">
+                    <Dumbbell className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Exercise Plan</CardTitle>
+                    <CardDescription className="text-xs mt-0.5">Skeletal motion and cardiac base training custom-tailored to your clinical fitness level.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 flex flex-col gap-6">
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100/80 dark:border-slate-850">
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Strategy Type</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{recs.exercise.type}</span>
+                  </div>
+                  <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100/80 dark:border-slate-850">
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Weekly Freq</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{recs.exercise.frequency}</span>
+                  </div>
+                  <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100/80 dark:border-slate-850">
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Session Limit</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{recs.exercise.duration}</span>
+                  </div>
+                  <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100/80 dark:border-slate-850">
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Target Intensity</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{recs.exercise.intensity}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Suggested Micro-Routine</h4>
+                  <div className="flex flex-col gap-4.5" id="exercise-routines-list">
+                    {recs.exercise.routine.map((item, idx) => {
+                      try {
+                        const parsed = JSON.parse(item);
+                        return (
+                          <div key={idx} className="p-5 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex flex-col gap-4 hover:border-orange-500/20 hover:bg-white dark:hover:bg-slate-900/50 transition-all duration-300">
+                            <div className="flex justify-between items-start gap-4">
+                              <div className="flex items-start gap-3">
+                                <div className="p-1.5 bg-orange-500/10 dark:bg-orange-950/55 rounded-xl border border-orange-500/20 flex-shrink-0 mt-0.5">
+                                  <CornerDownRight className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{parsed.name}</h4>
+                                  <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/10 text-2xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mt-2">
+                                    <span className="font-extrabold text-orange-600 dark:text-orange-400 uppercase tracking-widest text-4xs block mb-0.5">Safety Precaution</span>
+                                    {parsed.safetyNotes}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end flex-shrink-0 text-right">
+                                <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                                  ~{parsed.caloriesBurned} kcal
+                                </span>
+                                <span className="text-4xs font-bold text-slate-400 uppercase tracking-widest mt-1">Est. Burn</span>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-3 pt-3.5 border-t border-slate-100 dark:border-slate-800/60 text-2xs font-semibold">
+                              <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                                <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Duration</span>
+                                <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.duration}</span>
+                              </div>
+                              <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                                <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Frequency</span>
+                                <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.frequency}</span>
+                              </div>
+                              <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                                <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Intensity</span>
+                                <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.intensity}</span>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex flex-col items-end flex-shrink-0 text-right">
-                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                              ~{parsed.caloriesBurned} kcal
-                            </span>
-                            <span className="text-4xs font-black text-slate-400 uppercase tracking-widest mt-0.5">
-                              Est. Burn
-                            </span>
+                        );
+                      } catch (e) {
+                        return (
+                          <div key={idx} className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex gap-3 items-start text-left">
+                            <CornerDownRight className="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-bold">{item}</p>
                           </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-slate-850 text-2xs font-semibold">
-                          <div className="bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-850">
-                            <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono">Duration</span>
-                            <span className="text-slate-800 dark:text-slate-200 block truncate">{parsed.duration}</span>
-                          </div>
-                          <div className="bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-850">
-                            <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono">Frequency</span>
-                            <span className="text-slate-800 dark:text-slate-200 block truncate">{parsed.frequency}</span>
-                          </div>
-                          <div className="bg-white dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-850">
-                            <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono">Intensity</span>
-                            <span className="text-slate-800 dark:text-slate-200 block truncate">{parsed.intensity}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  } catch (e) {
-                    return (
-                      <div key={idx} className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex gap-3 items-start text-left">
-                        <CornerDownRight className="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-semibold">{item}</p>
-                      </div>
-                    );
-                  }
-                })}
-              </div>
-            </div>
-
-            {recs.exercise.precautions.length > 0 && (
-              <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex flex-col gap-2">
-                <span className="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span>Clinical Movement Precautions</span>
-                </span>
-                <ul className="list-disc pl-5 text-xs text-slate-550 dark:text-slate-400 flex flex-col gap-1.5 leading-relaxed font-medium">
-                  {recs.exercise.precautions.map((pre, idx) => (
-                    <li key={idx}>{pre}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* SECTION 6: LIFESTYLE TIPS */}
-        <Card className="border border-slate-100 dark:border-slate-800 shadow-xs" id="card-lifestyle">
-          <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-teal-50/10 dark:bg-teal-950/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400 rounded-xl">
-                <Lightbulb className="w-5 h-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-black text-slate-900 dark:text-white">Lifestyle Tips</CardTitle>
-                <CardDescription>Circadian and habit adaptations to assist biological markers and hormone regulation.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" id="lifestyle-items-list">
-              {recs.lifestyleTips.map((tip) => (
-                <div 
-                  key={tip.id} 
-                  className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-teal-500/30 transition-all group"
-                >
-                  <ShieldCheck className="w-5 h-5 text-teal-500 dark:text-teal-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">{tip.title}</h4>
-                      {tip.badge && (
-                        <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 font-mono">
-                          {tip.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">{tip.description}</p>
+                        );
+                      }
+                    })}
                   </div>
                 </div>
-              ))}
+
+                {recs.exercise.precautions.length > 0 && (
+                  <div className="p-4.5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex flex-col gap-2.5">
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
+                      <span>Clinical Movement Precautions</span>
+                    </span>
+                    <ul className="list-disc pl-5 text-xs text-slate-550 dark:text-slate-400 flex flex-col gap-2 leading-relaxed font-medium">
+                      {recs.exercise.precautions.map((pre, idx) => (
+                        <li key={idx}>{pre}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* SECTION 6: LIFESTYLE TIPS */}
+            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-lifestyle">
+              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-teal-50/15 dark:bg-teal-950/10 p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 rounded-2xl">
+                    <Lightbulb className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Lifestyle Adaptations</CardTitle>
+                    <CardDescription className="text-xs mt-0.5">Circadian and habit adaptations to assist biological markers and hormone regulation.</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="lifestyle-items-list">
+                  {recs.lifestyleTips.map((tip) => (
+                    <div 
+                      key={tip.id} 
+                      className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-teal-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                    >
+                      <ShieldCheck className="w-5 h-5 text-teal-500 dark:text-teal-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                      <div className="flex flex-col gap-1.5 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{tip.title}</h4>
+                          {tip.badge && (
+                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 font-mono">
+                              {tip.badge}
+                            </span>
+                          )}
+                        </div>
+                        {renderDescriptionText(tip.description)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Clinical / Educational Disclaimer Box */}
+            <div className="p-5 rounded-3xl bg-amber-500/5 dark:bg-amber-950/10 border border-amber-500/15 dark:border-amber-900/20 flex gap-3.5 items-start" id="recs-clinical-disclaimer">
+              <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-2xs sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                <strong>Clinical Disclaimer:</strong> Based on the information you provided, these recommendations are for educational purposes only and are not medical advice. Always consult a qualified healthcare professional before making health-related decisions.
+              </p>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Clinical / Educational Disclaimer Box */}
-        <div className="p-5 rounded-3xl bg-amber-50/50 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-900/25 flex gap-3.5 items-start" id="recs-clinical-disclaimer">
-          <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
-          <p className="text-2xs sm:text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">
-            <strong>Clinical Disclaimer:</strong> Based on the information you provided, these recommendations are for educational purposes only and are not medical advice. Always consult a qualified healthcare professional before making health-related decisions.
-          </p>
-        </div>
+            {/* Bottom Page Navigation Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end items-center gap-3.5 border-t border-slate-150 dark:border-slate-900/60 pt-6 mt-2" id="recs-bottom-actions">
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => navigateTo('profile-summary')}
+                id="recs-view-summary-btn"
+                className="w-full sm:w-auto font-bold text-xs px-5 py-2.5 rounded-2xl"
+              >
+                Review Profile Summary
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => navigateTo('profile-form')}
+                id="recs-edit-profile-btn"
+                className="w-full sm:w-auto font-bold text-xs px-5 py-2.5 rounded-2xl"
+              >
+                Edit Health Profile
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => navigateTo('dashboard')}
+                id="recs-return-dashboard-btn"
+                className="w-full sm:w-auto font-bold text-xs px-5 py-2.5 rounded-2xl"
+              >
+                Return to Dashboard
+              </Button>
+            </div>
 
-        {/* Bottom Page Navigation Action Buttons */}
-        <div className="flex flex-col sm:flex-row justify-end items-center gap-3 mt-4 border-t border-slate-100 dark:border-slate-900 pt-6" id="recs-bottom-actions">
-          <Button
-            variant="outline"
-            size="md"
-            onClick={() => navigateTo('profile-summary')}
-            id="recs-view-summary-btn"
-            className="w-full sm:w-auto font-bold text-sm"
-          >
-            Review Profile Summary
-          </Button>
-          <Button
-            variant="outline"
-            size="md"
-            onClick={() => navigateTo('profile-form')}
-            id="recs-edit-profile-btn"
-            className="w-full sm:w-auto font-bold text-sm"
-          >
-            Edit Health Profile
-          </Button>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => navigateTo('dashboard')}
-            id="recs-return-dashboard-btn"
-            className="w-full sm:w-auto font-bold text-sm"
-          >
-            Return to Dashboard
-          </Button>
+          </div>
         </div>
 
       </main>

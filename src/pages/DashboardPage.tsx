@@ -26,11 +26,20 @@ import {
   Dumbbell,
   Utensils,
   Plus,
-  Minus
+  Minus,
+  Target,
+  Sunrise,
+  Sun,
+  Sunset,
+  Moon,
+  Coffee,
+  Bed,
+  Clock
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
 import { useAuth } from '../context/AuthContext';
+import { generateRecommendations } from '../utils/recommendationEngine';
 import Button from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
 import Alert from '../components/Alert';
@@ -150,6 +159,117 @@ export default function DashboardPage() {
   // Allergen warning interaction states
   const [selectedAllergen, setSelectedAllergen] = useState('none');
   const [hasAllergyAlert, setHasAllergyAlert] = useState(false);
+
+  // Local states for goal tracker adjustments
+  const [goalStartWeight, setGoalStartWeight] = useState<number>(() => {
+    const saved = localStorage.getItem('health_goal_weight_start');
+    if (saved) return parseFloat(saved);
+    return profile?.weight ? Number(profile.weight) : 80;
+  });
+  const [goalCurrentWeight, setGoalCurrentWeight] = useState<number>(() => {
+    const saved = localStorage.getItem('health_goal_weight_current');
+    if (saved) return parseFloat(saved);
+    return profile?.weight ? Number(profile.weight) : 80;
+  });
+  const [goalTargetWeight, setGoalTargetWeight] = useState<number>(() => {
+    const saved = localStorage.getItem('health_goal_weight_target');
+    if (saved) return parseFloat(saved);
+    const w = profile?.weight ? Number(profile.weight) : 80;
+    const g = profile?.healthGoal || 'Improve Overall Health';
+    if (g === 'Weight Gain' || g === 'Gain Weight') return w + 5;
+    return w - 5;
+  });
+
+  const [goalTargetExercise, setGoalTargetExercise] = useState<number>(() => {
+    const saved = localStorage.getItem('health_goal_exercise_target');
+    return saved ? parseInt(saved, 10) : 150;
+  });
+
+  const [goalTargetWellness, setGoalTargetWellness] = useState<number>(() => {
+    const saved = localStorage.getItem('health_goal_wellness_target');
+    return saved ? parseInt(saved, 10) : 85;
+  });
+
+  const [goalTargetMeals, setGoalTargetMeals] = useState<number>(() => {
+    const saved = localStorage.getItem('health_goal_meals_target');
+    return saved ? parseInt(saved, 10) : 18;
+  });
+
+  // Keep goal weights in sync with profile updates
+  React.useEffect(() => {
+    if (profile && profile.weight) {
+      const w = Number(profile.weight);
+      if (!localStorage.getItem('health_goal_weight_start')) {
+        setGoalStartWeight(w);
+      }
+      if (!localStorage.getItem('health_goal_weight_current')) {
+        setGoalCurrentWeight(w);
+      }
+      if (!localStorage.getItem('health_goal_weight_target')) {
+        const g = profile.healthGoal;
+        if (g === 'Weight Gain' || g === 'Gain Weight') {
+          setGoalTargetWeight(w + 5);
+        } else {
+          setGoalTargetWeight(w - 5);
+        }
+      }
+    }
+  }, [profile]);
+
+  // Persist goal changes to local storage
+  React.useEffect(() => {
+    localStorage.setItem('health_goal_weight_start', goalStartWeight.toString());
+  }, [goalStartWeight]);
+
+  React.useEffect(() => {
+    localStorage.setItem('health_goal_weight_current', goalCurrentWeight.toString());
+  }, [goalCurrentWeight]);
+
+  React.useEffect(() => {
+    localStorage.setItem('health_goal_weight_target', goalTargetWeight.toString());
+  }, [goalTargetWeight]);
+
+  React.useEffect(() => {
+    localStorage.setItem('health_goal_exercise_target', goalTargetExercise.toString());
+  }, [goalTargetExercise]);
+
+  React.useEffect(() => {
+    localStorage.setItem('health_goal_wellness_target', goalTargetWellness.toString());
+  }, [goalTargetWellness]);
+
+  React.useEffect(() => {
+    localStorage.setItem('health_goal_meals_target', goalTargetMeals.toString());
+  }, [goalTargetMeals]);
+
+  // Daily Plan Completion States
+  const [planCompletedMorning, setPlanCompletedMorning] = useState(() => {
+    return localStorage.getItem('health_plan_completed_morning') === 'true';
+  });
+  const [planCompletedAfternoon, setPlanCompletedAfternoon] = useState(() => {
+    return localStorage.getItem('health_plan_completed_afternoon') === 'true';
+  });
+  const [planCompletedEvening, setPlanCompletedEvening] = useState(() => {
+    return localStorage.getItem('health_plan_completed_evening') === 'true';
+  });
+  const [planCompletedNight, setPlanCompletedNight] = useState(() => {
+    return localStorage.getItem('health_plan_completed_night') === 'true';
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('health_plan_completed_morning', planCompletedMorning.toString());
+  }, [planCompletedMorning]);
+
+  React.useEffect(() => {
+    localStorage.setItem('health_plan_completed_afternoon', planCompletedAfternoon.toString());
+  }, [planCompletedAfternoon]);
+
+  React.useEffect(() => {
+    localStorage.setItem('health_plan_completed_evening', planCompletedEvening.toString());
+  }, [planCompletedEvening]);
+
+  React.useEffect(() => {
+    localStorage.setItem('health_plan_completed_night', planCompletedNight.toString());
+  }, [planCompletedNight]);
 
   // Daily Tracking States
   const WATER_KEY = 'health_tracker_water';
@@ -506,7 +626,10 @@ export default function DashboardPage() {
 
           {/* TAB 1: Health Overview Panel */}
           {activeTab === 'overview' && (
-            <div className="flex flex-col gap-6" id="tab-overview-content">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fade-in" id="tab-overview-content">
+              
+              {/* LEFT COLUMN: Main Dashboard Workspace (8 cols) */}
+              <div className="lg:col-span-8 flex flex-col gap-8 animate-fade-in" id="overview-main-feed">
               
               {/* Health Profile Completion Callout */}
               {!isProfileFetched || loadingProfile ? (
@@ -525,7 +648,7 @@ export default function DashboardPage() {
                     <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="text-sm font-bold text-slate-950 dark:text-white">Complete Your Health Profile</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Define your biological parameters and chronic alerts to unlock customized meal blueprints and safe ingredient radars.</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Define parameters to unlock personalized meal recommendations and allergy warnings.</p>
                     </div>
                   </div>
                   <Button variant="primary" size="sm" onClick={() => navigateTo('profile-form')} id="setup-profile-cta-btn" className="bg-amber-600 hover:bg-amber-700 font-bold whitespace-nowrap">
@@ -537,8 +660,8 @@ export default function DashboardPage() {
                   <div className="flex gap-3">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-bold text-slate-950 dark:text-white font-extrabold">Health Profile Fully Active</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Your biological indexes and micro-nutrients are synchronized. Access custom recommendations or revise your entries.</p>
+                      <h4 className="text-sm font-bold text-slate-950 dark:text-white font-extrabold">Health Profile Active</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Your biological parameters are synchronized. Access customized suggestions or revise your inputs.</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -556,13 +679,13 @@ export default function DashboardPage() {
               <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-lg shadow-emerald-600/10" id="overview-welcome-banner">
                 <div className="flex flex-col gap-2 max-w-xl text-left">
                   <span className="bg-white/10 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider w-fit">
-                    Interactive Preview Foundation
+                    Active Health Hub
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
                     Hello, {userBio.name}!
                   </h2>
                   <p className="text-sm sm:text-base text-emerald-50/90 leading-relaxed">
-                    Welcome to the foundational workspace. Explore the simulated panels of the Smart Health Guide and try out the allergen warning radar below.
+                    Track and optimize your daily health performance. View dynamic parameters, log exercise, and monitor nutrition targets.
                   </p>
                 </div>
                 <Button variant="secondary" className="bg-white text-emerald-700 hover:bg-slate-50 whitespace-nowrap font-bold" onClick={() => setIsModalOpen(true)} id="overview-add-workout-btn">
@@ -580,32 +703,32 @@ export default function DashboardPage() {
                 const dailyWellnessScore = Math.round((waterPercent * 0.3) + (exercisePercent * 0.4) + (mealsPercent * 0.3));
 
                 return (
-                  <div className="flex flex-col gap-4 text-left" id="daily-health-tracking-center">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex flex-col gap-5 text-left animate-fade-in" id="daily-health-tracking-center">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/60 pb-3.5 mb-2">
                       <div>
-                        <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                        <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                           <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                           Daily Health Tracking Center
                         </h3>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">
-                          Live interactive tracking of your hydration, activity, and dietary milestones.
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
+                          Monitor daily wellness milestones in real-time.
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-3xs font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                        <span className="text-3xs font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 tracking-wider">
                           Local Sync Active
                         </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="trackers-cards-container">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="trackers-cards-container">
                       
                       {/* Card 1: Water Intake */}
-                      <Card id="tracker-card-water" className="border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
-                        <CardContent className="p-5 flex flex-col justify-between h-full gap-4 text-left">
+                      <Card id="tracker-card-water" className="border-slate-100 dark:border-slate-800/80 hover:shadow-md transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Hydration</span>
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold">Hydration</span>
                               <span className="text-sm font-bold text-slate-900 dark:text-white">Daily Water Intake</span>
                               <span className="text-2xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
                                 {waterIntake} / {waterTarget} ml
@@ -624,7 +747,7 @@ export default function DashboardPage() {
                                   cx="28"
                                   cy="28"
                                   r="22"
-                                  className="stroke-slate-100 dark:stroke-slate-800"
+                                  className="stroke-slate-100 dark:stroke-slate-800/80"
                                   strokeWidth="4"
                                   fill="transparent"
                                 />
@@ -640,7 +763,7 @@ export default function DashboardPage() {
                                   strokeLinecap="round"
                                 />
                               </svg>
-                              <span className="absolute text-3xs font-black text-blue-600 dark:text-blue-400">{waterPercent}%</span>
+                              <span className="absolute text-3xs font-extrabold text-blue-600 dark:text-blue-400">{waterPercent}%</span>
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200">
@@ -664,21 +787,21 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-1.5 mt-1">
                             <button
                               onClick={() => setWaterIntake(prev => Math.max(0, prev - 250))}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-black text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-bold text-xs cursor-pointer"
                               title="Subtract 250ml"
                             >
                               <Minus className="w-3 h-3 mr-0.5" /> 250
                             </button>
                             <button
                               onClick={() => setWaterIntake(prev => prev + 250)}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all font-black text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all font-bold text-xs cursor-pointer"
                               title="Add 250ml"
                             >
                               <Plus className="w-3 h-3 mr-0.5" /> 250
                             </button>
                             <button
                               onClick={() => setWaterIntake(prev => prev + 500)}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all font-black text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all font-bold text-xs cursor-pointer"
                               title="Add 500ml"
                             >
                               <Plus className="w-3 h-3 mr-0.5" /> 500
@@ -688,11 +811,11 @@ export default function DashboardPage() {
                       </Card>
 
                       {/* Card 2: Exercise Progress */}
-                      <Card id="tracker-card-exercise" className="border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
-                        <CardContent className="p-5 flex flex-col justify-between h-full gap-4 text-left">
+                      <Card id="tracker-card-exercise" className="border-slate-100 dark:border-slate-800/80 hover:shadow-md transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Fitness</span>
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold">Fitness</span>
                               <span className="text-sm font-bold text-slate-900 dark:text-white">Exercise Progress</span>
                               <span className="text-2xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
                                 {exerciseProgress} / {exerciseTarget} mins
@@ -711,7 +834,7 @@ export default function DashboardPage() {
                                   cx="28"
                                   cy="28"
                                   r="22"
-                                  className="stroke-slate-100 dark:stroke-slate-800"
+                                  className="stroke-slate-100 dark:stroke-slate-800/80"
                                   strokeWidth="4"
                                   fill="transparent"
                                 />
@@ -727,7 +850,7 @@ export default function DashboardPage() {
                                   strokeLinecap="round"
                                 />
                               </svg>
-                              <span className="absolute text-3xs font-black text-orange-600 dark:text-orange-400">{exercisePercent}%</span>
+                              <span className="absolute text-3xs font-extrabold text-orange-600 dark:text-orange-400">{exercisePercent}%</span>
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200">
@@ -751,21 +874,21 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-1.5 mt-1">
                             <button
                               onClick={() => setExerciseProgress(prev => Math.max(0, prev - 10))}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-black text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-bold text-xs cursor-pointer"
                               title="Subtract 10 mins"
                             >
                               <Minus className="w-3 h-3 mr-0.5" /> 10m
                             </button>
                             <button
                               onClick={() => setExerciseProgress(prev => prev + 10)}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100/50 dark:border-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all font-black text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100/50 dark:border-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all font-bold text-xs cursor-pointer"
                               title="Add 10 mins"
                             >
                               <Plus className="w-3 h-3 mr-0.5" /> 10m
                             </button>
                             <button
                               onClick={() => setIsModalOpen(true)}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all font-black text-xs cursor-pointer whitespace-nowrap"
+                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all font-bold text-xs cursor-pointer whitespace-nowrap"
                               title="Record detailed session"
                             >
                               <Dumbbell className="w-3 h-3 mr-0.5" /> Log
@@ -775,11 +898,11 @@ export default function DashboardPage() {
                       </Card>
 
                       {/* Card 3: Healthy Meals Completed */}
-                      <Card id="tracker-card-meals" className="border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
-                        <CardContent className="p-5 flex flex-col justify-between h-full gap-4 text-left">
+                      <Card id="tracker-card-meals" className="border-slate-100 dark:border-slate-800/80 hover:shadow-md transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Diet & Nutrition</span>
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold">Diet & Nutrition</span>
                               <span className="text-sm font-bold text-slate-900 dark:text-white">Meals Completed</span>
                               <span className="text-2xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
                                 {mealsCompleted} / {mealsTarget} Healthy Meals
@@ -798,7 +921,7 @@ export default function DashboardPage() {
                                   cx="28"
                                   cy="28"
                                   r="22"
-                                  className="stroke-slate-100 dark:stroke-slate-800"
+                                  className="stroke-slate-100 dark:stroke-slate-800/80"
                                   strokeWidth="4"
                                   fill="transparent"
                                 />
@@ -814,7 +937,7 @@ export default function DashboardPage() {
                                   strokeLinecap="round"
                                 />
                               </svg>
-                              <span className="absolute text-3xs font-black text-emerald-600 dark:text-emerald-400">{mealsCompleted}/3</span>
+                              <span className="absolute text-3xs font-extrabold text-emerald-600 dark:text-emerald-400">{mealsCompleted}/3</span>
                             </div>
                             <div className="flex flex-col gap-0.5">
                               <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200">
@@ -869,11 +992,11 @@ export default function DashboardPage() {
                       </Card>
 
                       {/* Card 4: Daily Wellness Score */}
-                      <Card id="tracker-card-wellness" className="border-slate-100 dark:border-slate-800 bg-gradient-to-br from-emerald-500/5 to-teal-500/10 dark:from-emerald-950/10 dark:to-teal-950/20 shadow-xs">
-                        <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                      <Card id="tracker-card-wellness" className="border-slate-100 dark:border-slate-800/80 bg-gradient-to-br from-emerald-500/5 to-teal-500/10 dark:from-emerald-950/10 dark:to-teal-950/20 shadow-xs">
+                        <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Scorecard</span>
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold">Scorecard</span>
                               <span className="text-sm font-bold text-slate-900 dark:text-white">Wellness Score</span>
                               <span className="text-2xs text-emerald-600 dark:text-emerald-400 font-extrabold mt-0.5">
                                 {dailyWellnessScore === 100 ? 'Perfect Day! 🏆' : 'Active Progress'}
@@ -892,7 +1015,7 @@ export default function DashboardPage() {
                                   cx="32"
                                   cy="32"
                                   r="26"
-                                  className="stroke-slate-100 dark:stroke-slate-800"
+                                  className="stroke-slate-100 dark:stroke-slate-800/80"
                                   strokeWidth="5"
                                   fill="transparent"
                                 />
@@ -922,8 +1045,8 @@ export default function DashboardPage() {
                             </div>
                           </div>
 
-                          <div className="text-3xs text-slate-400 dark:text-slate-500 font-semibold leading-normal">
-                            Weighted based on Daily Targets: Hydration (30%), Fitness (40%), and Nutrition (30%).
+                          <div className="text-3xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider leading-normal">
+                            Weights: Hydration (30%) • Fitness (40%) • Nutrition (30%)
                           </div>
                         </CardContent>
                       </Card>
@@ -938,19 +1061,19 @@ export default function DashboardPage() {
                 const displayHistory = [...history].reverse().slice(0, 7);
 
                 return (
-                  <div className="flex flex-col gap-4 text-left mt-2" id="daily-progress-history-section">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex flex-col gap-4 text-left mt-4" id="daily-progress-history-section">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/60 pb-3.5 mb-2">
                       <div>
-                        <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                        <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                           <History className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                           Wellness Progress History (Last 7 Days)
                         </h3>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
                           Historical daily logs of your wellness performance, metrics, and trends.
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-3xs font-extrabold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                        <span className="text-3xs font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2.5 py-1 rounded-full border border-slate-200 dark:border-slate-700/80 tracking-wider">
                           Interactive History
                         </span>
                       </div>
@@ -1167,25 +1290,25 @@ export default function DashboardPage() {
                 }
 
                 return (
-                  <div className="flex flex-col gap-4 text-left mt-2" id="weekly-health-insights-section">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex flex-col gap-4 text-left mt-4" id="weekly-health-insights-section">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/60 pb-3.5 mb-2">
                       <div>
-                        <h3 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                        <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
                           <Award className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                           Weekly Health Insights & Recommendations
                         </h3>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold">
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
                           Data-driven feedback, habit consistency analysis, and targeted suggestions based on the last 7 days.
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-3xs font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                        <span className="text-3xs font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 tracking-wider">
                           Weekly Report
                         </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="insights-cards-container">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="insights-cards-container">
                       
                       {/* Card 1: Achievements */}
                       <Card className="border-slate-100 dark:border-slate-800">
@@ -1298,8 +1421,565 @@ export default function DashboardPage() {
                 );
               })()}
 
-              {/* Bio Grid Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" id="overview-bio-grid">
+              {/* Health Goals & Progress Section */}
+              {(() => {
+                const last7Days = history.slice(-7);
+                const avgWellnessScore = last7Days.length > 0 
+                  ? Math.round(last7Days.reduce((acc, curr) => acc + curr.wellnessScore, 0) / last7Days.length) 
+                  : 0;
+
+                const currentWeeklyExercise = last7Days.reduce((acc, curr) => acc + curr.exerciseProgress, 0);
+                const currentWeeklyMeals = last7Days.reduce((acc, curr) => acc + curr.mealsCompleted, 0);
+
+                const rawGoal = profile?.healthGoal || 'Improve Overall Health';
+                const isWeightLoss = rawGoal === 'Weight Loss' || rawGoal === 'Lose Weight';
+                const isWeightGain = rawGoal === 'Weight Gain' || rawGoal === 'Gain Weight';
+                const isMuscleGain = rawGoal === 'Muscle Gain';
+                const isBloodSugar = rawGoal === 'Blood Sugar Control';
+                const isHeartHealth = rawGoal === 'Heart Health';
+                const isImproveHealth = rawGoal === 'Improve Overall Health' || rawGoal === 'Maintain Weight';
+
+                let progressPct = 0;
+                let goalTitle = rawGoal;
+                let statusLabel = '';
+                let statusValue = '';
+                let targetValue = '';
+                let progressDescription = '';
+                let progressDetails = '';
+                let milestones: string[] = [];
+
+                if (isWeightLoss) {
+                  const totalDiff = goalStartWeight - goalTargetWeight;
+                  const currentDiff = goalStartWeight - goalCurrentWeight;
+                  if (totalDiff > 0) {
+                    progressPct = Math.max(0, Math.min(100, Math.round((currentDiff / totalDiff) * 100)));
+                  } else {
+                    progressPct = 0;
+                  }
+                  statusLabel = 'Current Weight';
+                  statusValue = `${goalCurrentWeight.toFixed(1)} kg`;
+                  targetValue = `${goalTargetWeight.toFixed(1)} kg`;
+                  progressDescription = '0.5 kg - 1.0 kg per week of safe caloric restriction';
+                  progressDetails = `Starting: ${goalStartWeight.toFixed(1)} kg. Progress: ${(goalStartWeight - goalCurrentWeight).toFixed(1)} kg lost of ${totalDiff.toFixed(1)} kg goal.`;
+                  milestones = [
+                    'First Step (20% met): Activate metabolic fat-burning pathways',
+                    'Halfway (50% met): Significant cardiorespiratory efficiency lift',
+                    'Optimized (100% met): Target goal weight achieved!'
+                  ];
+                } else if (isWeightGain) {
+                  const totalDiff = goalTargetWeight - goalStartWeight;
+                  const currentDiff = goalCurrentWeight - goalStartWeight;
+                  if (totalDiff > 0) {
+                    progressPct = Math.max(0, Math.min(100, Math.round((currentDiff / totalDiff) * 100)));
+                  } else {
+                    progressPct = 0;
+                  }
+                  statusLabel = 'Current Weight';
+                  statusValue = `${goalCurrentWeight.toFixed(1)} kg`;
+                  targetValue = `${goalTargetWeight.toFixed(1)} kg`;
+                  progressDescription = '0.25 kg - 0.5 kg per week of controlled hyper-caloric nutrition';
+                  progressDetails = `Starting: ${goalStartWeight.toFixed(1)} kg. Progress: ${(goalCurrentWeight - goalStartWeight).toFixed(1)} kg gained of ${totalDiff.toFixed(1)} kg goal.`;
+                  milestones = [
+                    'Surplus (20% met): Glycogen energy buffers optimized',
+                    'Growth (50% met): Measurable muscular skeletal mass addition',
+                    'Target Met (100% met): Ideal weight and athletic profile unlocked!'
+                  ];
+                } else if (isMuscleGain) {
+                  progressPct = Math.max(0, Math.min(100, Math.round((currentWeeklyExercise / goalTargetExercise) * 100)));
+                  statusLabel = 'Weekly Training';
+                  statusValue = `${currentWeeklyExercise} mins`;
+                  targetValue = `${goalTargetExercise} mins`;
+                  progressDescription = 'Progressive resistance overload and training consistency';
+                  progressDetails = `${currentWeeklyExercise} mins logged this week toward your ${goalTargetExercise} mins target.`;
+                  milestones = [
+                    'Activation (20% met): Safe anabolic training stimulus initialized',
+                    'Development (50% met): Hypertrophy threshold reached successfully',
+                    'Peak Performance (100% met): Ideal weekly exercise volume complete!'
+                  ];
+                } else if (isBloodSugar) {
+                  progressPct = Math.max(0, Math.min(100, Math.round((currentWeeklyMeals / goalTargetMeals) * 100)));
+                  statusLabel = 'Nutritious Meals';
+                  statusValue = `${currentWeeklyMeals} meals`;
+                  targetValue = `${goalTargetMeals} meals`;
+                  progressDescription = '3 healthy, balanced meals daily with fiber buffers and low glycemic load';
+                  progressDetails = `${currentWeeklyMeals} target meals logged this week toward your ${goalTargetMeals} target.`;
+                  milestones = [
+                    'Stabilization (20% met): Insulin response normalization initiated',
+                    'Steady Energy (50% met): Steady post-prandial glycemic curve maintained',
+                    'Full Control (100% met): Peak metabolic flexibility achieved!'
+                  ];
+                } else if (isHeartHealth) {
+                  progressPct = Math.max(0, Math.min(100, Math.round((currentWeeklyExercise / goalTargetExercise) * 100)));
+                  statusLabel = 'Cardio Aerobic';
+                  statusValue = `${currentWeeklyExercise} mins`;
+                  targetValue = `${goalTargetExercise} mins`;
+                  progressDescription = '150 mins moderate cardio weekly (AHA gold standard)';
+                  progressDetails = `${currentWeeklyExercise} active mins logged this week toward your ${goalTargetExercise} mins cardiovascular goal.`;
+                  milestones = [
+                    'Stimulation (20% met): Blood circulation and vascular elasticity trigger active',
+                    'AHA Standard (50% met): Strengthened cardiac output limit established',
+                    'Heart Hero (100% met): Reduced resting pulse & optimal aerobic recovery!'
+                  ];
+                } else {
+                  // Improve Overall Health / Maintain Weight
+                  progressPct = Math.max(0, Math.min(100, Math.round((avgWellnessScore / goalTargetWellness) * 100)));
+                  statusLabel = 'Avg Wellness Score';
+                  statusValue = `${avgWellnessScore}%`;
+                  targetValue = `${goalTargetWellness}%`;
+                  progressDescription = 'Maintain a high weekly average daily habit completion rate';
+                  progressDetails = `Current 7-day average wellness rating: ${avgWellnessScore}% vs your ${goalTargetWellness}% benchmark.`;
+                  milestones = [
+                    'Consistent (20% met): Synchronized daily biological rhythms built',
+                    'Vibrant (50% met): Optimized sleep, hydration, and nutrition balance',
+                    'Zenith (100% met): Elite peak-health protection standards reached!'
+                  ];
+                }
+
+                return (
+                  <div className="flex flex-col gap-4 text-left border-t border-slate-100 dark:border-slate-800/60 pt-8 mt-6" id="health-goals-progress-section">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/60 pb-3.5 mb-2">
+                      <div>
+                        <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                          <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          Personalized Health Goals & Progress
+                        </h3>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
+                          Customized tracking cards synchronized with your {profile ? 'saved' : 'default'} goal parameters.
+                        </p>
+                      </div>
+                      <span className="text-3xs font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 tracking-wider">
+                        {goalTitle}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      {/* Left: Interactive Goal Dashboard Card */}
+                      <Card className="lg:col-span-8 border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col gap-6">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div className="flex gap-3.5 items-center">
+                              <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                                <Target className="w-6 h-6" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">ACTIVE GOAL FRAMEWORK</span>
+                                <span className="text-lg font-black text-slate-900 dark:text-white">{goalTitle}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-row items-center gap-6 bg-slate-50 dark:bg-slate-900/40 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
+                              <div className="flex flex-col">
+                                <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-bold">{statusLabel}</span>
+                                <span className="text-sm font-extrabold text-slate-900 dark:text-white">{statusValue}</span>
+                              </div>
+                              <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
+                              <div className="flex flex-col">
+                                <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-bold">Goal Target</span>
+                                <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{targetValue}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Dynamic Adjuster Slider/Buttons */}
+                          <div className="flex flex-col gap-3">
+                            <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-extrabold">INTERACTIVE TARGET CONTROLS</span>
+                            
+                            {/* Weight controls */}
+                            {(isWeightLoss || isWeightGain) && (
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex flex-col gap-1 text-left">
+                                  <span className="text-4xs text-slate-400 uppercase font-black">Starting weight</span>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <button onClick={() => setGoalStartWeight(prev => Math.max(30, prev - 0.5))} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">-</button>
+                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 w-16 text-center">{goalStartWeight.toFixed(1)} kg</span>
+                                    <button onClick={() => setGoalStartWeight(prev => prev + 0.5)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">+</button>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1 text-left">
+                                  <span className="text-4xs text-slate-400 uppercase font-black">Logged Current weight</span>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <button onClick={() => setGoalCurrentWeight(prev => Math.max(30, prev - 0.5))} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">-</button>
+                                    <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 w-16 text-center">{goalCurrentWeight.toFixed(1)} kg</span>
+                                    <button onClick={() => setGoalCurrentWeight(prev => prev + 0.5)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">+</button>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1 text-left">
+                                  <span className="text-4xs text-slate-400 uppercase font-black">Target weight goal</span>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <button onClick={() => setGoalTargetWeight(prev => Math.max(30, prev - 0.5))} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">-</button>
+                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 w-16 text-center">{goalTargetWeight.toFixed(1)} kg</span>
+                                    <button onClick={() => setGoalTargetWeight(prev => prev + 0.5)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">+</button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Exercise target controls */}
+                            {(isMuscleGain || isHeartHealth) && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex flex-col gap-1 text-left justify-center">
+                                  <span className="text-4xs text-slate-400 uppercase font-black">Logged Active Training (7 Days)</span>
+                                  <span className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{currentWeeklyExercise} mins</span>
+                                </div>
+                                <div className="flex flex-col gap-1 text-left">
+                                  <span className="text-4xs text-slate-400 uppercase font-black">Adjust Weekly Target Goal</span>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <button onClick={() => setGoalTargetExercise(prev => Math.max(30, prev - 15))} className="w-16 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">-15m</button>
+                                    <span className="text-xs font-extrabold text-orange-600 dark:text-orange-400 w-20 text-center">{goalTargetExercise} mins</span>
+                                    <button onClick={() => setGoalTargetExercise(prev => prev + 15)} className="w-16 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">+15m</button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Wellness target controls */}
+                            {isImproveHealth && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex flex-col gap-1 text-left justify-center">
+                                  <span className="text-4xs text-slate-400 uppercase font-black">Current 7-Day Average Score</span>
+                                  <span className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{avgWellnessScore}%</span>
+                                </div>
+                                <div className="flex flex-col gap-1 text-left">
+                                  <span className="text-4xs text-slate-400 uppercase font-black">Adjust Average Target Goal</span>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <button onClick={() => setGoalTargetWellness(prev => Math.max(50, prev - 5))} className="w-14 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">-5%</button>
+                                    <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 w-20 text-center">{goalTargetWellness}%</span>
+                                    <button onClick={() => setGoalTargetWellness(prev => Math.min(100, prev + 5))} className="w-14 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">+5%</button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Blood sugar controls */}
+                            {isBloodSugar && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex flex-col gap-1 text-left justify-center">
+                                  <span className="text-4xs text-slate-400 uppercase font-black">Healthy Meals Completed (7 Days)</span>
+                                  <span className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{currentWeeklyMeals} meals</span>
+                                </div>
+                                <div className="flex flex-col gap-1 text-left">
+                                  <span className="text-4xs text-slate-400 uppercase font-black">Adjust Weekly Target Goal</span>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <button onClick={() => setGoalTargetMeals(prev => Math.max(5, prev - 1))} className="w-12 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">-1</button>
+                                    <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 w-20 text-center">{goalTargetMeals} meals</span>
+                                    <button onClick={() => setGoalTargetMeals(prev => Math.min(21, prev + 1))} className="w-12 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">+1</button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Visual Progress Indicator */}
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">VISUAL TARGET COVERAGE</span>
+                              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{progressPct}% Met</span>
+                            </div>
+                            <div className="relative w-full h-4 bg-slate-100 dark:bg-slate-800/80 rounded-full overflow-hidden border border-slate-200/40 dark:border-slate-700/30 shadow-inner">
+                              <div 
+                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500 ease-out shadow-md"
+                                style={{ width: `${progressPct}%` }}
+                              />
+                            </div>
+                            <span className="text-3xs text-slate-400 dark:text-slate-500 font-medium">
+                              {progressDetails}
+                            </span>
+                          </div>
+
+                          {/* Estimated Healthy Progress Info */}
+                          <div className="flex gap-2.5 items-start bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10 text-left">
+                            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-3xs uppercase font-extrabold text-emerald-700 dark:text-emerald-400">ESTIMATED HEALTHY PACE</span>
+                              <p className="text-2xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                                {progressDescription}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Right: Motivational Milestones Card */}
+                      <Card className="lg:col-span-4 border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col gap-4 h-full text-left">
+                          <div className="flex items-start justify-between">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Consistency</span>
+                              <span className="text-sm font-bold text-slate-900 dark:text-white">Motivational Milestones</span>
+                            </div>
+                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                              <Award className="w-5 h-5" />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-4 mt-2 flex-1 justify-center">
+                            {milestones.map((milestone, idx) => {
+                              // Calculate if milestone is reached based on percentage threshold
+                              const threshold = idx === 0 ? 20 : idx === 1 ? 50 : 100;
+                              const isReached = progressPct >= threshold;
+                              
+                              return (
+                                <div key={idx} className="flex gap-3 items-start">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0 text-3xs font-extrabold ${isReached ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'}`}>
+                                    {isReached ? '✓' : idx + 1}
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className={`text-2xs font-extrabold ${isReached ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
+                                      {milestone.split(':')[0]}
+                                    </span>
+                                    <span className="text-3xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                                      {milestone.split(':')[1] || ''}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Personalized Daily Health Plan Section */}
+              {(() => {
+                const recs = profile ? generateRecommendations(profile) : null;
+                const healthGoal = profile?.healthGoal || 'Improve Overall Health';
+
+                const waterLitersGoal = recs?.waterIntake?.liters || 2.5;
+                const waterCupsGoal = recs?.waterIntake?.cups || 10;
+                const exerciseType = recs?.exercise?.type || 'Moderate Intensity Exercise';
+                const exerciseDuration = recs?.exercise?.duration || '30 mins';
+
+                // Locate existing bio-calculated recommendations for morning, lunch, dinner snacks
+                const foodsList = recs?.foodsToEat || [];
+                const breakfastFood = foodsList.find(f => f.category === 'Breakfast') || {
+                  title: healthGoal === 'Weight Loss' ? 'Egg White & Vegetable Scramble' :
+                         healthGoal === 'Weight Gain' ? 'Almond Butter Banana Toast' :
+                         healthGoal === 'Muscle Gain' ? 'Greek Yogurt with Whey Protein & Berries' :
+                         healthGoal === 'Heart Health' ? 'Steel-Cut Oats with Chia Seeds & Walnuts' :
+                         healthGoal === 'Blood Sugar Control' ? 'Tofu Mushroom Scramble with Spinach' :
+                         'Nutritious Fiber Oatmeal Bowl',
+                  description: 'Rich in lean protein and essential macronutrients to support energy.'
+                };
+
+                const lunchFood = foodsList.find(f => f.category === 'Lunch') || {
+                  title: healthGoal === 'Weight Loss' ? 'Grilled Chicken Breast Salad' :
+                         healthGoal === 'Weight Gain' ? 'Quinoa Salmon Bowl with Avocado' :
+                         healthGoal === 'Muscle Gain' ? 'Brown Rice with Lean Beef & Broccoli' :
+                         healthGoal === 'Heart Health' ? 'Mediterranean Salad with Chickpeas' :
+                         healthGoal === 'Blood Sugar Control' ? 'Baked Tempeh Bowl with Pumpkin Seeds' :
+                         'Balanced Protein and Grain Medley',
+                  description: 'Enforces glycemic control and supplies consistent mental energy.'
+                };
+
+                const dinnerFood = foodsList.find(f => f.category === 'Dinner') || {
+                  title: healthGoal === 'Weight Loss' ? 'Baked Cod with Asparagus' :
+                         healthGoal === 'Weight Gain' ? 'Stir-fried Beef with Rice & Bell Peppers' :
+                         healthGoal === 'Muscle Gain' ? 'Pan-Seared Salmon with Sweet Potato' :
+                         healthGoal === 'Heart Health' ? 'Pan-Seared Salmon with Steamed Spinach' :
+                         healthGoal === 'Blood Sugar Control' ? 'Grilled Salmon with Zucchini' :
+                         'Light Lean Protein and Greens',
+                  description: 'Promotes muscle tissue recovery and rest-state homeostasis.'
+                };
+
+                const snackFood = foodsList.find(f => f.category === 'Healthy Snacks') || {
+                  title: 'Raw Almonds & Fresh Blueberries',
+                  description: 'Polished trace mineral support without blood sugar spike.'
+                };
+
+                // Formulate 4 beautiful plans
+                const morningPlan = {
+                  title: 'Morning Routine',
+                  time: '06:00 AM - 12:00 PM',
+                  gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
+                  border: 'border-orange-500/20',
+                  icon: <Sunrise className="w-5 h-5 text-amber-500" />,
+                  hydration: `Drink 2 cups of water (${Math.round(waterLitersGoal * 1000 / waterCupsGoal * 2)}ml) post-waking.`,
+                  meal: breakfastFood.title,
+                  activity: healthGoal === 'Blood Sugar Control' ? 'Fasting blood sugar test.' : healthGoal === 'Weight Loss' ? 'Morning weight check.' : '5-minute activation stretch.',
+                  benefit: healthGoal === 'Blood Sugar Control' ? 'Establishes morning glycemic stability.' : healthGoal === 'Weight Loss' ? 'Fosters early fat oxidation.' : 'Triggers metabolism and maintains cellular hydration.',
+                  completed: planCompletedMorning,
+                  toggle: () => setPlanCompletedMorning(!planCompletedMorning)
+                };
+
+                const afternoonPlan = {
+                  title: 'Afternoon Routine',
+                  time: '12:00 PM - 05:00 PM',
+                  gradient: 'from-sky-500/10 via-blue-500/5 to-transparent',
+                  border: 'border-sky-500/20',
+                  icon: <Sun className="w-5 h-5 text-sky-500" />,
+                  hydration: `Sip on ${Math.round(waterCupsGoal / 3)} cups of water.`,
+                  meal: lunchFood.title,
+                  activity: '5-minute stand-and-stretch break.',
+                  benefit: healthGoal === 'Blood Sugar Control' ? 'Keeps blood sugar stable and avoids energy dips.' : healthGoal === 'Heart Health' ? 'Lowers vascular pressure and improves circulation.' : 'Replenishes vital nutrients to maintain afternoon energy.',
+                  completed: planCompletedAfternoon,
+                  toggle: () => setPlanCompletedAfternoon(!planCompletedAfternoon)
+                };
+
+                const eveningPlan = {
+                  title: 'Evening Routine',
+                  time: '05:00 PM - 09:00 PM',
+                  gradient: 'from-rose-500/10 via-purple-500/5 to-transparent',
+                  border: 'border-rose-500/20',
+                  icon: <Sunset className="w-5 h-5 text-rose-500" />,
+                  hydration: 'Drink 1-2 cups of water post-exercise.',
+                  meal: dinnerFood.title,
+                  activity: `Complete ${exerciseDuration} of ${exerciseType}.`,
+                  benefit: healthGoal === 'Weight Loss' ? 'Enhances post-exercise nighttime fat burn.' : healthGoal === 'Muscle Gain' ? 'Triggers overnight muscular hypertrophy and repair.' : 'Promotes nighttime muscle recovery and cardiorespiratory rest.',
+                  completed: planCompletedEvening,
+                  toggle: () => setPlanCompletedEvening(!planCompletedEvening)
+                };
+
+                const nightPlan = {
+                  title: 'Night Routine',
+                  time: '09:00 PM - 06:00 AM',
+                  gradient: 'from-indigo-500/10 via-slate-500/5 to-transparent',
+                  border: 'border-indigo-500/20',
+                  icon: <Moon className="w-5 h-5 text-indigo-500" />,
+                  hydration: 'Discontinue fluids 1 hour prior to sleep.',
+                  meal: snackFood ? snackFood.title : 'Maintain fasting window.',
+                  activity: `Get ${profile?.sleepDuration || '6 to 8 hours'} of sleep.`,
+                  benefit: healthGoal === 'Weight Loss' ? 'Improves leptin sensitivity and limits cravings.' : healthGoal === 'Blood Sugar Control' ? 'Assists liver glucose regulation overnight.' : 'Ensures deep restful sleep for hormone balance.',
+                  completed: planCompletedNight,
+                  toggle: () => setPlanCompletedNight(!planCompletedNight)
+                };
+
+                const routines = [morningPlan, afternoonPlan, eveningPlan, nightPlan];
+                const totalChecked = [planCompletedMorning, planCompletedAfternoon, planCompletedEvening, planCompletedNight].filter(Boolean).length;
+                const overallCompletionPct = Math.round((totalChecked / 4) * 100);
+
+                return (
+                  <div className="flex flex-col gap-4 text-left border-t border-slate-100 dark:border-slate-800/60 pt-8 mt-6 animate-fade-in" id="daily-health-timeline-section">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/60 pb-3.5 mb-2">
+                      <div>
+                        <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          Personalized Daily Health Plan
+                        </h3>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
+                          Chronological wellness schedule optimized for your goal target ({healthGoal}).
+                        </p>
+                      </div>
+
+                      {/* Overall Checklist Progress Tracker */}
+                      <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-900/40 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800/60 w-fit">
+                        <div className="flex flex-col items-end">
+                          <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">Today's Momentum</span>
+                          <span className="text-xs font-extrabold text-slate-900 dark:text-white">{overallCompletionPct}% Completed</span>
+                        </div>
+                        <div className="relative w-11 h-11 flex items-center justify-center">
+                          {/* Radial Progress Ring */}
+                          <svg className="w-full h-full transform -rotate-90">
+                            <circle cx="22" cy="22" r="16" stroke="currentColor" strokeWidth="3.5" fill="transparent" className="text-slate-100 dark:text-slate-800/60" />
+                            <circle cx="22" cy="22" r="16" stroke="currentColor" strokeWidth="3.5" fill="transparent" strokeDasharray={2 * Math.PI * 16} strokeDashoffset={2 * Math.PI * 16 * (1 - overallCompletionPct / 100)} className="text-emerald-500 transition-all duration-500" />
+                          </svg>
+                          <span className="absolute text-3xs font-extrabold text-emerald-600 dark:text-emerald-400">{totalChecked}/4</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timeline Grid layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="timeline-routine-grid">
+                      {routines.map((routine, idx) => (
+                        <Card 
+                          key={idx} 
+                          id={`timeline-card-${idx}`}
+                          className={`relative border overflow-hidden group hover:shadow-md transition-all duration-300 ${routine.completed ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/20' : `border-slate-100 dark:border-slate-800`}`}
+                        >
+                          {/* Subtle time-of-day gradient strip at top */}
+                          <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${routine.completed ? 'from-emerald-500 to-teal-500' : routine.gradient.split(' ')[1] + ' ' + routine.gradient.split(' ')[2]}`} />
+
+                          <CardContent className="p-5 pt-6 flex flex-col gap-4 h-full">
+                            <div className="flex justify-between items-start gap-2">
+                              <div className="flex gap-2.5 items-center">
+                                <div className={`p-2 rounded-xl flex items-center justify-center ${routine.completed ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500'}`}>
+                                  {routine.completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : routine.icon}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-black text-slate-950 dark:text-white leading-tight">{routine.title}</span>
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 font-extrabold tracking-widest uppercase">{routine.time}</span>
+                                </div>
+                              </div>
+
+                              {/* Interactive checkmark toggle */}
+                              <button 
+                                onClick={routine.toggle} 
+                                className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 shadow-sm ${routine.completed ? 'bg-emerald-500 border-emerald-500 text-white hover:bg-emerald-600' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-transparent hover:border-emerald-400 hover:text-emerald-400/50'}`}
+                              >
+                                <span className="text-xs font-black select-none">✓</span>
+                              </button>
+                            </div>
+
+                            {/* Timeline steps */}
+                            <div className="flex flex-col gap-3 my-1 flex-1 text-left">
+                              {/* Hydration */}
+                              <div className="flex gap-2.5 items-start">
+                                <span className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${routine.completed ? 'bg-emerald-500' : 'bg-blue-400 dark:bg-blue-500'}`} />
+                                <div className="flex flex-col">
+                                  <span className="text-4xs uppercase font-black tracking-widest text-slate-400 dark:text-slate-500">Hydration</span>
+                                  <p className={`text-2xs font-semibold leading-relaxed ${routine.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
+                                    {routine.hydration}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Meal */}
+                              <div className="flex gap-2.5 items-start">
+                                <span className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${routine.completed ? 'bg-emerald-500' : 'bg-emerald-500'}`} />
+                                <div className="flex flex-col">
+                                  <span className="text-4xs uppercase font-black tracking-widest text-slate-400 dark:text-slate-500">Meal</span>
+                                  <p className={`text-2xs font-bold leading-relaxed ${routine.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-slate-100'}`}>
+                                    {routine.meal}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Activity */}
+                              <div className="flex gap-2.5 items-start">
+                                <span className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${routine.completed ? 'bg-emerald-500' : 'bg-orange-400 dark:bg-orange-500'}`} />
+                                <div className="flex flex-col">
+                                  <span className="text-4xs uppercase font-black tracking-widest text-slate-400 dark:text-slate-500">Activity</span>
+                                  <p className={`text-2xs font-semibold leading-relaxed ${routine.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
+                                    {routine.activity}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Clinical Benefit */}
+                            <div className="pt-3 border-t border-dashed border-slate-100 dark:border-slate-800">
+                              <p className={`text-3xs font-medium leading-normal ${routine.completed ? 'text-slate-400 dark:text-slate-500 italic' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                                <span className="font-bold">Clinical Benefit: </span>{routine.benefit}
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              </div>
+
+              {/* RIGHT COLUMN: Sidebar (4 cols) */}
+              <div className="lg:col-span-4 flex flex-col gap-6 sticky top-24 animate-fade-in" id="overview-sidebar">
+                
+                {/* Biological Parameters Header */}
+                <div className="border-b border-slate-100 dark:border-slate-800 pb-3 text-left">
+                  <h3 className="text-base font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                    <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    Biological Parameters
+                  </h3>
+                  <p className="text-4xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">
+                    Sync Status: Fully Synced
+                  </p>
+                </div>
+
+                {/* Bio Grid Cards */}
+                <div className="grid grid-cols-2 gap-4" id="overview-bio-grid">
                 
                 <Card id="bio-card-weight">
                   <CardContent className="p-5 flex flex-col gap-1 text-left">
@@ -1340,9 +2020,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Middle Section - Allergen Warning Simulator */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="overview-mid-row">
-                
-                <Card className="lg:col-span-7 flex flex-col justify-between" id="allergen-simulator-card">
+              <Card hoverable className="border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between text-left animate-fade-in" id="allergen-simulator-card">
                   <CardHeader>
                     <CardTitle>Interactive Food Allergen Warning Radar</CardTitle>
                     <CardDescription>Select an allergen biological flag below to preview the instant alert guidelines framework in action.</CardDescription>
@@ -1378,7 +2056,7 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-5 flex flex-col justify-between" id="educational-links-card">
+                <Card hoverable className="border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between text-left animate-fade-in" id="educational-links-card">
                   <CardHeader>
                     <CardTitle>Scientific Resources</CardTitle>
                     <CardDescription>Trusted educational organizations and dietary research data portals.</CardDescription>
