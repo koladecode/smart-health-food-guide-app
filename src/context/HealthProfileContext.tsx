@@ -213,6 +213,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
   }, [isAuthenticated, token]);
 
   const saveProfile = async (newProfile: HealthProfile) => {
+    console.log('[INSTRUMENT_WEIGHT] [saveProfile] Method saveProfile called with newProfile weight:', newProfile.weight);
     const previousProfile = profile;
     const isNew = !profile;
 
@@ -234,8 +235,11 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
       healthConditions: [...baseConditions, sleepTag, stressTag]
     };
 
+    console.log('[INSTRUMENT_WEIGHT] [saveProfile] profileToSave constructed. weight:', profileToSave.weight);
+
     // Optimistic UI update using decodeProfile(profileToSave) to make sure state is formatted identically
     const decodedOptimisticProfile = decodeProfile(profileToSave);
+    console.log('[INSTRUMENT_WEIGHT] [saveProfile] decodedOptimisticProfile constructed. weight:', decodedOptimisticProfile.weight);
     setProfile(decodedOptimisticProfile);
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(decodedOptimisticProfile));
@@ -246,13 +250,16 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
     if (isAuthenticated) {
       try {
         setLoadingProfile(true);
+        console.log('[INSTRUMENT_WEIGHT] [saveProfile] Immediately before fetchWithAuth POST /api/profile. Payload weight:', profileToSave.weight);
         const response = await fetchWithAuth('/api/profile', {
           method: 'POST',
           body: JSON.stringify(profileToSave),
         });
+        console.log('[INSTRUMENT_WEIGHT] [saveProfile] fetchWithAuth POST completed. response status:', response.status);
         let result: any;
         try {
           result = await response.json();
+          console.log('[INSTRUMENT_WEIGHT] [saveProfile] Response body received. Result status:', result.status, 'Result weight:', result.data?.profile?.weight);
         } catch (e) {
           // ignore
         }
@@ -261,6 +268,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         }
         if (result.status === 'success' && result.data?.profile) {
           const savedDbProfile = decodeProfile(result.data.profile);
+          console.log('[INSTRUMENT_WEIGHT] [saveProfile] Setting state with decoded backend returned profile. weight:', savedDbProfile.weight);
           setProfile(savedDbProfile);
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(savedDbProfile));
           setRecsExist(true); // Generated automatically on save

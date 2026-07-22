@@ -8,6 +8,7 @@ export class HealthProfileService {
    * Helper to map database structure to response format
    */
   public static mapDbProfileToResponse(profile: any, conditions: any[]): any {
+    console.log('[INSTRUMENT_WEIGHT] [healthProfileService.mapDbProfileToResponse] Received raw row profile object. Raw weight field is:', profile.weight);
     const regionCond = conditions?.find((c) => c.type === 'condition' && c.name && c.name.startsWith('region:'));
     const countryOrRegion = regionCond ? regionCond.name.replace('region:', '') : 'Global/Other';
 
@@ -20,6 +21,7 @@ export class HealthProfileService {
 
     const weight = Number(profile.weight);
     const height = Number(profile.height);
+    console.log('[INSTRUMENT_WEIGHT] [healthProfileService.mapDbProfileToResponse] Parsed numeric weight:', weight, 'height:', height);
     
     // BMI calculation
     let bmi = 0;
@@ -114,6 +116,8 @@ export class HealthProfileService {
       alcohol_consumption: profileData.alcoholConsumption || 'None',
       current_medications: profileData.currentMedications || null,
     };
+
+    console.log('[INSTRUMENT_WEIGHT] [healthProfileService.createProfile] dbPayload.weight before database insert:', dbPayload.weight);
 
     if (profileData.gender !== undefined) {
       dbPayload.gender = profileData.gender;
@@ -224,6 +228,8 @@ export class HealthProfileService {
     if (profileData.age !== undefined) dbPayload.age = Number(profileData.age);
     if (profileData.weight !== undefined) dbPayload.weight = Number(profileData.weight);
     if (profileData.height !== undefined) dbPayload.height = Number(profileData.height);
+
+    console.log('[INSTRUMENT_WEIGHT] [healthProfileService.updateProfile] dbPayload.weight before database update:', dbPayload.weight);
     if (profileData.activityLevel !== undefined) dbPayload.activity_level = profileData.activityLevel;
     if (profileData.healthGoal !== undefined || profileData.healthGoals !== undefined) {
       dbPayload.health_goal = profileData.healthGoal || profileData.healthGoals;

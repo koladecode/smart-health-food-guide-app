@@ -721,57 +721,58 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="trackers-cards-container">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="trackers-cards-container">
                       
                       {/* Card 1: Water Intake */}
-                      <Card id="tracker-card-water" className="border-slate-100 dark:border-slate-800/80 hover:shadow-md transition-all duration-300">
+                      <Card id="tracker-card-water" className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
                         <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
                           <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold">Hydration</span>
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">Daily Water Intake</span>
-                              <span className="text-2xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
-                                {waterIntake} / {waterTarget} ml
-                              </span>
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-2xs text-blue-500 dark:text-blue-400 uppercase tracking-widest font-black">Hydration</span>
+                              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Daily Water Intake</span>
+                              <div className="flex items-baseline gap-1 mt-1">
+                                <span className="text-3xl font-black tracking-tight text-slate-950 dark:text-white">{waterIntake}</span>
+                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">/ {waterTarget} ml</span>
+                              </div>
                             </div>
-                            <div className="p-2.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-2xl">
+                            <div className="p-2.5 bg-blue-50/80 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-2xl flex-shrink-0">
                               <Droplet className="w-5 h-5" />
                             </div>
                           </div>
 
                           {/* Circular Progress Gauge */}
-                          <div className="flex items-center gap-4 py-1">
-                            <div className="relative w-14 h-14 flex items-center justify-center flex-shrink-0">
+                          <div className="flex items-center gap-4 py-1.5 border-t border-slate-50 dark:border-slate-800/40">
+                            <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
                               <svg className="w-full h-full transform -rotate-90">
                                 <circle
-                                  cx="28"
-                                  cy="28"
-                                  r="22"
-                                  className="stroke-slate-100 dark:stroke-slate-800/80"
-                                  strokeWidth="4"
+                                  cx="24"
+                                  cy="24"
+                                  r="19"
+                                  className="stroke-slate-100 dark:stroke-slate-800/60"
+                                  strokeWidth="3.5"
                                   fill="transparent"
                                 />
                                 <circle
-                                  cx="28"
-                                  cy="28"
-                                  r="22"
-                                  className="stroke-blue-500 transition-all duration-300"
-                                  strokeWidth="4"
+                                  cx="24"
+                                  cy="24"
+                                  r="19"
+                                  className="stroke-blue-500 transition-all duration-500 ease-out"
+                                  strokeWidth="3.5"
                                   fill="transparent"
-                                  strokeDasharray={2 * Math.PI * 22}
-                                  strokeDashoffset={2 * Math.PI * 22 - (waterPercent / 100) * 2 * Math.PI * 22}
+                                  strokeDasharray={2 * Math.PI * 19}
+                                  strokeDashoffset={2 * Math.PI * 19 - (waterPercent / 100) * 2 * Math.PI * 19}
                                   strokeLinecap="round"
                                 />
                               </svg>
                               <span className="absolute text-3xs font-extrabold text-blue-600 dark:text-blue-400">{waterPercent}%</span>
                             </div>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200">
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200 truncate">
                                 {waterPercent >= 100 ? 'Target Reached! 💧' : 'Stay Hydrated'}
                               </span>
                               <button
                                 type="button"
-                                className="text-3xs text-blue-600 dark:text-blue-400 hover:underline text-left font-bold"
+                                className="text-3xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors text-left font-bold"
                                 onClick={() => {
                                   const targets = [2000, 2500, 3000, 3500, 4000];
                                   const nextIdx = (targets.indexOf(waterTarget) + 1) % targets.length;
@@ -784,81 +785,82 @@ export default function DashboardPage() {
                           </div>
 
                           {/* Interactive Controls */}
-                          <div className="flex items-center gap-1.5 mt-1">
+                          <div className="flex items-center gap-2 mt-1">
                             <button
                               onClick={() => setWaterIntake(prev => Math.max(0, prev - 250))}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-bold text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center py-2 px-1 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all font-bold text-3xs cursor-pointer"
                               title="Subtract 250ml"
                             >
-                              <Minus className="w-3 h-3 mr-0.5" /> 250
+                              <Minus className="w-3 h-3 mr-1" /> 250
                             </button>
                             <button
                               onClick={() => setWaterIntake(prev => prev + 250)}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all font-bold text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center py-2 px-1 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/20 dark:hover:bg-blue-950/40 border border-blue-100/30 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 transition-all font-bold text-3xs cursor-pointer"
                               title="Add 250ml"
                             >
-                              <Plus className="w-3 h-3 mr-0.5" /> 250
+                              <Plus className="w-3 h-3 mr-1" /> 250
                             </button>
                             <button
                               onClick={() => setWaterIntake(prev => prev + 500)}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all font-bold text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center py-2 px-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-xs hover:shadow-md transition-all font-bold text-3xs cursor-pointer"
                               title="Add 500ml"
                             >
-                              <Plus className="w-3 h-3 mr-0.5" /> 500
+                              <Plus className="w-3 h-3 mr-1" /> 500
                             </button>
                           </div>
                         </CardContent>
                       </Card>
 
                       {/* Card 2: Exercise Progress */}
-                      <Card id="tracker-card-exercise" className="border-slate-100 dark:border-slate-800/80 hover:shadow-md transition-all duration-300">
+                      <Card id="tracker-card-exercise" className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
                         <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
                           <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold">Fitness</span>
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">Exercise Progress</span>
-                              <span className="text-2xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
-                                {exerciseProgress} / {exerciseTarget} mins
-                              </span>
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-2xs text-orange-500 dark:text-orange-400 uppercase tracking-widest font-black">Fitness</span>
+                              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Exercise Progress</span>
+                              <div className="flex items-baseline gap-1 mt-1">
+                                <span className="text-3xl font-black tracking-tight text-slate-950 dark:text-white">{exerciseProgress}</span>
+                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">/ {exerciseTarget} mins</span>
+                              </div>
                             </div>
-                            <div className="p-2.5 bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 rounded-2xl">
+                            <div className="p-2.5 bg-orange-50/80 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-2xl flex-shrink-0">
                               <Flame className="w-5 h-5" />
                             </div>
                           </div>
 
                           {/* Circular Progress Gauge */}
-                          <div className="flex items-center gap-4 py-1">
-                            <div className="relative w-14 h-14 flex items-center justify-center flex-shrink-0">
+                          <div className="flex items-center gap-4 py-1.5 border-t border-slate-50 dark:border-slate-800/40">
+                            <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
                               <svg className="w-full h-full transform -rotate-90">
                                 <circle
-                                  cx="28"
-                                  cy="28"
-                                  r="22"
-                                  className="stroke-slate-100 dark:stroke-slate-800/80"
-                                  strokeWidth="4"
+                                  cx="24"
+                                  cy="24"
+                                  r="19"
+                                  className="stroke-slate-100 dark:stroke-slate-800/60"
+                                  strokeWidth="3.5"
                                   fill="transparent"
                                 />
                                 <circle
-                                  cx="28"
-                                  cy="28"
-                                  r="22"
-                                  className="stroke-orange-500 transition-all duration-300"
-                                  strokeWidth="4"
+                                  cx="24"
+                                  cy="24"
+                                  r="19"
+                                  className="stroke-orange-500 transition-all duration-500 ease-out"
+                                  strokeWidth="3.5"
                                   fill="transparent"
-                                  strokeDasharray={2 * Math.PI * 22}
-                                  strokeDashoffset={2 * Math.PI * 22 - (exercisePercent / 100) * 2 * Math.PI * 22}
+                                  strokeDasharray={2 * Math.PI * 19}
+                                  strokeDashoffset={2 * Math.PI * 19 - (exercisePercent / 100) * 2 * Math.PI * 19}
                                   strokeLinecap="round"
                                 />
                               </svg>
                               <span className="absolute text-3xs font-extrabold text-orange-600 dark:text-orange-400">{exercisePercent}%</span>
                             </div>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200">
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200 truncate">
                                 {exercisePercent >= 100 ? 'Goal Completed! 🔥' : 'Keep Moving'}
                               </span>
                               <button
                                 type="button"
-                                className="text-3xs text-orange-600 dark:text-orange-400 hover:underline text-left font-bold"
+                                className="text-3xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors text-left font-bold"
                                 onClick={() => {
                                   const targets = [15, 30, 45, 60, 90];
                                   const nextIdx = (targets.indexOf(exerciseTarget) + 1) % targets.length;
@@ -871,81 +873,82 @@ export default function DashboardPage() {
                           </div>
 
                           {/* Interactive Controls */}
-                          <div className="flex items-center gap-1.5 mt-1">
+                          <div className="flex items-center gap-2 mt-1">
                             <button
                               onClick={() => setExerciseProgress(prev => Math.max(0, prev - 10))}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-bold text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center py-2 px-1 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-100 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-all font-bold text-3xs cursor-pointer"
                               title="Subtract 10 mins"
                             >
-                              <Minus className="w-3 h-3 mr-0.5" /> 10m
+                              <Minus className="w-3 h-3 mr-1" /> 10m
                             </button>
                             <button
                               onClick={() => setExerciseProgress(prev => prev + 10)}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100/50 dark:border-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all font-bold text-xs cursor-pointer"
+                              className="flex-1 flex items-center justify-center py-2 px-1 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/20 dark:hover:bg-orange-950/40 border border-orange-100/30 dark:border-orange-900/30 text-orange-600 dark:text-orange-400 transition-all font-bold text-3xs cursor-pointer"
                               title="Add 10 mins"
                             >
-                              <Plus className="w-3 h-3 mr-0.5" /> 10m
+                              <Plus className="w-3 h-3 mr-1" /> 10m
                             </button>
                             <button
                               onClick={() => setIsModalOpen(true)}
-                              className="flex-1 flex items-center justify-center p-2 rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all font-bold text-xs cursor-pointer whitespace-nowrap"
+                              className="flex-1 flex items-center justify-center py-2 px-1 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-xs hover:shadow-md transition-all font-bold text-3xs cursor-pointer whitespace-nowrap"
                               title="Record detailed session"
                             >
-                              <Dumbbell className="w-3 h-3 mr-0.5" /> Log
+                              <Dumbbell className="w-3 h-3 mr-1" /> Log
                             </button>
                           </div>
                         </CardContent>
                       </Card>
 
                       {/* Card 3: Healthy Meals Completed */}
-                      <Card id="tracker-card-meals" className="border-slate-100 dark:border-slate-800/80 hover:shadow-md transition-all duration-300">
+                      <Card id="tracker-card-meals" className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
                         <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
                           <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold">Diet & Nutrition</span>
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">Meals Completed</span>
-                              <span className="text-2xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
-                                {mealsCompleted} / {mealsTarget} Healthy Meals
-                              </span>
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-2xs text-emerald-500 dark:text-emerald-400 uppercase tracking-widest font-black">Diet & Nutrition</span>
+                              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Meals Completed</span>
+                              <div className="flex items-baseline gap-1 mt-1">
+                                <span className="text-3xl font-black tracking-tight text-slate-950 dark:text-white">{mealsCompleted}</span>
+                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">/ {mealsTarget} Healthy Meals</span>
+                              </div>
                             </div>
-                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                            <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex-shrink-0">
                               <Utensils className="w-5 h-5" />
                             </div>
                           </div>
 
                           {/* Circular Progress Gauge */}
-                          <div className="flex items-center gap-4 py-1">
-                            <div className="relative w-14 h-14 flex items-center justify-center flex-shrink-0">
+                          <div className="flex items-center gap-4 py-1.5 border-t border-slate-50 dark:border-slate-800/40">
+                            <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
                               <svg className="w-full h-full transform -rotate-90">
                                 <circle
-                                  cx="28"
-                                  cy="28"
-                                  r="22"
-                                  className="stroke-slate-100 dark:stroke-slate-800/80"
-                                  strokeWidth="4"
+                                  cx="24"
+                                  cy="24"
+                                  r="19"
+                                  className="stroke-slate-100 dark:stroke-slate-800/60"
+                                  strokeWidth="3.5"
                                   fill="transparent"
                                 />
                                 <circle
-                                  cx="28"
-                                  cy="28"
-                                  r="22"
-                                  className="stroke-emerald-500 transition-all duration-300"
-                                  strokeWidth="4"
+                                  cx="24"
+                                  cy="24"
+                                  r="19"
+                                  className="stroke-emerald-500 transition-all duration-500 ease-out"
+                                  strokeWidth="3.5"
                                   fill="transparent"
-                                  strokeDasharray={2 * Math.PI * 22}
-                                  strokeDashoffset={2 * Math.PI * 22 - (mealsPercent / 100) * 2 * Math.PI * 22}
+                                  strokeDasharray={2 * Math.PI * 19}
+                                  strokeDashoffset={2 * Math.PI * 19 - (mealsPercent / 100) * 2 * Math.PI * 19}
                                   strokeLinecap="round"
                                 />
                               </svg>
                               <span className="absolute text-3xs font-extrabold text-emerald-600 dark:text-emerald-400">{mealsCompleted}/3</span>
                             </div>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200">
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200 truncate">
                                 {mealsPercent >= 100 ? 'All Meals Healthy! 🍏' : 'Track Healthy Plates'}
                               </span>
                               <button
                                 type="button"
-                                className="text-3xs text-emerald-600 dark:text-emerald-400 hover:underline text-left font-bold"
+                                className="text-3xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left font-bold"
                                 onClick={() => {
                                   setActiveTab('nutrition');
                                 }}
@@ -959,30 +962,30 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-1.5 mt-1">
                             <button
                               onClick={() => setMealBreakfast(!mealBreakfast)}
-                              className={`flex-1 p-2 rounded-xl text-3xs font-extrabold border transition-all cursor-pointer ${
+                              className={`flex-1 py-2 px-0.5 rounded-xl text-3xs font-black border transition-all cursor-pointer text-center ${
                                 mealBreakfast
                                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-xs'
-                                  : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
                               }`}
                             >
                               Breakfast
                             </button>
                             <button
                               onClick={() => setMealLunch(!mealLunch)}
-                              className={`flex-1 p-2 rounded-xl text-3xs font-extrabold border transition-all cursor-pointer ${
+                              className={`flex-1 py-2 px-0.5 rounded-xl text-3xs font-black border transition-all cursor-pointer text-center ${
                                 mealLunch
                                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-xs'
-                                  : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
                               }`}
                             >
                               Lunch
                             </button>
                             <button
                               onClick={() => setMealDinner(!mealDinner)}
-                              className={`flex-1 p-2 rounded-xl text-3xs font-extrabold border transition-all cursor-pointer ${
+                              className={`flex-1 py-2 px-0.5 rounded-xl text-3xs font-black border transition-all cursor-pointer text-center ${
                                 mealDinner
                                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-xs'
-                                  : 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
                               }`}
                             >
                               Dinner
@@ -992,50 +995,51 @@ export default function DashboardPage() {
                       </Card>
 
                       {/* Card 4: Daily Wellness Score */}
-                      <Card id="tracker-card-wellness" className="border-slate-100 dark:border-slate-800/80 bg-gradient-to-br from-emerald-500/5 to-teal-500/10 dark:from-emerald-950/10 dark:to-teal-950/20 shadow-xs">
-                        <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
+                      <Card id="tracker-card-wellness" className="border border-slate-100/80 dark:border-slate-800/80 bg-gradient-to-br from-emerald-500/5 to-teal-500/10 dark:from-emerald-950/10 dark:to-teal-950/20 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
                           <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold">Scorecard</span>
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">Wellness Score</span>
-                              <span className="text-2xs text-emerald-600 dark:text-emerald-400 font-extrabold mt-0.5">
-                                {dailyWellnessScore === 100 ? 'Perfect Day! 🏆' : 'Active Progress'}
-                              </span>
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-2xs text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-black">Scorecard</span>
+                              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Wellness Score</span>
+                              <div className="flex items-baseline gap-1 mt-1">
+                                <span className="text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">{dailyWellnessScore}</span>
+                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">/ 100 pts</span>
+                              </div>
                             </div>
-                            <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                            <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl flex-shrink-0">
                               <Sparkles className="w-5 h-5" />
                             </div>
                           </div>
 
                           {/* Large Circular Gauge Dial */}
-                          <div className="flex items-center gap-4 py-0.5">
-                            <div className="relative w-16 h-16 flex items-center justify-center flex-shrink-0">
+                          <div className="flex items-center gap-4 py-1.5 border-t border-slate-50 dark:border-slate-800/40">
+                            <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
                               <svg className="w-full h-full transform -rotate-90">
                                 <circle
-                                  cx="32"
-                                  cy="32"
-                                  r="26"
-                                  className="stroke-slate-100 dark:stroke-slate-800/80"
-                                  strokeWidth="5"
+                                  cx="24"
+                                  cy="24"
+                                  r="19"
+                                  className="stroke-slate-100 dark:stroke-slate-800/60"
+                                  strokeWidth="3.5"
                                   fill="transparent"
                                 />
                                 <circle
-                                  cx="32"
-                                  cy="32"
-                                  r="26"
-                                  className="stroke-emerald-600 dark:stroke-emerald-400 transition-all duration-300"
-                                  strokeWidth="5"
+                                  cx="24"
+                                  cy="24"
+                                  r="19"
+                                  className="stroke-emerald-600 dark:stroke-emerald-400 transition-all duration-500 ease-out"
+                                  strokeWidth="3.5"
                                   fill="transparent"
-                                  strokeDasharray={2 * Math.PI * 26}
-                                  strokeDashoffset={2 * Math.PI * 26 - (dailyWellnessScore / 100) * 2 * Math.PI * 26}
+                                  strokeDasharray={2 * Math.PI * 19}
+                                  strokeDashoffset={2 * Math.PI * 19 - (dailyWellnessScore / 100) * 2 * Math.PI * 19}
                                   strokeLinecap="round"
                                 />
                               </svg>
-                              <span className="absolute text-xs font-black text-emerald-700 dark:text-emerald-300">{dailyWellnessScore}</span>
+                              <span className="absolute text-3xs font-extrabold text-emerald-700 dark:text-emerald-300">{dailyWellnessScore}%</span>
                             </div>
                             <div className="flex flex-col gap-0.5 min-w-0">
                               <span className="text-3xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-black">Dynamic Status</span>
-                              <p className="text-2xs font-semibold text-slate-600 dark:text-slate-300 leading-snug truncate">
+                              <p className="text-2xs font-bold text-slate-800 dark:text-slate-200 leading-snug truncate">
                                 {dailyWellnessScore === 0 && "Ready to start?"}
                                 {dailyWellnessScore > 0 && dailyWellnessScore < 40 && "Starting strong! 🚀"}
                                 {dailyWellnessScore >= 40 && dailyWellnessScore < 70 && "Steady progress! 👍"}
@@ -1045,7 +1049,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
 
-                          <div className="text-3xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider leading-normal">
+                          <div className="text-4xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider leading-normal">
                             Weights: Hydration (30%) • Fitness (40%) • Nutrition (30%)
                           </div>
                         </CardContent>
@@ -1079,7 +1083,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3" id="history-cards-container">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4" id="history-cards-container">
                       {displayHistory.map((entry) => {
                         const originalIdx = history.findIndex(h => h.date === entry.date);
                         
@@ -1093,52 +1097,57 @@ export default function DashboardPage() {
                         }
 
                         return (
-                          <Card key={entry.date} id={`history-card-${entry.date}`} className="border-slate-100 dark:border-slate-800 hover:shadow-xs transition-all duration-300 flex flex-col justify-between">
-                            <div className="p-3.5 flex flex-col gap-2.5 h-full text-left">
+                          <Card key={entry.date} id={`history-card-${entry.date}`} className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between">
+                            <div className="p-4 flex flex-col gap-3 h-full text-left">
                               {/* Card Header: Date & Trend */}
-                              <div className="flex flex-col gap-1">
-                                <span className="text-2xs font-extrabold text-slate-950 dark:text-white truncate">
-                                  {formatHistoryDate(entry.date)}
+                              <div className="flex flex-col gap-1 border-b border-slate-50 dark:border-slate-800/30 pb-2">
+                                <span className="text-2xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                  {formatHistoryDate(entry.date).split(',')[0]}
+                                </span>
+                                <span className="text-xs font-black text-slate-900 dark:text-white truncate">
+                                  {formatHistoryDate(entry.date).split(',')[1] || formatHistoryDate(entry.date)}
                                 </span>
                                 
                                 {/* Trend Indicator Badge */}
-                                {trend === 'improving' && (
-                                  <span className="inline-flex items-center gap-0.5 text-4xs font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-md border border-emerald-500/10 w-fit">
-                                    <TrendingUp className="w-2.5 h-2.5" /> Improving
-                                  </span>
-                                )}
-                                {trend === 'stable' && (
-                                  <span className="inline-flex items-center gap-0.5 text-4xs font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 w-fit">
-                                    <Minus className="w-2.5 h-2.5" /> Stable
-                                  </span>
-                                )}
-                                {trend === 'declining' && (
-                                  <span className="inline-flex items-center gap-0.5 text-4xs font-black uppercase bg-orange-500/10 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-md border border-orange-500/15 w-fit">
-                                    <TrendingDown className="w-2.5 h-2.5" /> Declining
-                                  </span>
-                                )}
+                                <div className="mt-1">
+                                  {trend === 'improving' && (
+                                    <span className="inline-flex items-center gap-1 text-4xs font-black uppercase bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/30">
+                                      <TrendingUp className="w-2.5 h-2.5 flex-shrink-0" /> Improving
+                                    </span>
+                                  )}
+                                  {trend === 'stable' && (
+                                    <span className="inline-flex items-center gap-1 text-4xs font-black uppercase bg-slate-50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800/60">
+                                      <Minus className="w-2.5 h-2.5 flex-shrink-0" /> Stable
+                                    </span>
+                                  )}
+                                  {trend === 'declining' && (
+                                    <span className="inline-flex items-center gap-1 text-4xs font-black uppercase bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-100 dark:border-amber-900/30">
+                                      <TrendingDown className="w-2.5 h-2.5 flex-shrink-0" /> Declining
+                                    </span>
+                                  )}
+                                </div>
                               </div>
 
                               {/* Wellness Score Badge / Circle */}
-                              <div className="flex items-center gap-2 py-1 border-t border-b border-slate-50 dark:border-slate-900/40 my-0.5">
-                                <div className="text-xl font-black text-slate-900 dark:text-white">
+                              <div className="flex items-center gap-2.5 py-1.5 my-0.5">
+                                <div className="text-2xl font-black text-slate-950 dark:text-white">
                                   {entry.wellnessScore}
                                 </div>
                                 <div className="flex flex-col leading-none">
-                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider">Score</span>
-                                  <span className="text-3xs font-semibold text-slate-500 dark:text-slate-400">
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Score</span>
+                                  <span className="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
                                     {entry.wellnessScore >= 80 ? 'Excellent' : entry.wellnessScore >= 50 ? 'Good' : 'Incomplete'}
                                   </span>
                                 </div>
                               </div>
 
                               {/* Daily Metrics breakdown */}
-                              <div className="flex flex-col gap-1.5 text-3xs text-slate-500 dark:text-slate-400 font-semibold mt-auto">
+                              <div className="flex flex-col gap-2 text-3xs text-slate-500 dark:text-slate-400 font-semibold mt-auto pt-2 border-t border-slate-50 dark:border-slate-800/30">
                                 {/* Water */}
                                 <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Droplet className="w-3.5 h-3.5 text-blue-500" />
-                                    <span>Hydration</span>
+                                  <span className="flex items-center gap-1 min-w-0">
+                                    <Droplet className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                                    <span className="truncate">Hydration</span>
                                   </span>
                                   <span className="font-bold text-slate-800 dark:text-slate-200">
                                     {Math.round(entry.waterIntake / 100) / 10}L
@@ -1147,9 +1156,9 @@ export default function DashboardPage() {
                                 
                                 {/* Exercise */}
                                 <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Flame className="w-3.5 h-3.5 text-orange-500" />
-                                    <span>Fitness</span>
+                                  <span className="flex items-center gap-1 min-w-0">
+                                    <Flame className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                                    <span className="truncate">Fitness</span>
                                   </span>
                                   <span className="font-bold text-slate-800 dark:text-slate-200">
                                     {entry.exerciseProgress}m
@@ -1158,9 +1167,9 @@ export default function DashboardPage() {
 
                                 {/* Meals */}
                                 <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Utensils className="w-3.5 h-3.5 text-emerald-500" />
-                                    <span>Nutrition</span>
+                                  <span className="flex items-center gap-1 min-w-0">
+                                    <Utensils className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                                    <span className="truncate">Nutrition</span>
                                   </span>
                                   <span className="font-bold text-slate-800 dark:text-slate-200">
                                     {entry.mealsCompleted}/{entry.mealsTarget}
@@ -1310,24 +1319,23 @@ export default function DashboardPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="insights-cards-container">
                       
-                      {/* Card 1: Achievements */}
-                      <Card className="border-slate-100 dark:border-slate-800">
-                        <CardContent className="p-5 flex flex-col gap-4 h-full text-left">
+                      <Card className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col gap-4 h-full text-left">
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Success Milestones</span>
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">Weekly Achievements</span>
+                              <span className="text-2xs text-emerald-500 dark:text-emerald-400 uppercase tracking-widest font-black">Success Milestones</span>
+                              <span className="text-base font-bold text-slate-850 dark:text-slate-200">Weekly Achievements</span>
                             </div>
-                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                            <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex-shrink-0">
                               <Award className="w-5 h-5" />
                             </div>
                           </div>
 
-                          <div className="flex flex-col gap-2.5 flex-1">
+                          <div className="flex flex-col gap-3 flex-1">
                             {achievements.map((ach, idx) => (
                               <div key={idx} className="flex gap-2 items-start">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                                <span className="text-2xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
                                   {ach}
                                 </span>
                               </div>
@@ -1335,31 +1343,30 @@ export default function DashboardPage() {
                           </div>
                         </CardContent>
                       </Card>
-
-                      {/* Card 2: Habit Consistency */}
-                      <Card className="border-slate-100 dark:border-slate-800">
-                        <CardContent className="p-5 flex flex-col gap-4 h-full text-left">
+                           {/* Card 2: Habit Consistency */}
+                      <Card className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col gap-4 h-full text-left">
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Habit Quality</span>
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">Consistency Matrix</span>
+                              <span className="text-2xs text-blue-500 dark:text-blue-400 uppercase tracking-widest font-black">Habit Quality</span>
+                              <span className="text-base font-bold text-slate-800 dark:text-slate-200">Consistency Matrix</span>
                             </div>
-                            <div className="p-2.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-2xl">
+                            <div className="p-2.5 bg-blue-50/80 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-2xl flex-shrink-0">
                               <Activity className="w-5 h-5" />
                             </div>
                           </div>
 
                           <div className="flex flex-col gap-3 flex-1">
-                            <div className="flex items-center gap-3">
-                              <div className="px-3 py-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl font-black text-sm">
+                            <div className="flex items-center gap-3 bg-blue-50/40 dark:bg-blue-950/10 p-2.5 rounded-xl border border-blue-50/50 dark:border-blue-950/25">
+                              <div className="px-2.5 py-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg font-black text-sm">
                                 {avgWellnessScore}%
                               </div>
-                              <div className="flex flex-col leading-tight">
-                                <span className="text-2xs font-extrabold text-slate-800 dark:text-slate-200">{consistencyMessage}</span>
-                                <span className="text-3xs text-slate-400 dark:text-slate-500">Avg Wellness Score</span>
+                              <div className="flex flex-col leading-tight min-w-0">
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{consistencyMessage}</span>
+                                <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black mt-0.5">Avg Wellness Score</span>
                               </div>
                             </div>
-                            <p className="text-2xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
                               {consistencySubtitle}
                             </p>
                           </div>
@@ -1367,23 +1374,23 @@ export default function DashboardPage() {
                       </Card>
 
                       {/* Card 3: Areas for Improvement */}
-                      <Card className="border-slate-100 dark:border-slate-800">
-                        <CardContent className="p-5 flex flex-col gap-4 h-full text-left">
+                      <Card className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col gap-4 h-full text-left">
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Optimization</span>
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">Opportunity Gaps</span>
+                              <span className="text-2xs text-orange-500 dark:text-orange-400 uppercase tracking-widest font-black">Optimization</span>
+                              <span className="text-base font-bold text-slate-800 dark:text-slate-200">Opportunity Gaps</span>
                             </div>
-                            <div className="p-2.5 bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 rounded-2xl">
+                            <div className="p-2.5 bg-orange-50/80 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-2xl flex-shrink-0">
                               <AlertTriangle className="w-5 h-5" />
                             </div>
                           </div>
 
-                          <div className="flex flex-col gap-2.5 flex-1 justify-center">
+                          <div className="flex flex-col gap-3 flex-1 justify-center">
                             {improvements.map((imp, idx) => (
                               <div key={idx} className="flex gap-2 items-start">
-                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 flex-shrink-0" />
-                                <span className="text-2xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 flex-shrink-0" />
+                                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
                                   {imp}
                                 </span>
                               </div>
@@ -1393,23 +1400,23 @@ export default function DashboardPage() {
                       </Card>
 
                       {/* Card 4: Actionable Tip */}
-                      <Card className="border-slate-100 dark:border-slate-800 bg-gradient-to-br from-indigo-500/5 to-purple-500/10 dark:from-indigo-950/10 dark:to-purple-950/20">
-                        <CardContent className="p-5 flex flex-col gap-4 h-full text-left">
+                      <Card className="border border-slate-100/80 dark:border-slate-800/80 bg-gradient-to-br from-indigo-500/5 to-purple-500/10 dark:from-indigo-950/5 dark:to-purple-950/10 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
+                        <CardContent className="p-6 flex flex-col gap-4 h-full text-left">
                           <div className="flex items-start justify-between">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Habit Builder</span>
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">Daily Wellness Tip</span>
+                              <span className="text-2xs text-indigo-500 dark:text-indigo-400 uppercase tracking-widest font-black">Habit Builder</span>
+                              <span className="text-base font-bold text-slate-800 dark:text-slate-200">Daily Wellness Tip</span>
                             </div>
-                            <div className="p-2.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl">
+                            <div className="p-2.5 bg-indigo-50/80 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 rounded-2xl flex-shrink-0">
                               <Sparkles className="w-5 h-5" />
                             </div>
                           </div>
 
-                          <div className="flex flex-col gap-1.5 flex-1">
-                            <span className="text-2xs font-extrabold text-indigo-700 dark:text-indigo-300">
+                          <div className="flex flex-col gap-2 flex-1">
+                            <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
                               {tipTitle}
                             </span>
-                            <p className="text-2xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
                               {tipBody}
                             </p>
                           </div>
@@ -1528,15 +1535,15 @@ export default function DashboardPage() {
                   targetValue = `${goalTargetWellness}%`;
                   progressDescription = 'Maintain a high weekly average daily habit completion rate';
                   progressDetails = `Current 7-day average wellness rating: ${avgWellnessScore}% vs your ${goalTargetWellness}% benchmark.`;
-                  milestones = [
-                    'Consistent (20% met): Synchronized daily biological rhythms built',
-                    'Vibrant (50% met): Optimized sleep, hydration, and nutrition balance',
-                    'Zenith (100% met): Elite peak-health protection standards reached!'
-                  ];
-                }
+                    milestones = [
+                      'Consistent (20% met): Synchronized daily biological rhythms built',
+                      'Vibrant (50% met): Optimized sleep, hydration, and nutrition balance',
+                      'Zenith (100% met): Elite peak-health protection standards reached!'
+                    ];
+                  }
 
-                return (
-                  <div className="flex flex-col gap-4 text-left border-t border-slate-100 dark:border-slate-800/60 pt-8 mt-6" id="health-goals-progress-section">
+                  return (
+                    <div className="flex flex-col gap-4 text-left border-t border-slate-100 dark:border-slate-800/60 pt-8 mt-6" id="health-goals-progress-section">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/60 pb-3.5 mb-2">
                       <div>
                         <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
@@ -1554,61 +1561,61 @@ export default function DashboardPage() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                       {/* Left: Interactive Goal Dashboard Card */}
-                      <Card className="lg:col-span-8 border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
+                      <Card className="lg:col-span-8 border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.005] transition-all duration-300">
                         <CardContent className="p-6 flex flex-col gap-6">
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div className="flex gap-3.5 items-center">
-                              <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                              <div className="p-3 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-2xl">
                                 <Target className="w-6 h-6" />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">ACTIVE GOAL FRAMEWORK</span>
+                                <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">ACTIVE GOAL FRAMEWORK</span>
                                 <span className="text-lg font-black text-slate-900 dark:text-white">{goalTitle}</span>
                               </div>
                             </div>
                             
-                            <div className="flex flex-row items-center gap-6 bg-slate-50 dark:bg-slate-900/40 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
-                              <div className="flex flex-col">
-                                <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-bold">{statusLabel}</span>
-                                <span className="text-sm font-extrabold text-slate-900 dark:text-white">{statusValue}</span>
+                            <div className="flex flex-row items-center gap-6 bg-slate-50/50 dark:bg-slate-950/20 px-4 py-2.5 rounded-2xl border border-slate-100/80 dark:border-slate-800/60">
+                              <div className="flex flex-col text-left">
+                                <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">{statusLabel}</span>
+                                <span className="text-sm font-black text-slate-900 dark:text-white mt-0.5">{statusValue}</span>
                               </div>
-                              <div className="h-6 w-px bg-slate-200 dark:bg-slate-800" />
-                              <div className="flex flex-col">
-                                <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-bold">Goal Target</span>
-                                <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">{targetValue}</span>
+                              <div className="h-6 w-px bg-slate-200/60 dark:bg-slate-800/60" />
+                              <div className="flex flex-col text-left">
+                                <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Goal Target</span>
+                                <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{targetValue}</span>
                               </div>
                             </div>
                           </div>
 
                           {/* Dynamic Adjuster Slider/Buttons */}
                           <div className="flex flex-col gap-3">
-                            <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-extrabold">INTERACTIVE TARGET CONTROLS</span>
+                            <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-black">INTERACTIVE TARGET CONTROLS</span>
                             
                             {/* Weight controls */}
                             {(isWeightLoss || isWeightGain) && (
-                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                <div className="flex flex-col gap-1 text-left">
-                                  <span className="text-4xs text-slate-400 uppercase font-black">Starting weight</span>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <button onClick={() => setGoalStartWeight(prev => Math.max(30, prev - 0.5))} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">-</button>
-                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 w-16 text-center">{goalStartWeight.toFixed(1)} kg</span>
-                                    <button onClick={() => setGoalStartWeight(prev => prev + 0.5)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">+</button>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50/40 dark:bg-slate-950/10 p-4 rounded-2xl border border-slate-100/60 dark:border-slate-800/40">
+                                <div className="flex flex-col gap-1.5 text-left">
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Starting weight</span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <button onClick={() => setGoalStartWeight(prev => Math.max(30, prev - 0.5))} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-</button>
+                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 w-16 text-center">{goalStartWeight.toFixed(1)} kg</span>
+                                    <button onClick={() => setGoalStartWeight(prev => prev + 0.5)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+</button>
                                   </div>
                                 </div>
-                                <div className="flex flex-col gap-1 text-left">
-                                  <span className="text-4xs text-slate-400 uppercase font-black">Logged Current weight</span>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <button onClick={() => setGoalCurrentWeight(prev => Math.max(30, prev - 0.5))} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">-</button>
-                                    <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 w-16 text-center">{goalCurrentWeight.toFixed(1)} kg</span>
-                                    <button onClick={() => setGoalCurrentWeight(prev => prev + 0.5)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">+</button>
+                                <div className="flex flex-col gap-1.5 text-left">
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Logged Current weight</span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <button onClick={() => setGoalCurrentWeight(prev => Math.max(30, prev - 0.5))} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-</button>
+                                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 w-16 text-center">{goalCurrentWeight.toFixed(1)} kg</span>
+                                    <button onClick={() => setGoalCurrentWeight(prev => prev + 0.5)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+</button>
                                   </div>
                                 </div>
-                                <div className="flex flex-col gap-1 text-left">
-                                  <span className="text-4xs text-slate-400 uppercase font-black">Target weight goal</span>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <button onClick={() => setGoalTargetWeight(prev => Math.max(30, prev - 0.5))} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">-</button>
-                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 w-16 text-center">{goalTargetWeight.toFixed(1)} kg</span>
-                                    <button onClick={() => setGoalTargetWeight(prev => prev + 0.5)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-black hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-sm">+</button>
+                                <div className="flex flex-col gap-1.5 text-left">
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Target weight goal</span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <button onClick={() => setGoalTargetWeight(prev => Math.max(30, prev - 0.5))} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-</button>
+                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 w-16 text-center">{goalTargetWeight.toFixed(1)} kg</span>
+                                    <button onClick={() => setGoalTargetWeight(prev => prev + 0.5)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+</button>
                                   </div>
                                 </div>
                               </div>
@@ -1616,17 +1623,17 @@ export default function DashboardPage() {
 
                             {/* Exercise target controls */}
                             {(isMuscleGain || isHeartHealth) && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/40 dark:bg-slate-950/10 p-4 rounded-2xl border border-slate-100/60 dark:border-slate-800/40 animate-fade-in">
                                 <div className="flex flex-col gap-1 text-left justify-center">
-                                  <span className="text-4xs text-slate-400 uppercase font-black">Logged Active Training (7 Days)</span>
-                                  <span className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{currentWeeklyExercise} mins</span>
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Logged Active Training (7 Days)</span>
+                                  <span className="text-sm font-black text-slate-900 dark:text-white mt-1">{currentWeeklyExercise} mins</span>
                                 </div>
-                                <div className="flex flex-col gap-1 text-left">
-                                  <span className="text-4xs text-slate-400 uppercase font-black">Adjust Weekly Target Goal</span>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <button onClick={() => setGoalTargetExercise(prev => Math.max(30, prev - 15))} className="w-16 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">-15m</button>
-                                    <span className="text-xs font-extrabold text-orange-600 dark:text-orange-400 w-20 text-center">{goalTargetExercise} mins</span>
-                                    <button onClick={() => setGoalTargetExercise(prev => prev + 15)} className="w-16 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">+15m</button>
+                                <div className="flex flex-col gap-1.5 text-left">
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Adjust Weekly Target Goal</span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <button onClick={() => setGoalTargetExercise(prev => Math.max(30, prev - 15))} className="w-20 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-15m</button>
+                                    <span className="text-xs font-black text-orange-600 dark:text-orange-400 w-24 text-center">{goalTargetExercise} mins</span>
+                                    <button onClick={() => setGoalTargetExercise(prev => prev + 15)} className="w-20 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+15m</button>
                                   </div>
                                 </div>
                               </div>
@@ -1634,17 +1641,17 @@ export default function DashboardPage() {
 
                             {/* Wellness target controls */}
                             {isImproveHealth && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/40 dark:bg-slate-950/10 p-4 rounded-2xl border border-slate-100/60 dark:border-slate-800/40 animate-fade-in">
                                 <div className="flex flex-col gap-1 text-left justify-center">
-                                  <span className="text-4xs text-slate-400 uppercase font-black">Current 7-Day Average Score</span>
-                                  <span className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{avgWellnessScore}%</span>
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Current 7-Day Average Score</span>
+                                  <span className="text-sm font-black text-slate-900 dark:text-white mt-1">{avgWellnessScore}%</span>
                                 </div>
-                                <div className="flex flex-col gap-1 text-left">
-                                  <span className="text-4xs text-slate-400 uppercase font-black">Adjust Average Target Goal</span>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <button onClick={() => setGoalTargetWellness(prev => Math.max(50, prev - 5))} className="w-14 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">-5%</button>
-                                    <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 w-20 text-center">{goalTargetWellness}%</span>
-                                    <button onClick={() => setGoalTargetWellness(prev => Math.min(100, prev + 5))} className="w-14 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">+5%</button>
+                                <div className="flex flex-col gap-1.5 text-left">
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Adjust Average Target Goal</span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <button onClick={() => setGoalTargetWellness(prev => Math.max(50, prev - 5))} className="w-16 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-5%</button>
+                                    <span className="text-xs font-black text-blue-600 dark:text-blue-400 w-24 text-center">{goalTargetWellness}%</span>
+                                    <button onClick={() => setGoalTargetWellness(prev => Math.min(100, prev + 5))} className="w-16 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+5%</button>
                                   </div>
                                 </div>
                               </div>
@@ -1652,17 +1659,17 @@ export default function DashboardPage() {
 
                             {/* Blood sugar controls */}
                             {isBloodSugar && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/40 dark:bg-slate-950/10 p-4 rounded-2xl border border-slate-100/60 dark:border-slate-800/40 animate-fade-in">
                                 <div className="flex flex-col gap-1 text-left justify-center">
-                                  <span className="text-4xs text-slate-400 uppercase font-black">Healthy Meals Completed (7 Days)</span>
-                                  <span className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{currentWeeklyMeals} meals</span>
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Healthy Meals Completed (7 Days)</span>
+                                  <span className="text-sm font-black text-slate-900 dark:text-white mt-1">{currentWeeklyMeals} meals</span>
                                 </div>
-                                <div className="flex flex-col gap-1 text-left">
-                                  <span className="text-4xs text-slate-400 uppercase font-black">Adjust Weekly Target Goal</span>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    <button onClick={() => setGoalTargetMeals(prev => Math.max(5, prev - 1))} className="w-12 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">-1</button>
-                                    <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 w-20 text-center">{goalTargetMeals} meals</span>
-                                    <button onClick={() => setGoalTargetMeals(prev => Math.min(21, prev + 1))} className="w-12 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-2xs text-slate-600 dark:text-slate-300 shadow-sm">+1</button>
+                                <div className="flex flex-col gap-1.5 text-left">
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Adjust Weekly Target Goal</span>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <button onClick={() => setGoalTargetMeals(prev => Math.max(5, prev - 1))} className="w-14 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-1</button>
+                                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 w-24 text-center">{goalTargetMeals} meals</span>
+                                    <button onClick={() => setGoalTargetMeals(prev => Math.min(21, prev + 1))} className="w-14 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+1</button>
                                   </div>
                                 </div>
                               </div>
@@ -1672,26 +1679,26 @@ export default function DashboardPage() {
                           {/* Visual Progress Indicator */}
                           <div className="flex flex-col gap-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">VISUAL TARGET COVERAGE</span>
+                              <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">VISUAL TARGET COVERAGE</span>
                               <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{progressPct}% Met</span>
                             </div>
-                            <div className="relative w-full h-4 bg-slate-100 dark:bg-slate-800/80 rounded-full overflow-hidden border border-slate-200/40 dark:border-slate-700/30 shadow-inner">
+                            <div className="relative w-full h-3 bg-slate-100 dark:bg-slate-800/80 rounded-full overflow-hidden border border-slate-200/20 dark:border-slate-700/30">
                               <div 
-                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500 ease-out shadow-md"
+                                className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-full transition-all duration-500 ease-out shadow-xs"
                                 style={{ width: `${progressPct}%` }}
                               />
                             </div>
-                            <span className="text-3xs text-slate-400 dark:text-slate-500 font-medium">
+                            <span className="text-3xs text-slate-400 dark:text-slate-500 font-bold mt-1">
                               {progressDetails}
                             </span>
                           </div>
 
                           {/* Estimated Healthy Progress Info */}
-                          <div className="flex gap-2.5 items-start bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10 text-left">
+                          <div className="flex gap-3 items-start bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/10 text-left">
                             <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs uppercase font-extrabold text-emerald-700 dark:text-emerald-400">ESTIMATED HEALTHY PACE</span>
-                              <p className="text-2xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                              <span className="text-3xs uppercase font-black text-emerald-700 dark:text-emerald-400">ESTIMATED HEALTHY PACE</span>
+                              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed mt-0.5">
                                 {progressDescription}
                               </p>
                             </div>
@@ -1700,34 +1707,34 @@ export default function DashboardPage() {
                       </Card>
 
                       {/* Right: Motivational Milestones Card */}
-                      <Card className="lg:col-span-4 border-slate-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
+                      <Card className="lg:col-span-4 border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.005] transition-all duration-300">
                         <CardContent className="p-6 flex flex-col gap-4 h-full text-left">
-                          <div className="flex items-start justify-between">
+                          <div className="flex items-start justify-between border-b border-slate-50 dark:border-slate-800/30 pb-3">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Consistency</span>
-                              <span className="text-sm font-bold text-slate-900 dark:text-white">Motivational Milestones</span>
+                              <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Consistency</span>
+                              <span className="text-base font-bold text-slate-800 dark:text-slate-200">Motivational Milestones</span>
                             </div>
-                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                            <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex-shrink-0">
                               <Award className="w-5 h-5" />
                             </div>
                           </div>
 
-                          <div className="flex flex-col gap-4 mt-2 flex-1 justify-center">
+                          <div className="flex flex-col gap-5 mt-3 flex-1">
                             {milestones.map((milestone, idx) => {
                               // Calculate if milestone is reached based on percentage threshold
                               const threshold = idx === 0 ? 20 : idx === 1 ? 50 : 100;
                               const isReached = progressPct >= threshold;
                               
                               return (
-                                <div key={idx} className="flex gap-3 items-start">
-                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0 text-3xs font-extrabold ${isReached ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'}`}>
+                                <div key={idx} className="flex gap-3.5 items-start">
+                                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0 text-2xs font-extrabold transition-all duration-300 ${isReached ? 'bg-emerald-500 text-white shadow-xs' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-150 dark:border-slate-700'}`}>
                                     {isReached ? '✓' : idx + 1}
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className={`text-2xs font-extrabold ${isReached ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
+                                    <span className={`text-xs font-black ${isReached ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
                                       {milestone.split(':')[0]}
                                     </span>
-                                    <span className="text-3xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                                    <span className="text-2xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mt-0.5">
                                       {milestone.split(':')[1] || ''}
                                     </span>
                                   </div>
@@ -1879,47 +1886,46 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-
                     {/* Timeline Grid layout */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="timeline-routine-grid">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="timeline-routine-grid">
                       {routines.map((routine, idx) => (
                         <Card 
                           key={idx} 
                           id={`timeline-card-${idx}`}
-                          className={`relative border overflow-hidden group hover:shadow-md transition-all duration-300 ${routine.completed ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/20' : `border-slate-100 dark:border-slate-800`}`}
+                          className={`relative border overflow-hidden group hover:shadow-md transition-all duration-300 ${routine.completed ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/20 shadow-xs' : 'border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:scale-[1.01]'}`}
                         >
                           {/* Subtle time-of-day gradient strip at top */}
                           <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${routine.completed ? 'from-emerald-500 to-teal-500' : routine.gradient.split(' ')[1] + ' ' + routine.gradient.split(' ')[2]}`} />
 
                           <CardContent className="p-5 pt-6 flex flex-col gap-4 h-full">
-                            <div className="flex justify-between items-start gap-2">
+                            <div className="flex justify-between items-start gap-2 border-b border-slate-50 dark:border-slate-850 pb-3">
                               <div className="flex gap-2.5 items-center">
-                                <div className={`p-2 rounded-xl flex items-center justify-center ${routine.completed ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-500'}`}>
+                                <div className={`p-2 rounded-xl flex items-center justify-center ${routine.completed ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-500'}`}>
                                   {routine.completed ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : routine.icon}
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-black text-slate-950 dark:text-white leading-tight">{routine.title}</span>
-                                  <span className="text-4xs text-slate-400 dark:text-slate-500 font-extrabold tracking-widest uppercase">{routine.time}</span>
+                                  <span className="text-4xs text-slate-400 dark:text-slate-500 font-extrabold tracking-widest uppercase mt-0.5">{routine.time}</span>
                                 </div>
                               </div>
 
                               {/* Interactive checkmark toggle */}
                               <button 
                                 onClick={routine.toggle} 
-                                className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 shadow-sm ${routine.completed ? 'bg-emerald-500 border-emerald-500 text-white hover:bg-emerald-600' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-transparent hover:border-emerald-400 hover:text-emerald-400/50'}`}
+                                className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 shadow-xs ${routine.completed ? 'bg-emerald-500 border-emerald-500 text-white hover:bg-emerald-600' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-transparent hover:border-emerald-400 hover:text-emerald-400/50'}`}
                               >
                                 <span className="text-xs font-black select-none">✓</span>
                               </button>
                             </div>
 
                             {/* Timeline steps */}
-                            <div className="flex flex-col gap-3 my-1 flex-1 text-left">
+                            <div className="flex flex-col gap-3.5 my-1 flex-1 text-left">
                               {/* Hydration */}
                               <div className="flex gap-2.5 items-start">
                                 <span className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${routine.completed ? 'bg-emerald-500' : 'bg-blue-400 dark:bg-blue-500'}`} />
                                 <div className="flex flex-col">
                                   <span className="text-4xs uppercase font-black tracking-widest text-slate-400 dark:text-slate-500">Hydration</span>
-                                  <p className={`text-2xs font-semibold leading-relaxed ${routine.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
+                                  <p className={`text-2xs font-semibold leading-relaxed mt-0.5 ${routine.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
                                     {routine.hydration}
                                   </p>
                                 </div>
@@ -1930,7 +1936,7 @@ export default function DashboardPage() {
                                 <span className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${routine.completed ? 'bg-emerald-500' : 'bg-emerald-500'}`} />
                                 <div className="flex flex-col">
                                   <span className="text-4xs uppercase font-black tracking-widest text-slate-400 dark:text-slate-500">Meal</span>
-                                  <p className={`text-2xs font-bold leading-relaxed ${routine.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-slate-100'}`}>
+                                  <p className={`text-2xs font-bold leading-relaxed mt-0.5 ${routine.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-slate-100'}`}>
                                     {routine.meal}
                                   </p>
                                 </div>
@@ -1941,7 +1947,7 @@ export default function DashboardPage() {
                                 <span className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${routine.completed ? 'bg-emerald-500' : 'bg-orange-400 dark:bg-orange-500'}`} />
                                 <div className="flex flex-col">
                                   <span className="text-4xs uppercase font-black tracking-widest text-slate-400 dark:text-slate-500">Activity</span>
-                                  <p className={`text-2xs font-semibold leading-relaxed ${routine.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
+                                  <p className={`text-2xs font-semibold leading-relaxed mt-0.5 ${routine.completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
                                     {routine.activity}
                                   </p>
                                 </div>
@@ -1981,51 +1987,51 @@ export default function DashboardPage() {
                 {/* Bio Grid Cards */}
                 <div className="grid grid-cols-2 gap-4" id="overview-bio-grid">
                 
-                <Card id="bio-card-weight">
+                <Card id="bio-card-weight" className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
                   <CardContent className="p-5 flex flex-col gap-1 text-left">
                     <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Body Mass</span>
                     <span className="text-2xl font-black text-slate-900 dark:text-white mt-1">{userBio.weight}</span>
-                    <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1 font-medium">
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-1 font-semibold">
                       <TrendingUp className="w-3.5 h-3.5" /> Stable Trend
                     </span>
                   </CardContent>
                 </Card>
 
-                <Card id="bio-card-height">
+                <Card id="bio-card-height" className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
                   <CardContent className="p-5 flex flex-col gap-1 text-left">
                     <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Physical Stature</span>
                     <span className="text-2xl font-black text-slate-900 dark:text-white mt-1">{userBio.height}</span>
-                    <span className="text-xs text-slate-400 mt-1">Normal limits</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-medium">Normal limits</span>
                   </CardContent>
                 </Card>
 
-                <Card id="bio-card-activity">
+                <Card id="bio-card-activity" className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
                   <CardContent className="p-5 flex flex-col gap-1 text-left">
                     <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Metabolic Activity</span>
-                    <span className="text-base font-bold text-slate-900 dark:text-white mt-1 truncate">{userBio.activity}</span>
-                    <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1 font-medium">
+                    <span className="text-base font-bold text-slate-900 dark:text-white mt-1.5 truncate">{userBio.activity}</span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-1.5 font-semibold">
                       <CheckCircle className="w-3.5 h-3.5" /> Normal range
                     </span>
                   </CardContent>
                 </Card>
 
-                <Card id="bio-card-goal">
+                <Card id="bio-card-goal" className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300">
                   <CardContent className="p-5 flex flex-col gap-1 text-left">
                     <span className="text-2xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Onboarding Goal</span>
-                    <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1 truncate">{userBio.goal}</span>
-                    <span className="text-xs text-slate-400 mt-1">Educational focus</span>
+                    <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1.5 truncate">{userBio.goal}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-medium">Educational focus</span>
                   </CardContent>
                 </Card>
 
               </div>
 
               {/* Middle Section - Allergen Warning Simulator */}
-              <Card hoverable className="border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between text-left animate-fade-in" id="allergen-simulator-card">
-                  <CardHeader>
-                    <CardTitle>Interactive Food Allergen Warning Radar</CardTitle>
-                    <CardDescription>Select an allergen biological flag below to preview the instant alert guidelines framework in action.</CardDescription>
+              <Card className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between text-left animate-fade-in" id="allergen-simulator-card">
+                  <CardHeader className="p-6 pb-4">
+                    <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">Interactive Food Allergen Warning Radar</CardTitle>
+                    <CardDescription className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">Select an allergen biological flag below to preview the instant alert guidelines framework in action.</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex flex-col gap-5">
+                  <CardContent className="p-6 pt-0 flex flex-col gap-5">
                     
                     <Select
                       label="Select Profile Allergen Flag"
@@ -2056,34 +2062,34 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card hoverable className="border-slate-100 dark:border-slate-800 shadow-xs flex flex-col justify-between text-left animate-fade-in" id="educational-links-card">
-                  <CardHeader>
-                    <CardTitle>Scientific Resources</CardTitle>
-                    <CardDescription>Trusted educational organizations and dietary research data portals.</CardDescription>
+                <Card className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between text-left animate-fade-in" id="educational-links-card">
+                  <CardHeader className="p-6 pb-4">
+                    <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">Scientific Resources</CardTitle>
+                    <CardDescription className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-1">Trusted educational organizations and dietary research data portals.</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex flex-col gap-4">
+                  <CardContent className="p-6 pt-0 flex flex-col gap-4">
                     
-                    <div className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-950 rounded-xl cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all" id="edu-link-1">
+                    <div className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-950 rounded-xl cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-slate-850/80 transition-all duration-300" id="edu-link-1">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 rounded-xl">
                           <BookOpen className="w-5 h-5" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">World Health Organization</h4>
-                          <p className="text-xs text-slate-400">Public diet & lifestyle reviews</p>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">World Health Organization</h4>
+                          <p className="text-4xs font-semibold text-slate-400 dark:text-slate-500 uppercase mt-0.5">Public diet & lifestyle reviews</p>
                         </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-400" />
                     </div>
 
-                    <div className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-950 rounded-xl cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all" id="edu-link-2">
+                    <div className="flex items-center justify-between p-3.5 hover:bg-slate-50 dark:hover:bg-slate-950 rounded-xl cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-slate-850/80 transition-all duration-300" id="edu-link-2">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 rounded-xl">
                           <ClipboardList className="w-5 h-5" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">Harvard Nutrition Source</h4>
-                          <p className="text-xs text-slate-400">Comprehensive ingredient research</p>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">Harvard Nutrition Source</h4>
+                          <p className="text-4xs font-semibold text-slate-400 dark:text-slate-500 uppercase mt-0.5">Comprehensive ingredient research</p>
                         </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-400" />

@@ -50,10 +50,7 @@ async function run() {
       log(`Total health profiles: ${profiles?.length || 0}`);
       for (const p of profiles || []) {
         log(`  - Profile ID: ${p.id}`);
-        log(`    UserID: ${p.user_id}`);
-        log(`    Name: ${p.full_name}`);
-        log(`    Goal: ${p.health_goal}`);
-        log(`    CreatedAt: ${p.created_at}`);
+        log(`    Full Profile Row JSON: ${JSON.stringify(p, null, 2)}`);
       }
     }
 

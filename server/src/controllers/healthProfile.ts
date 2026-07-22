@@ -68,8 +68,12 @@ export const createOrUpdateProfile = async (req: AuthenticatedRequest, res: Resp
     const userId = req.user.id;
     const profileData = req.body;
 
+    console.log('[INSTRUMENT_WEIGHT] [Backend Controller] Raw req.body weight field value received:', profileData.weight);
+
     // Validate Input
     const { fullName, age, height, weight, activityLevel, healthGoal, healthGoals } = profileData;
+
+    console.log('[INSTRUMENT_WEIGHT] [Backend Controller] Destructured weight value:', weight);
 
     if (!fullName || typeof fullName !== 'string' || fullName.trim().length === 0) {
       res.status(400).json({

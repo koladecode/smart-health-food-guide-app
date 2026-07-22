@@ -132,27 +132,38 @@ export default function ProfileFormPage() {
   const [dietaryPreference, setDietaryPreference] = useState('None');
   const [currentMedications, setCurrentMedications] = useState('');
 
+  const initializedRef = React.useRef(false);
+
   // Pre-fill if editing profile
   useEffect(() => {
-    if (profile) {
-      setFullName(profile.fullName || '');
-      setAge(profile.age || '');
-      setGender(profile.gender || '');
-      setCountryOrRegion(profile.countryOrRegion || 'Global/Other');
-      setHeight(profile.height || '');
-      setWeight(profile.weight || '');
-      setActivityLevel(profile.activityLevel || 'Moderately Active');
-      setHealthGoal(profile.healthGoal || 'Improve Overall Health');
-      setSmokingStatus(profile.smokingStatus || 'Non-smoker');
-      setAlcoholConsumption(profile.alcoholConsumption || 'None');
-      setSelectedConditions(profile.healthConditions || ['none']);
-      setSelectedAllergens(profile.foodAllergies || ['none']);
-      setDietaryPreference(profile.dietaryPreference || 'None');
-      setCurrentMedications(profile.currentMedications || '');
-      setSleepDuration(profile.sleepDuration || '6 to 8 hours');
-      setStressLevel(profile.stressLevel || 'Moderate');
+    if (initializedRef.current) {
+      console.log('[INSTRUMENT_WEIGHT] [useEffect: profile] Skipping re-initialization as form is already initialized.');
+      return;
     }
-  }, [profile]);
+
+    if (isProfileFetched && !loadingProfile) {
+      console.log('[INSTRUMENT_WEIGHT] [useEffect: profile] Initializing form with profile data. Profile weight is:', profile?.weight);
+      if (profile) {
+        setFullName(profile.fullName || '');
+        setAge(profile.age || '');
+        setGender(profile.gender || '');
+        setCountryOrRegion(profile.countryOrRegion || 'Global/Other');
+        setHeight(profile.height || '');
+        setWeight(profile.weight || '');
+        setActivityLevel(profile.activityLevel || 'Moderately Active');
+        setHealthGoal(profile.healthGoal || 'Improve Overall Health');
+        setSmokingStatus(profile.smokingStatus || 'Non-smoker');
+        setAlcoholConsumption(profile.alcoholConsumption || 'None');
+        setSelectedConditions(profile.healthConditions || ['none']);
+        setSelectedAllergens(profile.foodAllergies || ['none']);
+        setDietaryPreference(profile.dietaryPreference || 'None');
+        setCurrentMedications(profile.currentMedications || '');
+        setSleepDuration(profile.sleepDuration || '6 to 8 hours');
+        setStressLevel(profile.stressLevel || 'Moderate');
+      }
+      initializedRef.current = true;
+    }
+  }, [profile, isProfileFetched, loadingProfile]);
 
   if (loading || !isProfileFetched || loadingProfile) {
     return (
@@ -279,6 +290,7 @@ export default function ProfileFormPage() {
 
   const handleNext = () => {
     if (validateStep(step)) {
+      console.log('[INSTRUMENT_WEIGHT] [handleNext] Navigating to next step. Current step:', step, 'Weight value before navigation:', weight);
       setStep(prev => prev + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -295,6 +307,8 @@ export default function ProfileFormPage() {
       setStep(1);
       return;
     }
+
+    console.log('[INSTRUMENT_WEIGHT] [handleSubmit] Weight state value immediately before constructing finalProfile:', weight);
 
     const finalProfile: HealthProfile = {
       fullName,
@@ -314,6 +328,8 @@ export default function ProfileFormPage() {
       stressLevel,
       countryOrRegion
     };
+
+    console.log('[INSTRUMENT_WEIGHT] [handleSubmit] finalProfile object constructed:', JSON.stringify(finalProfile));
 
     setSaveError(null);
 
@@ -631,7 +647,11 @@ export default function ProfileFormPage() {
                       type="number"
                       placeholder="e.g. 68"
                       value={weight}
-                      onChange={(e) => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        console.log('[INSTRUMENT_WEIGHT] [onChange] User changed weight in input field. New value:', val);
+                        setWeight(val);
+                      }}
                       error={errors.weight}
                       icon={<Scale className="w-4 h-4 text-slate-400" />}
                       min="10"
@@ -903,6 +923,10 @@ export default function ProfileFormPage() {
               {/* STEP 4: Review Assessment */}
               {step === 4 && (
                 <div className="flex flex-col gap-6 text-left animate-fade-in" id="step-4-container">
+                  {(() => {
+                    console.log('[INSTRUMENT_WEIGHT] [render step 4] Rendering Review step. Current weight state:', weight);
+                    return null;
+                  })()}
                   <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3 mb-1">
                     <div className="p-1.5 bg-emerald-500/10 rounded-xl">
                       <ClipboardCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
