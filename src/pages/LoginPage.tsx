@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle2, Heart, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Heart, Lock, Mail, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useAuth } from '../context/AuthContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && !authLoading && isProfileSynced) {
@@ -62,14 +63,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300" id="login-page-root">
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 relative overflow-hidden" id="login-page-root">
       
+      {/* Decorative ambient blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[45vw] h-[45vw] bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] bg-teal-500/5 dark:bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+
       {/* Header bar with Back button and Theme Switcher */}
-      <header className="px-4 py-4 md:px-8 flex justify-between items-center" id="login-header">
+      <header className="px-4 py-4 md:px-8 flex justify-between items-center z-10" id="login-header">
         <button
           id="login-back-btn"
           onClick={() => navigateTo('landing')}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-650 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Landing</span>
@@ -78,40 +83,37 @@ export default function LoginPage() {
       </header>
 
       {/* Main card box container */}
-      <main className="flex-1 flex items-center justify-center px-4 py-12" id="login-main">
-        <div className="w-full max-w-md" id="login-card-wrapper">
+      <main className="flex-1 flex items-center justify-center px-4 py-12 z-10" id="login-main">
+        <div className="w-full max-w-[440px]" id="login-card-wrapper">
           
-          <Card className="shadow-xl shadow-slate-100 dark:shadow-none bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl" id="login-form-card">
-            <CardContent className="p-8 md:p-10 flex flex-col gap-6">
+          <Card className="shadow-md shadow-slate-100/50 dark:shadow-none bg-white dark:bg-slate-900/80 backdrop-blur-md border border-slate-100 dark:border-slate-800/80 rounded-3xl transition-all duration-300" id="login-form-card">
+            <CardContent className="p-6 md:p-8 flex flex-col gap-6">
               
               {/* Logo branding */}
-              <div className="flex flex-col items-center text-center gap-3" id="login-branding">
-                <div className="p-3 bg-emerald-600 rounded-2xl text-white shadow-md shadow-emerald-600/10" id="login-logo-badge">
-                  <Heart className="w-8 h-8" />
+              <div className="flex flex-col items-center text-center gap-4" id="login-branding">
+                <div className="p-4 bg-emerald-50/80 dark:bg-emerald-950/45 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl text-emerald-600 dark:text-emerald-400 shadow-2xs" id="login-logo-badge">
+                  <Heart className="w-7 h-7 fill-emerald-500/10 dark:fill-emerald-400/10" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-black text-slate-950 dark:text-white tracking-tight">
                     Welcome Back
                   </h1>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Sign in to access your health & food dashboard.
+                  <p className="text-xs font-semibold text-slate-400 dark:text-slate-550 mt-1 leading-normal max-w-[280px]">
+                    Sign in to access your custom metabolic & health insights.
                   </p>
                 </div>
               </div>
 
               {/* Status Alert logs */}
               {error && (
-                <Alert variant="error" title="Sign In Error" id="login-alert-error">
+                <Alert variant="error" title="Sign In Error" id="login-alert-error" className="rounded-2xl border-rose-100/80 dark:border-rose-950/50 text-sm">
                   {error}
                 </Alert>
               )}
 
               {success && (
-                <Alert variant="success" title="Access Granted" id="login-alert-success">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Preparing your customized recommendations...</span>
-                  </div>
+                <Alert variant="success" title="Access Granted" id="login-alert-success" className="rounded-2xl border-emerald-100/80 dark:border-emerald-950/50 text-sm">
+                  Preparing your personalized recommendations...
                 </Alert>
               )}
 
@@ -124,7 +126,7 @@ export default function LoginPage() {
                   placeholder="name@domain.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  icon={<Mail className="w-5 h-5" />}
+                  icon={<Mail className="w-4 h-4 text-slate-400" />}
                   required
                   disabled={loading || success}
                 />
@@ -139,12 +141,22 @@ export default function LoginPage() {
                     </a>
                   </div>
                   <Input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     id="login-password-input"
                     placeholder="••••••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    icon={<Lock className="w-5 h-5" />}
+                    icon={<Lock className="w-4 h-4 text-slate-400" />}
+                    endIcon={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    }
                     required
                     disabled={loading || success}
                   />
@@ -154,7 +166,7 @@ export default function LoginPage() {
                   type="submit"
                   variant="primary"
                   size="lg"
-                  className="w-full mt-2"
+                  className="w-full mt-2 font-bold py-3.5 shadow-md shadow-emerald-500/10 dark:shadow-none rounded-xl"
                   isLoading={loading}
                   id="login-submit-btn"
                 >
@@ -164,18 +176,18 @@ export default function LoginPage() {
 
               {/* Divider */}
               <div className="relative flex py-2 items-center" id="login-divider">
-                <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
-                <span className="flex-shrink mx-4 text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                <div className="flex-grow border-t border-slate-100 dark:border-slate-800/80"></div>
+                <span className="flex-shrink mx-4 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">
                   Or Connect With
                 </span>
-                <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+                <div className="flex-grow border-t border-slate-100 dark:border-slate-800/80"></div>
               </div>
 
               {/* Social login option */}
               <Button
                 variant="outline"
                 size="md"
-                className="w-full font-semibold flex items-center justify-center gap-2 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                className="w-full font-semibold flex items-center justify-center gap-2 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl"
                 onClick={() => {
                   setLoading(true);
                   setTimeout(() => {
@@ -210,12 +222,12 @@ export default function LoginPage() {
               </Button>
 
               {/* Subtitle link to Register */}
-              <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-2" id="login-footer-text">
+              <p className="text-center text-sm text-slate-550 dark:text-slate-400 mt-2" id="login-footer-text">
                 Don't have an account?{' '}
                 <button
                   id="login-link-register"
                   onClick={() => navigateTo('register')}
-                  className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline hover:text-emerald-700"
+                  className="font-black text-emerald-600 dark:text-emerald-400 hover:underline hover:text-emerald-700"
                 >
                   Create free account
                 </button>
@@ -228,7 +240,7 @@ export default function LoginPage() {
       </main>
 
       {/* Basic Footer disclaimer */}
-      <footer className="px-4 py-6 md:px-8 border-t border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400" id="login-footer">
+      <footer className="px-4 py-6 md:px-8 border-t border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400 z-10" id="login-footer">
         <div className="flex items-center gap-1.5 max-w-md text-left" id="login-footer-disclaimer">
           <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
           <span>Educational health metrics guide ONLY. Not suitable for diagnoses.</span>

@@ -18,6 +18,8 @@ export interface HealthProfile {
   sleepDuration?: 'Less than 6 hours' | '6 to 8 hours' | 'More than 8 hours';
   stressLevel?: 'Low' | 'Moderate' | 'High';
   countryOrRegion?: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
 
 function decodeProfile(profileData: any): HealthProfile {
@@ -68,6 +70,8 @@ function decodeProfile(profileData: any): HealthProfile {
     sleepDuration,
     stressLevel,
     countryOrRegion,
+    createdAt: profileData.createdAt || profileData.created_at,
+    updatedAt: profileData.updatedAt || profileData.updated_at,
   };
 }
 

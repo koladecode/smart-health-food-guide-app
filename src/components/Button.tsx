@@ -31,14 +31,14 @@ export default function Button(props: ButtonProps) {
     ...rest
   } = props;
 
-  const baseStyle = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyle = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none hover:scale-[1.015] active:scale-[0.985] disabled:transform-none disabled:shadow-none';
 
   const variants = {
     primary: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm shadow-emerald-600/10 hover:shadow-emerald-600/20',
     secondary: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40',
-    outline: 'border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/40',
+    outline: 'border border-gray-300 dark:border-gray-750 text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30',
     ghost: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800/40',
-    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-red-600/20 focus:ring-red-500',
+    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-red-600/20 focus-visible:ring-red-500',
   };
 
   const sizes = {

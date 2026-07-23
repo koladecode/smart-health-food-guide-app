@@ -47,6 +47,7 @@ import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import { Input, Select, Textarea } from '../components/Input';
 import ThemeToggle from '../components/ThemeToggle';
+import { DashboardSkeleton } from '../components/Skeleton';
 
 type ActiveTab = 'overview' | 'nutrition' | 'fitness' | 'medications';
 
@@ -466,32 +467,7 @@ export default function DashboardPage() {
   const allergenInfo = getAllergenWarningContent();
 
   if (loading || !isProfileSynced) {
-    return (
-      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300" id="dashboard-loading">
-        <header className="px-6 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950" id="loading-header">
-          <div className="flex items-center gap-2">
-            <div className="p-1 bg-emerald-600 rounded-lg text-white">
-              <Heart className="w-5 h-5" />
-            </div>
-            <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-              Smart Health Guide
-            </span>
-          </div>
-          <ThemeToggle />
-        </header>
-
-        <main className="flex-1 flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950" id="loading-main">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" id="loading-spinner" />
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading your health dashboard...</p>
-          </div>
-        </main>
-
-        <footer className="py-6 border-t border-slate-100 dark:border-slate-900 text-center text-xs text-slate-400 bg-white dark:bg-slate-950" id="loading-footer">
-          © 2026 Smart Health Guide
-        </footer>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -1084,102 +1060,112 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4" id="history-cards-container">
-                      {displayHistory.map((entry) => {
-                        const originalIdx = history.findIndex(h => h.date === entry.date);
-                        
-                        // Calculate trend relative to previous day
-                        let trend: 'improving' | 'stable' | 'declining' = 'stable';
-                        if (originalIdx > 0) {
-                          const currentScore = history[originalIdx].wellnessScore;
-                          const previousScore = history[originalIdx - 1].wellnessScore;
-                          if (currentScore > previousScore) trend = 'improving';
-                          else if (currentScore < previousScore) trend = 'declining';
-                        }
+                      {displayHistory.length === 0 ? (
+                        <div className="col-span-full py-4 w-full" id="history-empty">
+                          <EmptyState
+                            title="No Historical Progress Logs"
+                            description="Your daily tracker history is currently clear. Complete your first health and habit metrics today to begin compiling your weekly progress trends!"
+                            id="history-empty-state"
+                          />
+                        </div>
+                      ) : (
+                        displayHistory.map((entry) => {
+                          const originalIdx = history.findIndex(h => h.date === entry.date);
+                          
+                          // Calculate trend relative to previous day
+                          let trend: 'improving' | 'stable' | 'declining' = 'stable';
+                          if (originalIdx > 0) {
+                            const currentScore = history[originalIdx].wellnessScore;
+                            const previousScore = history[originalIdx - 1].wellnessScore;
+                            if (currentScore > previousScore) trend = 'improving';
+                            else if (currentScore < previousScore) trend = 'declining';
+                          }
 
-                        return (
-                          <Card key={entry.date} id={`history-card-${entry.date}`} className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between">
-                            <div className="p-4 flex flex-col gap-3 h-full text-left">
-                              {/* Card Header: Date & Trend */}
-                              <div className="flex flex-col gap-1 border-b border-slate-50 dark:border-slate-800/30 pb-2">
-                                <span className="text-2xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                  {formatHistoryDate(entry.date).split(',')[0]}
-                                </span>
-                                <span className="text-xs font-black text-slate-900 dark:text-white truncate">
-                                  {formatHistoryDate(entry.date).split(',')[1] || formatHistoryDate(entry.date)}
-                                </span>
-                                
-                                {/* Trend Indicator Badge */}
-                                <div className="mt-1">
-                                  {trend === 'improving' && (
-                                    <span className="inline-flex items-center gap-1 text-4xs font-black uppercase bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/30">
-                                      <TrendingUp className="w-2.5 h-2.5 flex-shrink-0" /> Improving
+                          return (
+                            <Card key={entry.date} id={`history-card-${entry.date}`} className="border border-slate-100/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between">
+                              <div className="p-4 flex flex-col gap-3 h-full text-left">
+                                {/* Card Header: Date & Trend */}
+                                <div className="flex flex-col gap-1 border-b border-slate-50 dark:border-slate-800/30 pb-2">
+                                  <span className="text-2xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                    {formatHistoryDate(entry.date).split(',')[0]}
+                                  </span>
+                                  <span className="text-xs font-black text-slate-900 dark:text-white truncate">
+                                    {formatHistoryDate(entry.date).split(',')[1] || formatHistoryDate(entry.date)}
+                                  </span>
+                                  
+                                  {/* Trend Indicator Badge */}
+                                  <div className="mt-1">
+                                    {trend === 'improving' && (
+                                      <span className="inline-flex items-center gap-1 text-4xs font-black uppercase bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-100 dark:border-emerald-900/30">
+                                        <TrendingUp className="w-2.5 h-2.5 flex-shrink-0" /> Improving
+                                      </span>
+                                    )}
+                                    {trend === 'stable' && (
+                                      <span className="inline-flex items-center gap-1 text-4xs font-black uppercase bg-slate-50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800/60">
+                                        <Minus className="w-2.5 h-2.5 flex-shrink-0" /> Stable
+                                      </span>
+                                    )}
+                                    {trend === 'declining' && (
+                                      <span className="inline-flex items-center gap-1 text-4xs font-black uppercase bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-100 dark:border-amber-900/30">
+                                        <TrendingDown className="w-2.5 h-2.5 flex-shrink-0" /> Declining
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Wellness Score Badge / Circle */}
+                                <div className="flex items-center gap-2.5 py-1.5 my-0.5">
+                                  <div className="text-2xl font-black text-slate-950 dark:text-white">
+                                    {entry.wellnessScore}
+                                  </div>
+                                  <div className="flex flex-col leading-none">
+                                    <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Score</span>
+                                    <span className="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                                      {entry.wellnessScore >= 80 ? 'Excellent' : entry.wellnessScore >= 50 ? 'Good' : 'Incomplete'}
                                     </span>
-                                  )}
-                                  {trend === 'stable' && (
-                                    <span className="inline-flex items-center gap-1 text-4xs font-black uppercase bg-slate-50 text-slate-500 dark:bg-slate-800/40 dark:text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800/60">
-                                      <Minus className="w-2.5 h-2.5 flex-shrink-0" /> Stable
+                                  </div>
+                                </div>
+
+                                {/* Daily Metrics breakdown */}
+                                <div className="flex flex-col gap-2 text-3xs text-slate-500 dark:text-slate-400 font-semibold mt-auto pt-2 border-t border-slate-50 dark:border-slate-800/30">
+                                  {/* Water */}
+                                  <div className="flex items-center justify-between">
+                                    <span className="flex items-center gap-1 min-w-0">
+                                      <Droplet className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                                      <span className="truncate">Hydration</span>
                                     </span>
-                                  )}
-                                  {trend === 'declining' && (
-                                    <span className="inline-flex items-center gap-1 text-4xs font-black uppercase bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-100 dark:border-amber-900/30">
-                                      <TrendingDown className="w-2.5 h-2.5 flex-shrink-0" /> Declining
+                                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                                      {Math.round(entry.waterIntake / 100) / 10}L
                                     </span>
-                                  )}
+                                  </div>
+                                  
+                                  {/* Exercise */}
+                                  <div className="flex items-center justify-between">
+                                    <span className="flex items-center gap-1 min-w-0">
+                                      <Flame className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                                      <span className="truncate">Fitness</span>
+                                    </span>
+                                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                                      {entry.exerciseProgress}m
+                                    </span>
+                                  </div>
+
+                                  {/* Meals */}
+                                  <div className="flex items-center justify-between">
+                                    <span className="flex items-center gap-1 min-w-0">
+                                      <Utensils className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                                      <span className="truncate">Nutrition</span>
+                                    </span>
+                                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                                      {entry.mealsCompleted}/{entry.mealsTarget}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-
-                              {/* Wellness Score Badge / Circle */}
-                              <div className="flex items-center gap-2.5 py-1.5 my-0.5">
-                                <div className="text-2xl font-black text-slate-950 dark:text-white">
-                                  {entry.wellnessScore}
-                                </div>
-                                <div className="flex flex-col leading-none">
-                                  <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Score</span>
-                                  <span className="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
-                                    {entry.wellnessScore >= 80 ? 'Excellent' : entry.wellnessScore >= 50 ? 'Good' : 'Incomplete'}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Daily Metrics breakdown */}
-                              <div className="flex flex-col gap-2 text-3xs text-slate-500 dark:text-slate-400 font-semibold mt-auto pt-2 border-t border-slate-50 dark:border-slate-800/30">
-                                {/* Water */}
-                                <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1 min-w-0">
-                                    <Droplet className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                                    <span className="truncate">Hydration</span>
-                                  </span>
-                                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                                    {Math.round(entry.waterIntake / 100) / 10}L
-                                  </span>
-                                </div>
-                                
-                                {/* Exercise */}
-                                <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1 min-w-0">
-                                    <Flame className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                                    <span className="truncate">Fitness</span>
-                                  </span>
-                                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                                    {entry.exerciseProgress}m
-                                  </span>
-                                </div>
-
-                                {/* Meals */}
-                                <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1 min-w-0">
-                                    <Utensils className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                                    <span className="truncate">Nutrition</span>
-                                  </span>
-                                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                                    {entry.mealsCompleted}/{entry.mealsTarget}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </Card>
-                        );
-                      })}
+                            </Card>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 );
@@ -1597,25 +1583,25 @@ export default function DashboardPage() {
                                 <div className="flex flex-col gap-1.5 text-left">
                                   <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Starting weight</span>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <button onClick={() => setGoalStartWeight(prev => Math.max(30, prev - 0.5))} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-</button>
+                                    <button onClick={() => setGoalStartWeight(prev => Math.max(30, prev - 0.5))} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs hover:scale-110 active:scale-90 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">-</button>
                                     <span className="text-xs font-black text-slate-800 dark:text-slate-200 w-16 text-center">{goalStartWeight.toFixed(1)} kg</span>
-                                    <button onClick={() => setGoalStartWeight(prev => prev + 0.5)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+</button>
+                                    <button onClick={() => setGoalStartWeight(prev => prev + 0.5)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs hover:scale-110 active:scale-90 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">+</button>
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-1.5 text-left">
                                   <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Logged Current weight</span>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <button onClick={() => setGoalCurrentWeight(prev => Math.max(30, prev - 0.5))} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-</button>
+                                    <button onClick={() => setGoalCurrentWeight(prev => Math.max(30, prev - 0.5))} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs hover:scale-110 active:scale-90 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">-</button>
                                     <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 w-16 text-center">{goalCurrentWeight.toFixed(1)} kg</span>
-                                    <button onClick={() => setGoalCurrentWeight(prev => prev + 0.5)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+</button>
+                                    <button onClick={() => setGoalCurrentWeight(prev => prev + 0.5)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs hover:scale-110 active:scale-90 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">+</button>
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-1.5 text-left">
                                   <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Target weight goal</span>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <button onClick={() => setGoalTargetWeight(prev => Math.max(30, prev - 0.5))} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-</button>
+                                    <button onClick={() => setGoalTargetWeight(prev => Math.max(30, prev - 0.5))} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs hover:scale-110 active:scale-90 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">-</button>
                                     <span className="text-xs font-black text-slate-800 dark:text-slate-200 w-16 text-center">{goalTargetWeight.toFixed(1)} kg</span>
-                                    <button onClick={() => setGoalTargetWeight(prev => prev + 0.5)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+</button>
+                                    <button onClick={() => setGoalTargetWeight(prev => prev + 0.5)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 shadow-xs hover:scale-110 active:scale-90 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">+</button>
                                   </div>
                                 </div>
                               </div>
@@ -1631,9 +1617,9 @@ export default function DashboardPage() {
                                 <div className="flex flex-col gap-1.5 text-left">
                                   <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Adjust Weekly Target Goal</span>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <button onClick={() => setGoalTargetExercise(prev => Math.max(30, prev - 15))} className="w-20 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-15m</button>
+                                    <button onClick={() => setGoalTargetExercise(prev => Math.max(30, prev - 15))} className="w-20 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs hover:scale-105 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">-15m</button>
                                     <span className="text-xs font-black text-orange-600 dark:text-orange-400 w-24 text-center">{goalTargetExercise} mins</span>
-                                    <button onClick={() => setGoalTargetExercise(prev => prev + 15)} className="w-20 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+15m</button>
+                                    <button onClick={() => setGoalTargetExercise(prev => prev + 15)} className="w-20 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs hover:scale-105 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">+15m</button>
                                   </div>
                                 </div>
                               </div>
@@ -1649,9 +1635,9 @@ export default function DashboardPage() {
                                 <div className="flex flex-col gap-1.5 text-left">
                                   <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Adjust Average Target Goal</span>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <button onClick={() => setGoalTargetWellness(prev => Math.max(50, prev - 5))} className="w-16 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-5%</button>
+                                    <button onClick={() => setGoalTargetWellness(prev => Math.max(50, prev - 5))} className="w-16 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs hover:scale-105 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">-5%</button>
                                     <span className="text-xs font-black text-blue-600 dark:text-blue-400 w-24 text-center">{goalTargetWellness}%</span>
-                                    <button onClick={() => setGoalTargetWellness(prev => Math.min(100, prev + 5))} className="w-16 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+5%</button>
+                                    <button onClick={() => setGoalTargetWellness(prev => Math.min(100, prev + 5))} className="w-16 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs hover:scale-105 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">+5%</button>
                                   </div>
                                 </div>
                               </div>
@@ -1667,9 +1653,9 @@ export default function DashboardPage() {
                                 <div className="flex flex-col gap-1.5 text-left">
                                   <span className="text-4xs text-slate-400 dark:text-slate-500 uppercase font-black">Adjust Weekly Target Goal</span>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <button onClick={() => setGoalTargetMeals(prev => Math.max(5, prev - 1))} className="w-14 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">-1</button>
+                                    <button onClick={() => setGoalTargetMeals(prev => Math.max(5, prev - 1))} className="w-14 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs hover:scale-105 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">-1</button>
                                     <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 w-24 text-center">{goalTargetMeals} meals</span>
-                                    <button onClick={() => setGoalTargetMeals(prev => Math.min(21, prev + 1))} className="w-14 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs transition-colors">+1</button>
+                                    <button onClick={() => setGoalTargetMeals(prev => Math.min(21, prev + 1))} className="w-14 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 text-xs text-slate-600 dark:text-slate-300 shadow-xs hover:scale-105 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">+1</button>
                                   </div>
                                 </div>
                               </div>
@@ -2053,10 +2039,9 @@ export default function DashboardPage() {
                     )}
 
                     {!allergenInfo && (
-                      <div className="p-4 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2" id="simulator-empty-notif">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                        <span>No allergy profile alerts currently triggered. Defaulting to general nutrition listings.</span>
-                      </div>
+                      <Alert variant="success" title="No Active Triggers" id="simulator-empty-notif" className="rounded-2xl border-emerald-100/80 dark:border-emerald-950/50 text-sm">
+                        No allergy profile alerts currently triggered. Defaulting to general nutrition listings.
+                      </Alert>
                     )}
 
                   </CardContent>

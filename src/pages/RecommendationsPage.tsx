@@ -33,6 +33,8 @@ import Button from '../components/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/Card';
 import ThemeToggle from '../components/ThemeToggle';
 import Alert from '../components/Alert';
+import { RecommendationsSkeleton } from '../components/Skeleton';
+import EmptyState from '../components/EmptyState';
 
 export default function RecommendationsPage() {
   const { navigateTo } = useNavigation();
@@ -74,32 +76,7 @@ export default function RecommendationsPage() {
 
   // 0. If profile is loading, show loading spinner
   if (loadingProfile) {
-    return (
-      <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300" id="recs-profile-loading">
-        <header className="px-4 py-4 md:px-8 border-b border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex justify-between items-center" id="loading-recs-header">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-emerald-600 rounded-lg text-white">
-              <Heart className="w-5 h-5" />
-            </div>
-            <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-              Smart Health Guide
-            </span>
-          </div>
-          <ThemeToggle />
-        </header>
-
-        <main className="flex-1 flex items-center justify-center p-6" id="loading-recs-main">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading your profile and personalized recommendations...</p>
-          </div>
-        </main>
-
-        <footer className="py-6 border-t border-slate-100 dark:border-slate-900 text-center text-xs text-slate-400" id="loading-recs-footer">
-          © 2026 Smart Health Guide
-        </footer>
-      </div>
-    );
+    return <RecommendationsSkeleton />;
   }
 
   // 1. If no profile, show friendly incomplete message
@@ -161,6 +138,172 @@ export default function RecommendationsPage() {
     return Math.min(Math.max(percent, 0), 100);
   };
 
+  // Helper to rewrite every Clinical Rationale into a single concise benefit sentence (maximum two short sentences)
+  const summarizeClinicalRationale = (text: string): string => {
+    if (!text) return '';
+    let cleaned = text.trim();
+    
+    const commonReplacements: { [key: string]: string } = {
+      'its low-glycemic nature assists in preventing sharp blood glucose surges and moderates insulin spikes.': 
+        'Stabilizes blood glucose curves and prevents pancreatic insulin spikes with a slow-release, low-glycemic design.',
+      'it has natural cardioprotective minerals, is low in sodium, and optimizes vascular elasticity and circulation.': 
+        'Contains rich cardioprotective minerals and low sodium to optimize arterial elasticity and general circulation.',
+      'it is rich in soluble fibers/healthy lipids that actively bind and help clear excessive circulating LDL cholesterol.': 
+        'Actively binds and clears excess circulating LDL cholesterol using active soluble fibers and healthy lipids.',
+      'its high nutrient density and low glycemic load support healthy caloric deficits while preserving lean tissues.': 
+        'Maintains high nutrient density and low glycemic load to protect lean muscle tissue in a calorie deficit.',
+      'its clean amino acid structure and calorie-efficient density promote lean tissue protein synthesis and energy recovery.': 
+        'Accelerates clean muscle protein synthesis and energy recovery with a premium bioavailable amino acid profile.',
+      'it is extremely soothing, low in gastrointestinal irritants, and highly easy to digest, preserving intestinal integrity.': 
+        'Eases digestion and prevents acid reflux or gastric discomfort by protecting the delicate stomach lining.',
+      'its balanced micro-mineral profile is safe for renal filtration, limiting unnecessary nitrogenous waste load.': 
+        'Protects renal health and limits nitrogenous waste with a kidney-safe micro-mineral balance.',
+      'it is loaded with essential bioavailable micronutrients, reinforcing antioxidant defense and physical vitality.': 
+        'Strengthens cellular antioxidant defenses and boosts daily physical vitality with bioavailable micronutrients.'
+    };
+
+    for (const [key, val] of Object.entries(commonReplacements)) {
+      if (cleaned.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(cleaned.toLowerCase())) {
+        return val;
+      }
+    }
+
+    const sentences = cleaned
+      .split(/(?<=[.!?])\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    if (sentences.length > 0) {
+      let summary = sentences[0];
+      if (sentences.length > 1 && (summary.length + sentences[1].length < 130)) {
+        summary += ' ' + sentences[1];
+      }
+      if (!summary.endsWith('.')) {
+        summary += '.';
+      }
+      return summary;
+    }
+
+    return cleaned;
+  };
+
+  // Helper to convert Healthy Food Combinations into 3 key benefits
+  const getCombinationBenefits = (comb: { id: string; title: string; description: string }): { label: string; text: string }[] => {
+    const id = comb.id;
+    const desc = comb.description;
+
+    const library: { [key: string]: { label: string; text: string }[] } = {
+      'comb-breakfast': [
+        { label: 'Morning Energy', text: 'Combines complete proteins and complex grains to deliver hours of stable, non-fluctuating energy.' },
+        { label: 'Hormone Regulation', text: 'Suppresses breakfast-induced cortisol peaks and satisfies physical fullness cues.' },
+        { label: 'Metabolic Ignite', text: 'Supports early thyroid and metabolic rate processes safely without insulin spikes.' }
+      ],
+      'comb-lunch': [
+        { label: 'Macronutrient Split', text: 'Delivers a perfectly-proportioned mix of lean proteins, complex grains, and healthy lipids.' },
+        { label: 'Glycemic Buffer', text: 'Soluble fiber from greens delays gastric emptying, eliminating post-lunch brain fog.' },
+        { label: 'Cellular Fueling', text: 'Provides a rich spectrum of bioavailable amino acids for muscle and organ repair.' }
+      ],
+      'comb-dinner': [
+        { label: 'Nocturnal Safety', text: 'Protects esophageal walls and prevents overnight acid reflux with soft, alkaline items.' },
+        { label: 'Sustained Glycogen', text: 'Keeps blood sugar stable throughout the night, preventing cortisol-induced sleep disruptions.' },
+        { label: 'System Recovery', text: 'Supplies concentrated trace minerals to support cellular detox and biological repair.' }
+      ],
+      'comb-snack': [
+        { label: 'Hunger Control', text: 'Physically fills the stomach between main meals using dietary fiber and healthy plant fats.' },
+        { label: 'Insulin Defense', text: 'Prevents mid-day energy dips without prompting sudden glycemic spikes or cravings.' },
+        { label: 'Cortisol Cushioning', text: 'Provides crucial minerals that help buffer physiological stress responses.' }
+      ],
+      'comb-iron-vitc': [
+        { label: '300% Absorption', text: 'Vitamin C chemically reduces non-heme iron into a highly bioavailable ferrous form.' },
+        { label: 'Oxygen Capacity', text: 'Directly supports red blood cell production to combat clinical fatigue and anemia.' },
+        { label: 'Cellular Synergy', text: 'Combines dynamic plant-based iron carriers with active citrus ascorbic acids.' }
+      ],
+      'comb-fat-vitamins': [
+        { label: 'Lipid Transport', text: 'Healthy fats act as critical carriers to ferry fat-soluble vitamins (A, D, E, K) across the gut barrier.' },
+        { label: 'Skeletal Integrity', text: 'Maximizes calcium absorption and binding to secure healthy bone density.' },
+        { label: 'Uptake Efficiency', text: 'Guarantees fat-soluble co-factors are fully utilized by cells instead of flushed out.' }
+      ],
+      'comb-carb-fiber-protein': [
+        { label: 'Glucose Damping', text: 'Wrapping raw starches in fibers and clean proteins smooths the post-meal glucose rise.' },
+        { label: 'Extended Fullness', text: 'Significantly extends digestion transit time, signaling long-term satiety.' },
+        { label: 'Pancreatic Rest', text: 'Reduces heavy work for beta-cells, preserving high insulin sensitivity.' }
+      ],
+      'comb-amino-synthesis': [
+        { label: 'Complete Spectrum', text: 'Fuses complementary plant foods to yield a full profile of all nine essential amino acids.' },
+        { label: 'Muscle Protection', text: 'Supplies high-quality building blocks to halt muscle catabolism and waste.' },
+        { label: 'Vascular Longevity', text: 'Provides satisfying proteins without the heavy saturated fats of animal sources.' }
+      ],
+      'comb-potassium-magnesium': [
+        { label: 'Osmotic Balance', text: 'Active potassium drives excess intracellular sodium out of circulation through the kidneys.' },
+        { label: 'Arterial Relaxation', text: 'Magnesium relaxes vascular smooth muscles, lowering resting systemic tension.' },
+        { label: 'Pressure Defence', text: 'Combined mineral action supports natural, healthy blood pressure readings.' }
+      ],
+      'comb-kidney-safe-flavour': [
+        { label: 'Renal Relief', text: 'Protects sensitive nephrons from pressure damage by avoiding synthetic sodium seasonings.' },
+        { label: 'Safe Taste', text: 'Uses fresh herbs and mild citrus to delight taste buds without overloading blood potassium levels.' },
+        { label: 'Endothelial Tone', text: 'Provides natural cardiovascular co-factors that support arterial health.' }
+      ],
+      'comb-fiber-sterols': [
+        { label: 'Cholesterol Sweep', text: 'Viscous fibers form a temporary gel that traps and excretes dietary cholesterol.' },
+        { label: 'Lipid Balance', text: 'Monounsaturated olive oil acids encourage liver synthesis of protective HDL.' },
+        { label: 'Artery Preservation', text: 'Lowers circulating atherogenic LDL particles to keep cardiovascular passages clear.' }
+      ],
+      'comb-ginger-steamed': [
+        { label: 'Digestive Comfort', text: 'Active gingerols stimulate stomach motility, preventing backward flow of gastric acids.' },
+        { label: 'Soothed Gut Lining', text: 'Softened steamed fibers digest gently without causing mechanical gut friction.' },
+        { label: 'Anti-Bloat Action', text: 'Stops bacterial fermentation to prevent stomach distension and flatulence.' }
+      ],
+      'comb-density-gain': [
+        { label: 'Caloric Efficiency', text: 'Delivers a clean caloric surplus using complex grains and natural lipids rather than sugar.' },
+        { label: 'Gut Protection', text: 'Avoids digestive overload, allowing efficient calorie processing without bloating.' },
+        { label: 'Glycogen Storage', text: 'Replenishes energy stores inside active muscle and liver tissues completely.' }
+      ],
+      'comb-omega3-lycopene-hh': [
+        { label: '400% Bioavailability', text: 'Heating tomatoes in extra virgin olive oil unlocks high quantities of active lycopene.' },
+        { label: 'Arterial Shielding', text: 'Protects vascular lining from free-radical oxidation and calcification.' },
+        { label: 'Inflammation Relief', text: 'Fuses omega-3 and carotenoids to reduce systemic cellular inflammatory responses.' }
+      ],
+      'comb-amino-synthesis-mg': [
+        { label: 'Anabolic Delivery', text: 'Triggers a slight insulin push that shuttles amino acids straight into recovering fibers.' },
+        { label: 'Muscle Recovery', text: 'Supplies the perfect ratio of structural materials to rebuild and expand muscle tissue.' },
+        { label: 'Glycogen Recharge', text: 'Refuels muscle glycogen levels within the critical post-workout repair window.' }
+      ]
+    };
+
+    for (const [key, val] of Object.entries(library)) {
+      if (id.startsWith(key) || key.startsWith(id)) {
+        return val;
+      }
+    }
+
+    const sentences = desc
+      .split(/(?<=[.!?])\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 5);
+
+    const fallbackBenefits: { label: string; text: string }[] = [];
+    if (sentences.length >= 3) {
+      fallbackBenefits.push(
+        { label: 'Synergy Boost', text: sentences[0] },
+        { label: 'Active Benefit', text: sentences[1] },
+        { label: 'Target Outcome', text: sentences[2] }
+      );
+    } else if (sentences.length === 2) {
+      fallbackBenefits.push(
+        { label: 'Synergy Boost', text: sentences[0] },
+        { label: 'Active Benefit', text: sentences[1] },
+        { label: 'Target Outcome', text: 'Promotes complete nutrient absorption and long-term metabolic health.' }
+      );
+    } else {
+      fallbackBenefits.push(
+        { label: 'Synergy Boost', text: desc },
+        { label: 'Nutrient Uptake', text: 'Combines natural compounds to elevate metabolic absorption and cell efficiency.' },
+        { label: 'Target Outcome', text: 'Supports vital metabolic functions and reduces oxidative tissue stress.' }
+      );
+    }
+    return fallbackBenefits.slice(0, 3);
+  };
+
   // Helper to parse description with optional clinical reason into short, high-scannability sentences
   const renderDescriptionText = (text: string) => {
     if (!text) return null;
@@ -212,7 +355,7 @@ export default function RecommendationsPage() {
             <Activity className="w-4 h-4 text-teal-500 dark:text-teal-400 flex-shrink-0 mt-0.5" />
             <div>
               <span className="font-extrabold text-teal-600 dark:text-teal-400 uppercase tracking-widest text-4xs block mb-0.5">Clinical Rationale</span>
-              {clinicalReason}
+              {summarizeClinicalRationale(clinicalReason)}
             </div>
           </div>
         )}
@@ -446,7 +589,13 @@ export default function RecommendationsPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                {recs.foodsToEat.some(f => f.category) ? (
+                {recs.foodsToEat.length === 0 ? (
+                  <EmptyState
+                    title="No Food Recommendations Calculated"
+                    description="Our biometric matching engine couldn't find matches. Please verify that your dietary choices and preferences are correctly set in your health profile."
+                    id="recs-eat-empty-state"
+                  />
+                ) : recs.foodsToEat.some(f => f.category) ? (
                   <div className="flex flex-col gap-8" id="eat-items-list-grouped">
                     {(['Breakfast', 'Lunch', 'Dinner', 'Healthy Snacks', 'Drinks'] as const).map((category) => {
                       const categoryFoods = recs.foodsToEat.filter((f) => f.category === category);
@@ -469,38 +618,75 @@ export default function RecommendationsPage() {
                         }
                       };
 
+                      const primaryFood = categoryFoods[0];
+                      const alternativeFood = categoryFoods[1];
+
                       return (
                         <div key={category} className="flex flex-col gap-4" id={`category-block-${category.toLowerCase().replace(' ', '-')}`}>
                           <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-2">
                             <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100/60 dark:border-slate-800/40">
                               {getCategoryIcon(category)}
                             </div>
-                            <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">{category}</h3>
-                            <span className="text-4xs px-2 py-0.5 font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono ml-auto">
-                              {categoryFoods.length} selected
-                            </span>
+                            <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
+                              {category === 'Healthy Snacks' ? 'Snacks' : category}
+                            </h3>
+                            {categoryFoods.length > 2 && (
+                              <span className="text-4xs px-2 py-0.5 font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-mono ml-auto">
+                                2 of {categoryFoods.length} shown
+                              </span>
+                            )}
                           </div>
                           
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {categoryFoods.map((food) => (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Primary Choice */}
+                            {primaryFood && (
                               <div 
-                                key={food.id} 
-                                className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                                className="p-5 bg-white dark:bg-slate-900/60 border border-slate-150 dark:border-slate-800 rounded-2xl flex flex-col gap-3 shadow-xs hover:border-emerald-500/30 transition-all duration-300 group relative overflow-hidden"
                               >
-                                <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                                <div className="flex flex-col gap-1.5 flex-1">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                                    {food.badge && (
-                                      <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
-                                        {food.badge}
-                                      </span>
-                                    )}
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-2xs uppercase tracking-wider">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <span>Primary Choice</span>
                                   </div>
-                                  {renderDescriptionText(food.description)}
+                                  {primaryFood.badge && (
+                                    <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
+                                      {primaryFood.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                                  {primaryFood.title}
+                                </h4>
+                                <div className="text-xs leading-relaxed font-medium">
+                                  {renderDescriptionText(primaryFood.description)}
                                 </div>
                               </div>
-                            ))}
+                            )}
+
+                            {/* Optional Alternative */}
+                            {alternativeFood && (
+                              <div 
+                                className="p-5 bg-slate-50/20 dark:bg-slate-950/20 border border-dashed border-slate-200 dark:border-slate-800/80 rounded-2xl flex flex-col gap-3 hover:border-emerald-500/20 hover:bg-white dark:hover:bg-slate-900/40 transition-all duration-300 group"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-bold text-2xs uppercase tracking-wider font-mono">
+                                    <CornerDownRight className="w-4 h-4 text-slate-400" />
+                                    <span>Optional Alternative</span>
+                                  </div>
+                                  {alternativeFood.badge && (
+                                    <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono">
+                                      {alternativeFood.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                                  {alternativeFood.title}
+                                </h4>
+                                <div className="text-xs leading-relaxed font-medium">
+                                  {renderDescriptionText(alternativeFood.description)}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -513,22 +699,38 @@ export default function RecommendationsPage() {
                           <CheckCircle2 className="w-4 h-4 text-slate-400" />
                           <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">Other Suggestions</h3>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {recs.foodsToEat.filter((f) => !f.category).map((food) => (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {recs.foodsToEat.filter((f) => !f.category).slice(0, 2).map((food, fidx) => (
                             <div 
                               key={food.id} 
-                              className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                              className={`p-5 rounded-2xl flex flex-col gap-3 transition-all duration-300 group ${
+                                fidx === 0 
+                                  ? 'bg-white dark:bg-slate-900/60 border border-slate-150 dark:border-slate-800 hover:border-emerald-500/30' 
+                                  : 'bg-slate-50/20 dark:bg-slate-950/20 border border-dashed border-slate-200 dark:border-slate-800/80 hover:border-emerald-500/20 hover:bg-white dark:hover:bg-slate-900/40'
+                              }`}
                             >
-                              <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                              <div className="flex flex-col gap-1.5 flex-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                                  {food.badge && (
-                                    <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
-                                      {food.badge}
-                                    </span>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-bold text-2xs uppercase tracking-wider">
+                                  {fidx === 0 ? (
+                                    <>
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                      <span>Primary Suggestion</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CornerDownRight className="w-4 h-4 text-slate-400" />
+                                      <span>Alternative Suggestion</span>
+                                    </>
                                   )}
                                 </div>
+                                {food.badge && (
+                                  <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-450 font-mono">
+                                    {food.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{food.title}</h4>
+                              <div className="text-xs leading-relaxed font-medium">
                                 {renderDescriptionText(food.description)}
                               </div>
                             </div>
@@ -538,22 +740,38 @@ export default function RecommendationsPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="eat-items-list">
-                    {recs.foodsToEat.map((food) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="eat-items-list">
+                    {recs.foodsToEat.slice(0, 2).map((food, fidx) => (
                       <div 
                         key={food.id} 
-                        className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-emerald-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                        className={`p-5 rounded-2xl flex flex-col gap-3 transition-all duration-300 group ${
+                          fidx === 0 
+                            ? 'bg-white dark:bg-slate-900/60 border border-slate-150 dark:border-slate-800 hover:border-emerald-500/30 shadow-xs' 
+                            : 'bg-slate-50/20 dark:bg-slate-950/20 border border-dashed border-slate-200 dark:border-slate-800/80 hover:border-emerald-500/20 hover:bg-white dark:hover:bg-slate-900/40'
+                        }`}
                       >
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                        <div className="flex flex-col gap-1.5 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                            {food.badge && (
-                              <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
-                                {food.badge}
-                              </span>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-bold text-2xs uppercase tracking-wider">
+                            {fidx === 0 ? (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                <span>Primary Suggestion</span>
+                              </>
+                            ) : (
+                              <>
+                                <CornerDownRight className="w-4 h-4 text-slate-400" />
+                                <span>Alternative Suggestion</span>
+                              </>
                             )}
                           </div>
+                          {food.badge && (
+                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-450 font-mono">
+                              {food.badge}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{food.title}</h4>
+                        <div className="text-xs leading-relaxed font-medium">
                           {renderDescriptionText(food.description)}
                         </div>
                       </div>
@@ -577,27 +795,35 @@ export default function RecommendationsPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="avoid-items-list">
-                  {recs.foodsToAvoid.map((food) => (
-                    <div 
-                      key={food.id} 
-                      className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-amber-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
-                    >
-                      <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                      <div className="flex flex-col gap-1.5 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                          {food.badge && (
-                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono">
-                              {food.badge}
-                            </span>
-                          )}
+                {recs.foodsToAvoid.length === 0 ? (
+                  <EmptyState
+                    title="No Avoidance Filters Triggered"
+                    description="Based on your profile, no specific food categories or items are currently flagged as inflammatory or reactive."
+                    id="recs-avoid-empty-state"
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="avoid-items-list">
+                    {recs.foodsToAvoid.map((food) => (
+                      <div 
+                        key={food.id} 
+                        className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-amber-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                      >
+                        <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                        <div className="flex flex-col gap-1.5 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
+                            {food.badge && (
+                              <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono">
+                                {food.badge}
+                              </span>
+                            )}
+                          </div>
+                          {renderDescriptionText(food.description)}
                         </div>
-                        {renderDescriptionText(food.description)}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -615,27 +841,47 @@ export default function RecommendationsPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="combinations-items-list">
-                  {recs.healthyCombinations.map((comb) => (
-                    <div 
-                      key={comb.id} 
-                      className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-purple-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
-                    >
-                      <Heart className="w-5 h-5 text-purple-500 dark:text-purple-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                      <div className="flex flex-col gap-1.5 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{comb.title}</h4>
+                {recs.healthyCombinations.length === 0 ? (
+                  <EmptyState
+                    title="No Combinations Generated"
+                    description="Our metabolic synergy analyzer is compiling healthy pairings for your biological markers."
+                    id="recs-combinations-empty-state"
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="combinations-items-list">
+                    {recs.healthyCombinations.map((comb) => (
+                      <div 
+                        key={comb.id} 
+                        className="p-5 bg-white dark:bg-slate-900/40 border border-slate-150 dark:border-slate-800/80 rounded-2xl flex flex-col gap-3.5 hover:border-purple-500/25 dark:hover:border-purple-500/30 transition-all duration-300 group"
+                      >
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/60 pb-2.5">
+                          <div className="flex items-center gap-2">
+                            <Heart className="w-4 h-4 text-purple-500 dark:text-purple-400 flex-shrink-0 group-hover:scale-115 transition-transform duration-300" />
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{comb.title}</h4>
+                          </div>
                           {comb.badge && (
-                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono">
+                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono flex-shrink-0">
                               {comb.badge}
                             </span>
                           )}
                         </div>
-                        {renderDescriptionText(comb.description)}
+
+                        <div className="flex flex-col gap-3">
+                          {getCombinationBenefits(comb).map((benefit, bidx) => (
+                            <div key={bidx} className="flex items-start gap-2.5 text-2xs leading-relaxed text-slate-550 dark:text-slate-400 font-medium">
+                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 dark:bg-purple-400 mt-1.5 flex-shrink-0" />
+                              <div>
+                                <strong className="font-extrabold text-slate-850 dark:text-slate-200">{benefit.label}</strong>
+                                <span className="text-slate-400 dark:text-slate-500 mx-1">•</span>
+                                <span>{benefit.text}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -728,57 +974,65 @@ export default function RecommendationsPage() {
                 <div className="flex flex-col gap-4">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Suggested Micro-Routine</h4>
                   <div className="flex flex-col gap-4.5" id="exercise-routines-list">
-                    {recs.exercise.routine.map((item, idx) => {
-                      try {
-                        const parsed = JSON.parse(item);
-                        return (
-                          <div key={idx} className="p-5 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex flex-col gap-4 hover:border-orange-500/20 hover:bg-white dark:hover:bg-slate-900/50 transition-all duration-300">
-                            <div className="flex justify-between items-start gap-4">
-                              <div className="flex items-start gap-3">
-                                <div className="p-1.5 bg-orange-500/10 dark:bg-orange-950/55 rounded-xl border border-orange-500/20 flex-shrink-0 mt-0.5">
-                                  <CornerDownRight className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                                </div>
-                                <div>
-                                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{parsed.name}</h4>
-                                  <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/10 text-2xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mt-2">
-                                    <span className="font-extrabold text-orange-600 dark:text-orange-400 uppercase tracking-widest text-4xs block mb-0.5">Safety Precaution</span>
-                                    {parsed.safetyNotes}
+                    {recs.exercise.routine.length === 0 ? (
+                      <EmptyState
+                        title="No Micro-Routines Recommended"
+                        description="Based on your cardiovascular baseline and region requirements, no dedicated active routines are currently active."
+                        id="recs-exercise-empty-state"
+                      />
+                    ) : (
+                      recs.exercise.routine.map((item, idx) => {
+                        try {
+                          const parsed = JSON.parse(item);
+                          return (
+                            <div key={idx} className="p-5 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex flex-col gap-4 hover:border-orange-500/20 hover:bg-white dark:hover:bg-slate-900/50 transition-all duration-300">
+                              <div className="flex justify-between items-start gap-4">
+                                <div className="flex items-start gap-3">
+                                  <div className="p-1.5 bg-orange-500/10 dark:bg-orange-950/55 rounded-xl border border-orange-500/20 flex-shrink-0 mt-0.5">
+                                    <CornerDownRight className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{parsed.name}</h4>
+                                    <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/10 text-2xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mt-2">
+                                      <span className="font-extrabold text-orange-600 dark:text-orange-400 uppercase tracking-widest text-4xs block mb-0.5">Safety Precaution</span>
+                                      {parsed.safetyNotes}
+                                    </div>
                                   </div>
                                 </div>
+                                <div className="flex flex-col items-end flex-shrink-0 text-right">
+                                  <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                                    ~{parsed.caloriesBurned} kcal
+                                  </span>
+                                  <span className="text-4xs font-bold text-slate-400 uppercase tracking-widest mt-1">Est. Burn</span>
+                                </div>
                               </div>
-                              <div className="flex flex-col items-end flex-shrink-0 text-right">
-                                <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                                  ~{parsed.caloriesBurned} kcal
-                                </span>
-                                <span className="text-4xs font-bold text-slate-400 uppercase tracking-widest mt-1">Est. Burn</span>
+                              
+                              <div className="grid grid-cols-3 gap-3 pt-3.5 border-t border-slate-100 dark:border-slate-800/60 text-2xs font-semibold">
+                                <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                                  <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Duration</span>
+                                  <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.duration}</span>
+                                </div>
+                                <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                                  <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Frequency</span>
+                                  <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.frequency}</span>
+                                </div>
+                                <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                                  <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Intensity</span>
+                                  <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.intensity}</span>
+                                </div>
                               </div>
                             </div>
-                            
-                            <div className="grid grid-cols-3 gap-3 pt-3.5 border-t border-slate-100 dark:border-slate-800/60 text-2xs font-semibold">
-                              <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                                <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Duration</span>
-                                <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.duration}</span>
-                              </div>
-                              <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                                <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Frequency</span>
-                                <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.frequency}</span>
-                              </div>
-                              <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                                <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Intensity</span>
-                                <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.intensity}</span>
-                              </div>
+                          );
+                        } catch (e) {
+                          return (
+                            <div key={idx} className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex gap-3 items-start text-left">
+                              <CornerDownRight className="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-bold">{item}</p>
                             </div>
-                          </div>
-                        );
-                      } catch (e) {
-                        return (
-                          <div key={idx} className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex gap-3 items-start text-left">
-                            <CornerDownRight className="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-bold">{item}</p>
-                          </div>
-                        );
-                      }
-                    })}
+                          );
+                        }
+                      })
+                    )}
                   </div>
                 </div>
 
@@ -812,27 +1066,35 @@ export default function RecommendationsPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="lifestyle-items-list">
-                  {recs.lifestyleTips.map((tip) => (
-                    <div 
-                      key={tip.id} 
-                      className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-teal-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
-                    >
-                      <ShieldCheck className="w-5 h-5 text-teal-500 dark:text-teal-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                      <div className="flex flex-col gap-1.5 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{tip.title}</h4>
-                          {tip.badge && (
-                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 font-mono">
-                              {tip.badge}
-                            </span>
-                          )}
+                {recs.lifestyleTips.length === 0 ? (
+                  <EmptyState
+                    title="No Lifestyle Adaptations Triggered"
+                    description="No special circadian adjustments or lifestyle tips are suggested at this moment. Maintain standard wellness cycles."
+                    id="recs-lifestyle-empty-state"
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="lifestyle-items-list">
+                    {recs.lifestyleTips.map((tip) => (
+                      <div 
+                        key={tip.id} 
+                        className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-teal-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
+                      >
+                        <ShieldCheck className="w-5 h-5 text-teal-500 dark:text-teal-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                        <div className="flex flex-col gap-1.5 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{tip.title}</h4>
+                            {tip.badge && (
+                              <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 font-mono">
+                                {tip.badge}
+                              </span>
+                            )}
+                          </div>
+                          {renderDescriptionText(tip.description)}
                         </div>
-                        {renderDescriptionText(tip.description)}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

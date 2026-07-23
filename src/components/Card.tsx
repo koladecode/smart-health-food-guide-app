@@ -16,8 +16,10 @@ export function Card(props: CardProps) {
   return (
     <div
       id={cardId}
-      className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-300 ${
-        hoverable ? 'hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-none hover:-translate-y-1' : ''
+      className={`bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden transition-all duration-300 ease-out ${
+        hoverable 
+          ? 'hover:shadow-lg hover:shadow-slate-200/30 dark:hover:shadow-none hover:-translate-y-1 hover:border-gray-200 dark:hover:border-gray-700 cursor-pointer active:scale-[0.99]' 
+          : ''
       } ${className}`}
       onClick={onClick}
       {...(rest as any)}
