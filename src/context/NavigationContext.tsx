@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'profile-form' | 'profile-summary' | 'recommendations';
+export type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'profile-form' | 'profile-summary' | 'recommendations' | 'admin' | 'admin-users' | 'admin-food';
 
 interface NavigationContextType {
   currentPage: Page;
@@ -18,6 +18,8 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     if (hash === '#/profile-form') return 'profile-form';
     if (hash === '#/profile-summary') return 'profile-summary';
     if (hash === '#/recommendations') return 'recommendations';
+    if (hash === '#/admin' || hash === '#/admin-users') return 'admin';
+    if (hash === '#/admin-food') return 'admin-food';
     return 'landing';
   });
 
@@ -36,6 +38,10 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
         setCurrentPage('profile-summary');
       } else if (hash === '#/recommendations') {
         setCurrentPage('recommendations');
+      } else if (hash === '#/admin' || hash === '#/admin-users') {
+        setCurrentPage('admin');
+      } else if (hash === '#/admin-food') {
+        setCurrentPage('admin-food');
       } else {
         setCurrentPage('landing');
       }

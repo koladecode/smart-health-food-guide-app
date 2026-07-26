@@ -15,6 +15,8 @@ import DashboardPage from './pages/DashboardPage';
 import ProfileFormPage from './pages/ProfileFormPage';
 import ProfileSummaryPage from './pages/ProfileSummaryPage';
 import RecommendationsPage from './pages/RecommendationsPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminFoodPage from './pages/AdminFoodPage';
 
 function AppContent() {
   const { currentPage, navigateTo } = useNavigation();
@@ -22,7 +24,7 @@ function AppContent() {
 
   React.useEffect(() => {
     if (!loading && !isAuthenticated) {
-      const privatePages = ['profile-form', 'profile-summary', 'recommendations', 'dashboard'];
+      const privatePages = ['profile-form', 'profile-summary', 'recommendations', 'dashboard', 'admin', 'admin-users', 'admin-food'];
       if (privatePages.includes(currentPage)) {
         navigateTo('landing');
       }
@@ -30,7 +32,7 @@ function AppContent() {
   }, [isAuthenticated, loading, currentPage, navigateTo]);
 
   // Strict rendering check to prevent flashes of private screens
-  const isPrivatePage = ['profile-form', 'profile-summary', 'recommendations', 'dashboard'].includes(currentPage);
+  const isPrivatePage = ['profile-form', 'profile-summary', 'recommendations', 'dashboard', 'admin', 'admin-users', 'admin-food'].includes(currentPage);
   if (!loading && !isAuthenticated && isPrivatePage) {
     return <LandingPage />;
   }
@@ -48,6 +50,11 @@ function AppContent() {
       return <RecommendationsPage />;
     case 'dashboard':
       return <DashboardPage />;
+    case 'admin':
+    case 'admin-users':
+      return <AdminUsersPage />;
+    case 'admin-food':
+      return <AdminFoodPage />;
     case 'landing':
     default:
       return <LandingPage />;
