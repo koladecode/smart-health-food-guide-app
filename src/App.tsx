@@ -17,6 +17,9 @@ import ProfileSummaryPage from './pages/ProfileSummaryPage';
 import RecommendationsPage from './pages/RecommendationsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminFoodPage from './pages/AdminFoodPage';
+import AdminExercisePage from './pages/AdminExercisePage';
+import AdminRecommendationsPage from './pages/AdminRecommendationsPage';
+import AdminDiseasesPage from './pages/AdminDiseasesPage';
 
 function AppContent() {
   const { currentPage, navigateTo } = useNavigation();
@@ -24,7 +27,7 @@ function AppContent() {
 
   React.useEffect(() => {
     if (!loading && !isAuthenticated) {
-      const privatePages = ['profile-form', 'profile-summary', 'recommendations', 'dashboard', 'admin', 'admin-users', 'admin-food'];
+      const privatePages = ['profile-form', 'profile-summary', 'recommendations', 'dashboard', 'admin', 'admin-users', 'admin-food', 'admin-exercise', 'admin-recommendations', 'admin-diseases'];
       if (privatePages.includes(currentPage)) {
         navigateTo('landing');
       }
@@ -32,7 +35,7 @@ function AppContent() {
   }, [isAuthenticated, loading, currentPage, navigateTo]);
 
   // Strict rendering check to prevent flashes of private screens
-  const isPrivatePage = ['profile-form', 'profile-summary', 'recommendations', 'dashboard', 'admin', 'admin-users', 'admin-food'].includes(currentPage);
+  const isPrivatePage = ['profile-form', 'profile-summary', 'recommendations', 'dashboard', 'admin', 'admin-users', 'admin-food', 'admin-exercise', 'admin-recommendations', 'admin-diseases'].includes(currentPage);
   if (!loading && !isAuthenticated && isPrivatePage) {
     return <LandingPage />;
   }
@@ -55,6 +58,12 @@ function AppContent() {
       return <AdminUsersPage />;
     case 'admin-food':
       return <AdminFoodPage />;
+    case 'admin-exercise':
+      return <AdminExercisePage />;
+    case 'admin-recommendations':
+      return <AdminRecommendationsPage />;
+    case 'admin-diseases':
+      return <AdminDiseasesPage />;
     case 'landing':
     default:
       return <LandingPage />;

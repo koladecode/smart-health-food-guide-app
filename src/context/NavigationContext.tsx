@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'profile-form' | 'profile-summary' | 'recommendations' | 'admin' | 'admin-users' | 'admin-food';
+export type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'profile-form' | 'profile-summary' | 'recommendations' | 'admin' | 'admin-users' | 'admin-food' | 'admin-exercise' | 'admin-recommendations' | 'admin-diseases';
 
 interface NavigationContextType {
   currentPage: Page;
@@ -20,6 +20,9 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     if (hash === '#/recommendations') return 'recommendations';
     if (hash === '#/admin' || hash === '#/admin-users') return 'admin';
     if (hash === '#/admin-food') return 'admin-food';
+    if (hash === '#/admin-exercise' || hash === '#/admin-exercises') return 'admin-exercise';
+    if (hash === '#/admin-recommendations') return 'admin-recommendations';
+    if (hash === '#/admin-diseases' || hash === '#/admin-conditions') return 'admin-diseases';
     return 'landing';
   });
 
@@ -42,6 +45,12 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
         setCurrentPage('admin');
       } else if (hash === '#/admin-food') {
         setCurrentPage('admin-food');
+      } else if (hash === '#/admin-exercise' || hash === '#/admin-exercises') {
+        setCurrentPage('admin-exercise');
+      } else if (hash === '#/admin-recommendations') {
+        setCurrentPage('admin-recommendations');
+      } else if (hash === '#/admin-diseases' || hash === '#/admin-conditions') {
+        setCurrentPage('admin-diseases');
       } else {
         setCurrentPage('landing');
       }

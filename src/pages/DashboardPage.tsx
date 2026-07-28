@@ -14,7 +14,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  ShieldAlert,
   ShieldCheck,
   Sparkles,
   TrendingUp,
@@ -36,7 +35,19 @@ import {
   Coffee,
   Bed,
   Clock,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Lightbulb,
+  Stethoscope,
+  Users,
+  UserPlus,
+  Server,
+  RefreshCw,
+  Zap,
+  Database,
+  Trophy,
+  Trash2,
+  Play,
+  BarChart3
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
@@ -52,8 +63,24 @@ import ThemeToggle from '../components/ThemeToggle';
 import { DashboardSkeleton } from '../components/Skeleton';
 import AdminUsersManagement from '../components/AdminUsersManagement';
 import AdminFoodManagement from '../components/AdminFoodManagement';
+import AdminExerciseManagement, { ManagedExercise } from '../components/AdminExerciseManagement';
+import AdminRecommendationsManagement from '../components/AdminRecommendationsManagement';
+import AdminDiseasesManagement from '../components/AdminDiseasesManagement';
 
-type ActiveTab = 'overview' | 'nutrition' | 'fitness' | 'medications' | 'admin' | 'admin-food';
+type ActiveTab = 'overview' | 'nutrition' | 'fitness' | 'admin' | 'admin-food' | 'admin-exercise' | 'admin-recommendations' | 'admin-diseases';
+
+export interface WorkoutLog {
+  id: string;
+  exerciseId?: string;
+  name: string;
+  category: string;
+  duration: number;
+  caloriesBurned: number;
+  date: string;
+  timestamp: string;
+  difficulty?: string;
+  notes?: string;
+}
 
 interface HistoryEntry {
   date: string;
@@ -161,9 +188,259 @@ export default function DashboardPage() {
   const [isSavingWorkout, setIsSavingWorkout] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Extra modal workout fields
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>('custom');
+  const [workoutCategory, setWorkoutCategory] = useState<string>('Cardio');
+  const [workoutCalories, setWorkoutCalories] = useState<string>('150');
+  const [workoutDifficulty, setWorkoutDifficulty] = useState<string>('Beginner');
+
+  // Workout Logs State
+  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('smart_health_guide_logged_workouts');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const twoDaysAgo = new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0];
+    const threeDaysAgo = new Date(Date.now() - 86400000 * 3).toISOString().split('T')[0];
+
+    return [
+      {
+        id: 'log-1',
+        exerciseId: 'ex-101',
+        name: 'Low-Impact Brisk Walking',
+        category: 'Cardio',
+        duration: 30,
+        caloriesBurned: 140,
+        date: todayStr,
+        timestamp: '08:30 AM',
+        difficulty: 'Beginner',
+        notes: 'Continuous morning walk around neighborhood park.'
+      },
+      {
+        id: 'log-2',
+        exerciseId: 'ex-105',
+        name: 'Yoga & Mindful Stretching',
+        category: 'Flexibility',
+        duration: 20,
+        caloriesBurned: 85,
+        date: todayStr,
+        timestamp: '05:15 PM',
+        difficulty: 'Beginner',
+        notes: 'Diaphragmatic breathing and spinal decompression.'
+      },
+      {
+        id: 'log-3',
+        exerciseId: 'ex-103',
+        name: 'Bodyweight Squats & Wall Pushes',
+        category: 'Strength Training',
+        duration: 25,
+        caloriesBurned: 120,
+        date: yesterday,
+        timestamp: '09:00 AM',
+        difficulty: 'Intermediate',
+        notes: 'Completed 3 sets of bodyweight squats.'
+      },
+      {
+        id: 'log-4',
+        exerciseId: 'ex-104',
+        name: 'Swimming & Water Aerobics',
+        category: 'Cardio',
+        duration: 40,
+        caloriesBurned: 280,
+        date: twoDaysAgo,
+        timestamp: '10:00 AM',
+        difficulty: 'Intermediate',
+        notes: 'Low impact joint resistance in heated pool.'
+      },
+      {
+        id: 'log-5',
+        exerciseId: 'ex-102',
+        name: 'Chair Aerobics & Gentle Mobility',
+        category: 'Rehab & Recovery',
+        duration: 15,
+        caloriesBurned: 75,
+        date: threeDaysAgo,
+        timestamp: '02:30 PM',
+        difficulty: 'Beginner',
+        notes: 'Upper body rotations and seated knee lifts.'
+      }
+    ];
+  });
+
+  // Managed exercises state from Exercise Management
+  const [managedExercisesList, setManagedExercisesList] = useState<ManagedExercise[]>([]);
+
+  const refreshFitnessData = React.useCallback(() => {
+    try {
+      const savedEx = localStorage.getItem('smart_health_guide_managed_exercises');
+      if (savedEx) {
+        setManagedExercisesList(JSON.parse(savedEx));
+      } else {
+        setManagedExercisesList([
+          {
+            id: 'ex-101',
+            name: 'Low-Impact Brisk Walking',
+            category: 'Cardio',
+            difficulty: 'Beginner',
+            duration: '30 mins',
+            targetBodyArea: 'Cardiovascular System',
+            healthGoal: 'Heart Health',
+            compatibleConditions: ['Hypertension Safe', 'Heart Healthy', 'Diabetes Friendly'],
+            status: 'Active',
+            caloriesBurned: 140,
+            description: 'Gentle aerobic walking to support blood flow.',
+            createdAt: '2026-01-10'
+          },
+          {
+            id: 'ex-102',
+            name: 'Chair Aerobics & Gentle Mobility',
+            category: 'Rehab & Recovery',
+            difficulty: 'Beginner',
+            duration: '15 mins',
+            targetBodyArea: 'Full Body',
+            healthGoal: 'Mobility & Joint Health',
+            compatibleConditions: ['Hypertension Safe', 'Arthritis Gentle'],
+            status: 'Active',
+            caloriesBurned: 75,
+            description: 'Seated upper and lower body movements for joint health.',
+            createdAt: '2026-01-15'
+          },
+          {
+            id: 'ex-103',
+            name: 'Bodyweight Squats & Wall Pushes',
+            category: 'Strength Training',
+            difficulty: 'Intermediate',
+            duration: '20 mins',
+            targetBodyArea: 'Lower Body & Core',
+            healthGoal: 'Muscle Strength',
+            compatibleConditions: ['Diabetes Friendly', 'Osteoporosis Safe'],
+            status: 'Active',
+            caloriesBurned: 110,
+            description: 'Controlled squats and wall push-ups.',
+            createdAt: '2026-01-20'
+          },
+          {
+            id: 'ex-104',
+            name: 'Swimming & Water Aerobics',
+            category: 'Cardio',
+            difficulty: 'Intermediate',
+            duration: '40 mins',
+            targetBodyArea: 'Full Body',
+            healthGoal: 'Full Body Endurance',
+            compatibleConditions: ['Arthritis Gentle', 'Low Back Pain Safe'],
+            status: 'Active',
+            caloriesBurned: 280,
+            description: 'Buoyant water resistance exercise.',
+            createdAt: '2026-01-22'
+          },
+          {
+            id: 'ex-105',
+            name: 'Yoga & Mindful Stretching',
+            category: 'Flexibility',
+            difficulty: 'Beginner',
+            duration: '25 mins',
+            targetBodyArea: 'Spine & Core',
+            healthGoal: 'Stress Reduction & Flexibility',
+            compatibleConditions: ['Hypertension Safe', 'Low Back Pain Safe'],
+            status: 'Active',
+            caloriesBurned: 90,
+            description: 'Gentle spinal lengthening and mindful breathing.',
+            createdAt: '2026-01-25'
+          }
+        ]);
+      }
+    } catch (e) {}
+  }, []);
+
+  React.useEffect(() => {
+    refreshFitnessData();
+  }, [activeTab, refreshFitnessData]);
+
+  React.useEffect(() => {
+    localStorage.setItem('smart_health_guide_logged_workouts', JSON.stringify(workoutLogs));
+  }, [workoutLogs]);
+
   // Allergen warning interaction states
   const [selectedAllergen, setSelectedAllergen] = useState('none');
   const [hasAllergyAlert, setHasAllergyAlert] = useState(false);
+
+  // Admin stats state
+  const [adminStats, setAdminStats] = useState(() => {
+    let usersCount = 5;
+    let foodsCount = 10;
+    let exercisesCount = 10;
+    let recsCount = 8;
+    let diseasesCount = 8;
+
+    try {
+      const u = localStorage.getItem('smart_health_guide_managed_users');
+      if (u) usersCount = JSON.parse(u).length;
+    } catch (e) {}
+
+    try {
+      const f = localStorage.getItem('smart_health_guide_managed_foods');
+      if (f) foodsCount = JSON.parse(f).length;
+    } catch (e) {}
+
+    try {
+      const ex = localStorage.getItem('smart_health_guide_managed_exercises');
+      if (ex) exercisesCount = JSON.parse(ex).length;
+    } catch (e) {}
+
+    try {
+      const r = localStorage.getItem('smart_health_guide_managed_recommendations');
+      if (r) recsCount = JSON.parse(r).length;
+    } catch (e) {}
+
+    try {
+      const d = localStorage.getItem('smart_health_guide_managed_diseases');
+      if (d) diseasesCount = JSON.parse(d).length;
+    } catch (e) {}
+
+    return { usersCount, foodsCount, exercisesCount, recsCount, diseasesCount };
+  });
+
+  const refreshAdminStats = React.useCallback(() => {
+    let usersCount = 5;
+    let foodsCount = 10;
+    let exercisesCount = 10;
+    let recsCount = 8;
+    let diseasesCount = 8;
+
+    try {
+      const u = localStorage.getItem('smart_health_guide_managed_users');
+      if (u) usersCount = JSON.parse(u).length;
+    } catch (e) {}
+
+    try {
+      const f = localStorage.getItem('smart_health_guide_managed_foods');
+      if (f) foodsCount = JSON.parse(f).length;
+    } catch (e) {}
+
+    try {
+      const ex = localStorage.getItem('smart_health_guide_managed_exercises');
+      if (ex) exercisesCount = JSON.parse(ex).length;
+    } catch (e) {}
+
+    try {
+      const r = localStorage.getItem('smart_health_guide_managed_recommendations');
+      if (r) recsCount = JSON.parse(r).length;
+    } catch (e) {}
+
+    try {
+      const d = localStorage.getItem('smart_health_guide_managed_diseases');
+      if (d) diseasesCount = JSON.parse(d).length;
+    } catch (e) {}
+
+    setAdminStats({ usersCount, foodsCount, exercisesCount, recsCount, diseasesCount });
+  }, []);
+
+  React.useEffect(() => {
+    refreshAdminStats();
+  }, [activeTab, refreshAdminStats]);
 
   // Local states for goal tracker adjustments
   const [goalStartWeight, setGoalStartWeight] = useState<number>(() => {
@@ -418,31 +695,92 @@ export default function DashboardPage() {
   };
 
   const menuItems = [
-    { id: 'overview', label: 'Health Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'overview', label: 'Admin Control Center', icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'nutrition', label: 'Nutrition & Meals', icon: <Apple className="w-5 h-5" /> },
     { id: 'fitness', label: 'Fitness & Motion', icon: <Activity className="w-5 h-5" /> },
-    { id: 'medications', label: 'Medications Safe Guard', icon: <ShieldAlert className="w-5 h-5" /> },
     { id: 'admin', label: 'Admin Users', icon: <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" /> },
     { id: 'admin-food', label: 'Food Management', icon: <UtensilsCrossed className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> },
+    { id: 'admin-exercise', label: 'Exercise Management', icon: <Dumbbell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> },
+    { id: 'admin-recommendations', label: 'Recommendations', icon: <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" /> },
+    { id: 'admin-diseases', label: 'Diseases & Conditions', icon: <Stethoscope className="w-5 h-5 text-rose-600 dark:text-rose-400" /> },
   ];
 
   const handleCreateWorkout = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!workoutName.trim()) return;
     setIsSavingWorkout(true);
+    
     setTimeout(() => {
       setIsSavingWorkout(false);
       setIsModalOpen(false);
       
-      const duration = parseInt(workoutDuration, 10) || 0;
-      setExerciseProgress((prev) => prev + duration);
+      const durationNum = parseInt(workoutDuration, 10) || 30;
+      const caloriesNum = parseInt(workoutCalories, 10) || Math.round(durationNum * 5.5);
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      const newLog: WorkoutLog = {
+        id: `log-${Date.now()}`,
+        exerciseId: selectedExerciseId !== 'custom' ? selectedExerciseId : undefined,
+        name: workoutName.trim(),
+        category: workoutCategory || 'Cardio',
+        duration: durationNum,
+        caloriesBurned: caloriesNum,
+        date: todayStr,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        difficulty: workoutDifficulty || 'Beginner',
+        notes: workoutNotes.trim() || undefined
+      };
+
+      setWorkoutLogs(prev => [newLog, ...prev]);
+      setExerciseProgress(prev => prev + durationNum);
 
       // Reset
       setWorkoutName('');
       setWorkoutDuration('30');
+      setWorkoutCategory('Cardio');
+      setWorkoutCalories('150');
+      setWorkoutDifficulty('Beginner');
       setWorkoutNotes('');
-      setToastMessage(`Success! Added ${duration} minutes to today's active progress tracker.`);
+      setSelectedExerciseId('custom');
+
+      setToastMessage(`Recorded "${newLog.name}" (${durationNum} mins, ~${caloriesNum} kcal) in your activity log.`);
       setTimeout(() => setToastMessage(null), 4000);
-    }, 1200);
+    }, 800);
+  };
+
+  const handleQuickLogManagedExercise = (ex: ManagedExercise) => {
+    const durationNum = parseInt(ex.duration.replace(/\D/g, ''), 10) || 30;
+    const caloriesNum = ex.caloriesBurned || Math.round(durationNum * 5.5);
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const newLog: WorkoutLog = {
+      id: `log-${Date.now()}`,
+      exerciseId: ex.id,
+      name: ex.name,
+      category: ex.category,
+      duration: durationNum,
+      caloriesBurned: caloriesNum,
+      date: todayStr,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      difficulty: ex.difficulty,
+      notes: `Quick logged from Exercise Management library (${ex.targetBodyArea}).`
+    };
+
+    setWorkoutLogs(prev => [newLog, ...prev]);
+    setExerciseProgress(prev => prev + durationNum);
+
+    setToastMessage(`Logged "${ex.name}" (${durationNum} mins, ~${caloriesNum} kcal) from Exercise Management!`);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const handleDeleteWorkoutLog = (logId: string) => {
+    const logToDelete = workoutLogs.find(l => l.id === logId);
+    setWorkoutLogs(prev => prev.filter(l => l.id !== logId));
+    if (logToDelete && logToDelete.date === new Date().toISOString().split('T')[0]) {
+      setExerciseProgress(prev => Math.max(0, prev - logToDelete.duration));
+    }
+    setToastMessage('Workout entry deleted from activity history.');
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const getAllergenWarningContent = () => {
@@ -616,15 +954,530 @@ export default function DashboardPage() {
             Based on the information you provided, these recommendations are for educational purposes only and are not medical advice. Always consult a qualified healthcare professional before making health-related decisions.
           </Alert>
 
-          {/* TAB 1: Health Overview Panel */}
+          {/* TAB 1: Admin Control Center & Health Overview Panel */}
           {activeTab === 'overview' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fade-in" id="tab-overview-content">
+            <div className="flex flex-col gap-8 animate-fade-in" id="tab-overview-content">
               
-              {/* LEFT COLUMN: Main Dashboard Workspace (8 cols) */}
-              <div className="lg:col-span-8 flex flex-col gap-8 animate-fade-in" id="overview-main-feed">
-              
-              {/* Health Profile Completion Callout */}
-              {!isProfileFetched || loadingProfile ? (
+              {/* PRIMARY ADMIN CONTROL CENTER HEADER */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl border border-indigo-500/20" id="admin-control-center-banner">
+                <div className="flex flex-col gap-2 max-w-2xl text-left">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-3xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Live System Active
+                    </span>
+                    <span className="text-2xs font-extrabold text-slate-400 uppercase tracking-widest">Master Admin Control Center</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                    System Control & Analytics Center
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                    Real-time entity counts, rapid administrative creation shortcuts, system status monitoring, and clinical audit activity streams.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 self-stretch sm:self-auto">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<RefreshCw className="w-3.5 h-3.5" />}
+                    onClick={refreshAdminStats}
+                    className="bg-slate-800 text-slate-200 hover:bg-slate-700 font-extrabold text-xs h-10 border border-slate-700 rounded-xl"
+                  >
+                    Refresh Sync
+                  </Button>
+                </div>
+              </div>
+
+              {/* DASHBOARD WIDGETS: Responsive KPI Grid */}
+              <div className="flex flex-col gap-3 text-left" id="admin-widgets-section">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                    <LayoutDashboard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    Entity Metrics & Repository Totals
+                  </h3>
+                  <span className="text-3xs font-extrabold uppercase text-slate-400 tracking-wider">5 Managed Repositories</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="admin-kpi-widgets-grid">
+                  
+                  {/* Total Users Widget */}
+                  <Card
+                    id="widget-total-users"
+                    onClick={() => setActiveTab('admin')}
+                    className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl cursor-pointer group"
+                  >
+                    <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                      <div className="flex items-start justify-between">
+                        <span className="text-3xs uppercase font-black tracking-wider text-purple-600 dark:text-purple-400">
+                          Total Users
+                        </span>
+                        <div className="p-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-xl border border-purple-100 dark:border-purple-900/30 group-hover:scale-110 transition-transform">
+                          <Users className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-3xl font-black text-slate-900 dark:text-white">{adminStats.usersCount}</span>
+                        <p className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Roles & accounts
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Total Foods Widget */}
+                  <Card
+                    id="widget-total-foods"
+                    onClick={() => setActiveTab('admin-food')}
+                    className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl cursor-pointer group"
+                  >
+                    <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                      <div className="flex items-start justify-between">
+                        <span className="text-3xs uppercase font-black tracking-wider text-emerald-600 dark:text-emerald-400">
+                          Total Foods
+                        </span>
+                        <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/30 group-hover:scale-110 transition-transform">
+                          <UtensilsCrossed className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-3xl font-black text-slate-900 dark:text-white">{adminStats.foodsCount}</span>
+                        <p className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Nutritional items
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Total Exercises Widget */}
+                  <Card
+                    id="widget-total-exercises"
+                    onClick={() => setActiveTab('admin-exercise')}
+                    className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl cursor-pointer group"
+                  >
+                    <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                      <div className="flex items-start justify-between">
+                        <span className="text-3xs uppercase font-black tracking-wider text-indigo-600 dark:text-indigo-400">
+                          Total Exercises
+                        </span>
+                        <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100 dark:border-indigo-900/30 group-hover:scale-110 transition-transform">
+                          <Dumbbell className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-3xl font-black text-slate-900 dark:text-white">{adminStats.exercisesCount}</span>
+                        <p className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Fitness routines
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Total Recommendations Widget */}
+                  <Card
+                    id="widget-total-recommendations"
+                    onClick={() => setActiveTab('admin-recommendations')}
+                    className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl cursor-pointer group"
+                  >
+                    <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                      <div className="flex items-start justify-between">
+                        <span className="text-3xs uppercase font-black tracking-wider text-amber-600 dark:text-amber-400">
+                          Total Recommendations
+                        </span>
+                        <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-xl border border-amber-100 dark:border-amber-900/30 group-hover:scale-110 transition-transform">
+                          <Lightbulb className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-3xl font-black text-slate-900 dark:text-white">{adminStats.recsCount}</span>
+                        <p className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Clinical rules
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Total Diseases & Conditions Widget */}
+                  <Card
+                    id="widget-total-diseases"
+                    onClick={() => setActiveTab('admin-diseases')}
+                    className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 rounded-2xl cursor-pointer group"
+                  >
+                    <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                      <div className="flex items-start justify-between">
+                        <span className="text-3xs uppercase font-black tracking-wider text-rose-600 dark:text-rose-400">
+                          Total Diseases
+                        </span>
+                        <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-100 dark:border-rose-900/30 group-hover:scale-110 transition-transform">
+                          <Stethoscope className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-3xl font-black text-slate-900 dark:text-white">{adminStats.diseasesCount}</span>
+                        <p className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Disease profiles
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* QUICK ACTIONS & SYSTEM STATUS ROW */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="quick-actions-status-row">
+                
+                {/* Quick Actions (7 cols) */}
+                <Card className="lg:col-span-7 border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs rounded-2xl text-left" id="card-quick-actions">
+                  <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                    <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-amber-500" />
+                      Quick Administrative Actions
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Instant shortcuts to create new entities across core system domains.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      
+                      {/* Add User */}
+                      <button
+                        id="quick-action-add-user"
+                        onClick={() => setActiveTab('admin')}
+                        className="flex items-center gap-3 p-3.5 rounded-xl border border-purple-200/60 dark:border-purple-900/40 bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-100/60 dark:hover:bg-purple-900/30 transition-all duration-200 group text-left cursor-pointer"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                          <UserPlus className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
+                            Add User
+                          </span>
+                          <span className="text-3xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                            Register new user, clinician or admin
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Add Food */}
+                      <button
+                        id="quick-action-add-food"
+                        onClick={() => setActiveTab('admin-food')}
+                        className="flex items-center gap-3 p-3.5 rounded-xl border border-emerald-200/60 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100/60 dark:hover:bg-emerald-900/30 transition-all duration-200 group text-left cursor-pointer"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                          <UtensilsCrossed className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
+                            Add Food
+                          </span>
+                          <span className="text-3xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                            Create nutritional meal entry
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Add Exercise */}
+                      <button
+                        id="quick-action-add-exercise"
+                        onClick={() => setActiveTab('admin-exercise')}
+                        className="flex items-center gap-3 p-3.5 rounded-xl border border-indigo-200/60 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100/60 dark:hover:bg-indigo-900/30 transition-all duration-200 group text-left cursor-pointer"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                          <Dumbbell className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
+                            Add Exercise
+                          </span>
+                          <span className="text-3xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                            Add physical activity routine
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Add Recommendation */}
+                      <button
+                        id="quick-action-add-recommendation"
+                        onClick={() => setActiveTab('admin-recommendations')}
+                        className="flex items-center gap-3 p-3.5 rounded-xl border border-amber-200/60 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100/60 dark:hover:bg-amber-900/30 transition-all duration-200 group text-left cursor-pointer"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                          <Lightbulb className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
+                            Add Recommendation
+                          </span>
+                          <span className="text-3xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                            Configure clinical rule
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Add Disease */}
+                      <button
+                        id="quick-action-add-disease"
+                        onClick={() => setActiveTab('admin-diseases')}
+                        className="flex items-center gap-3 p-3.5 rounded-xl border border-rose-200/60 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/60 dark:hover:bg-rose-900/30 transition-all duration-200 group text-left cursor-pointer sm:col-span-2"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold text-sm shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                          <Stethoscope className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-rose-600 dark:group-hover:text-rose-300 transition-colors">
+                            Add Disease & Condition
+                          </span>
+                          <span className="text-3xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                            Define medical condition profile, dietary restrictions & exercise clearances
+                          </span>
+                        </div>
+                      </button>
+
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* System Status (5 cols) */}
+                <Card className="lg:col-span-5 border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs rounded-2xl flex flex-col justify-between text-left" id="card-system-status">
+                  <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Server className="w-4 h-4 text-emerald-500" />
+                        System Status
+                      </CardTitle>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-3xs font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                        Operational
+                      </span>
+                    </div>
+                    <CardDescription className="text-xs">
+                      Live status indicators for core health guide services.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-5 flex flex-col gap-2.5 my-auto">
+                    
+                    {/* Users Status */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/60 dark:border-slate-800/60">
+                      <div className="flex items-center gap-2.5">
+                        <Users className="w-4 h-4 text-purple-500" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Users</span>
+                      </div>
+                      <span className="text-3xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/40">
+                        Operational
+                      </span>
+                    </div>
+
+                    {/* Foods Status */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/60 dark:border-slate-800/60">
+                      <div className="flex items-center gap-2.5">
+                        <UtensilsCrossed className="w-4 h-4 text-emerald-500" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Foods</span>
+                      </div>
+                      <span className="text-3xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/40">
+                        Operational
+                      </span>
+                    </div>
+
+                    {/* Exercises Status */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/60 dark:border-slate-800/60">
+                      <div className="flex items-center gap-2.5">
+                        <Dumbbell className="w-4 h-4 text-indigo-500" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Exercises</span>
+                      </div>
+                      <span className="text-3xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/40">
+                        Operational
+                      </span>
+                    </div>
+
+                    {/* Recommendations Status */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/60 dark:border-slate-800/60">
+                      <div className="flex items-center gap-2.5">
+                        <Lightbulb className="w-4 h-4 text-amber-500" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Recommendations</span>
+                      </div>
+                      <span className="text-3xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/40">
+                        Operational
+                      </span>
+                    </div>
+
+                    {/* Diseases Status */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/60 dark:border-slate-800/60">
+                      <div className="flex items-center gap-2.5">
+                        <Stethoscope className="w-4 h-4 text-rose-500" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Diseases</span>
+                      </div>
+                      <span className="text-3xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200/40">
+                        Operational
+                      </span>
+                    </div>
+
+                  </CardContent>
+                </Card>
+
+              </div>
+
+              {/* RECENT ACTIVITY LOG */}
+              <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs rounded-2xl text-left" id="card-recent-activity">
+                <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-indigo-500" />
+                      Recent Admin Activity Stream
+                    </CardTitle>
+                    <span className="text-3xs font-black uppercase text-slate-400 tracking-wider">Audit Feed</span>
+                  </div>
+                  <CardDescription className="text-xs">
+                    Real-time timeline of recent administrative modifications and system events.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-5">
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    
+                    {/* Activity 1: User Created */}
+                    <div className="py-3.5 flex items-start justify-between gap-4 first:pt-0 last:pb-0 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 px-2 rounded-xl transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-xl border border-purple-200/50 shrink-0 mt-0.5">
+                          <UserPlus className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">User Created</span>
+                            <span className="text-3xs font-extrabold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/40">
+                              Users
+                            </span>
+                          </div>
+                          <p className="text-2xs text-slate-600 dark:text-slate-400 font-medium mt-0.5">
+                            User account "Akanji Cornelius" created with Clinician privileges.
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-3xs font-extrabold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                        12 mins ago
+                      </span>
+                    </div>
+
+                    {/* Activity 2: Food Updated */}
+                    <div className="py-3.5 flex items-start justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 px-2 rounded-xl transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-200/50 shrink-0 mt-0.5">
+                          <UtensilsCrossed className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">Food Updated</span>
+                            <span className="text-3xs font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/40">
+                              Foods
+                            </span>
+                          </div>
+                          <p className="text-2xs text-slate-600 dark:text-slate-400 font-medium mt-0.5">
+                            "Avocado Salmon Bowl" macronutrient and sodium targets updated.
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-3xs font-extrabold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                        38 mins ago
+                      </span>
+                    </div>
+
+                    {/* Activity 3: Exercise Added */}
+                    <div className="py-3.5 flex items-start justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 px-2 rounded-xl transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-200/50 shrink-0 mt-0.5">
+                          <Dumbbell className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">Exercise Added</span>
+                            <span className="text-3xs font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/40">
+                              Exercises
+                            </span>
+                          </div>
+                          <p className="text-2xs text-slate-600 dark:text-slate-400 font-medium mt-0.5">
+                            "Low-Impact Cardiovascular Cycling" added to fitness repository.
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-3xs font-extrabold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                        2 hours ago
+                      </span>
+                    </div>
+
+                    {/* Activity 4: Recommendation Edited */}
+                    <div className="py-3.5 flex items-start justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 px-2 rounded-xl transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-xl border border-amber-200/50 shrink-0 mt-0.5">
+                          <Lightbulb className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">Recommendation Edited</span>
+                            <span className="text-3xs font-extrabold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/40">
+                              Recommendations
+                            </span>
+                          </div>
+                          <p className="text-2xs text-slate-600 dark:text-slate-400 font-medium mt-0.5">
+                            Hypertension protocol "Low-Sodium Daily Guideline" rule edited.
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-3xs font-extrabold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                        5 hours ago
+                      </span>
+                    </div>
+
+                    {/* Activity 5: Disease Added */}
+                    <div className="py-3.5 flex items-start justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 px-2 rounded-xl transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-200/50 shrink-0 mt-0.5">
+                          <Stethoscope className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">Disease Added</span>
+                            <span className="text-3xs font-extrabold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/40">
+                              Diseases
+                            </span>
+                          </div>
+                          <p className="text-2xs text-slate-600 dark:text-slate-400 font-medium mt-0.5">
+                            "Type 2 Diabetes & Insulin Resistance" clinical condition added.
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-3xs font-extrabold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                        1 day ago
+                      </span>
+                    </div>
+
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* PRESERVED PERSONAL HEALTH OVERVIEW WORKSPACE */}
+              <div className="border-t border-slate-200/80 dark:border-slate-800/80 pt-8 mt-2 flex flex-col gap-8" id="personal-health-overview-section">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+                      <Heart className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      Personal Health Overview & Daily Tracker
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                      Individual biological parameters, active trackers, hydration goals, and custom health schedules.
+                    </p>
+                  </div>
+                  <span className="text-3xs font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 tracking-wider w-fit">
+                    Preserved & Active
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  
+                  {/* LEFT COLUMN: Main Dashboard Workspace (8 cols) */}
+                  <div className="lg:col-span-8 flex flex-col gap-8" id="overview-main-feed-preserved">
+                  
+                  {/* Health Profile Completion Callout */}
+                  {!isProfileFetched || loadingProfile ? (
                 <div className="p-5 rounded-2xl bg-slate-100/50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 animate-pulse text-left flex items-center justify-between" id="dashboard-profile-loading">
                   <div className="flex gap-3 items-center">
                     <div className="w-5 h-5 bg-slate-200 dark:bg-slate-800 rounded-full" />
@@ -2106,7 +2959,9 @@ export default function DashboardPage() {
               </div>
 
             </div>
-          )}
+          </div>
+        </div>
+        )}
 
           {/* TAB 2: Nutrition & Meals */}
           {activeTab === 'nutrition' && (
@@ -2172,43 +3027,526 @@ export default function DashboardPage() {
           )}
 
           {/* TAB 3: Fitness & Motion */}
-          {activeTab === 'fitness' && (
-            <div className="flex flex-col gap-6 animate-fade-in" id="tab-fitness-content">
-              {/* Highlight our EmptyState component beautifully */}
-              <EmptyState
-                title="No Custom Workout Logs Recorded"
-                description="Your activity log is currently clear. Record a physical workout session using our modal form to build your metrics tracker."
-                actionLabel="Record Active Session"
-                onAction={() => setIsModalOpen(true)}
-                id="fitness-empty-state"
-              />
-            </div>
-          )}
+          {activeTab === 'fitness' && (() => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayWorkoutLogs = workoutLogs.filter(l => l.date === todayStr);
 
-          {/* TAB 4: Medication Alert */}
-          {activeTab === 'medications' && (
-            <div className="flex flex-col gap-6" id="tab-medications-content">
-              <EmptyState
-                title="Prescription Timing Safety Radar"
-                description="Medication-to-food chemical reaction analysis is currently locked. This feature is slated for the secondary deployment release."
-                actionLabel="Review Onboarding Goal"
-                onAction={() => setActiveTab('overview')}
-                id="medications-empty-state"
-              />
-            </div>
-          )}
+            const todayDurationTotal = todayWorkoutLogs.reduce((sum, l) => sum + l.duration, 0);
+            const todayCaloriesTotal = todayWorkoutLogs.reduce((sum, l) => sum + l.caloriesBurned, 0);
+            const todayWorkoutsCount = todayWorkoutLogs.length;
 
-          {/* TAB 5: Admin Users Management */}
+            const dailyDurationGoal = exerciseTarget || 30;
+            const dailyCaloriesGoal = 300;
+
+            const last7Days = Array.from({ length: 7 }).map((_, i) => {
+              const d = new Date(Date.now() - (6 - i) * 86400000);
+              const dateStr = d.toISOString().split('T')[0];
+              const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+              const dayLogs = workoutLogs.filter(l => l.date === dateStr);
+              const minutes = dayLogs.reduce((sum, l) => sum + l.duration, 0);
+              const calories = dayLogs.reduce((sum, l) => sum + l.caloriesBurned, 0);
+              const isToday = dateStr === todayStr;
+              return { dateStr, dayName, minutes, calories, isToday, count: dayLogs.length };
+            });
+
+            const weeklyTotalMinutes = last7Days.reduce((sum, d) => sum + d.minutes, 0);
+            const weeklyTotalCalories = last7Days.reduce((sum, d) => sum + d.calories, 0);
+            const weeklyGoalMinutes = dailyDurationGoal * 7;
+
+            let currentStreak = 0;
+            let checkDate = new Date();
+            for (let i = 0; i < 30; i++) {
+              const dateStr = checkDate.toISOString().split('T')[0];
+              const hasLogs = workoutLogs.some(l => l.date === dateStr && l.duration > 0);
+              if (hasLogs) {
+                currentStreak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+              } else if (i === 0) {
+                checkDate.setDate(checkDate.getDate() - 1);
+              } else {
+                break;
+              }
+            }
+
+            return (
+              <div className="flex flex-col gap-8 animate-fade-in" id="tab-fitness-content">
+                
+                {/* 1. Header Banner */}
+                <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl border border-indigo-500/20" id="fitness-header-banner">
+                  <div className="flex flex-col gap-2 max-w-2xl text-left">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-3xs font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        <Dumbbell className="w-3 h-3 text-indigo-400" />
+                        Exercise Management Integrated
+                      </span>
+                      <span className="text-2xs font-extrabold text-slate-400 uppercase tracking-widest">Fitness & Activity Engine</span>
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                      Fitness & Motion Dashboard
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                      Real-time workout telemetry connected directly to your clinical exercise management repository. Track duration, estimated calories, weekly consistency, and exercise logs.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3 self-stretch sm:self-auto shrink-0 flex-wrap">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      icon={<Plus className="w-4 h-4" />}
+                      onClick={() => setIsModalOpen(true)}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs h-11 px-5 rounded-xl shadow-md border-none cursor-pointer"
+                      id="btn-record-workout-hero"
+                    >
+                      Record Activity
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      icon={<Dumbbell className="w-4 h-4" />}
+                      onClick={() => setActiveTab('admin-exercise')}
+                      className="bg-slate-800 text-slate-200 hover:bg-slate-700 font-extrabold text-xs h-11 px-4 border border-slate-700 rounded-xl cursor-pointer"
+                      id="btn-manage-exercises-hero"
+                    >
+                      Exercise Repository
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 2. Today's Exercise Summary (KPI Grid) */}
+                <div className="flex flex-col gap-3 text-left" id="fitness-kpi-section">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      Today's Activity Telemetry & KPI Summary
+                    </h3>
+                    <span className="text-3xs font-extrabold uppercase text-slate-400 tracking-wider">Live Metrics</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="fitness-kpi-cards">
+                    
+                    {/* KPI 1: Active Duration */}
+                    <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
+                      <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                        <div className="flex items-start justify-between">
+                          <span className="text-3xs uppercase font-black tracking-wider text-indigo-600 dark:text-indigo-400">
+                            Total Duration
+                          </span>
+                          <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
+                            <Clock className="w-5 h-5" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-3xl font-black text-slate-900 dark:text-white">{todayDurationTotal}</span>
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">/ {dailyDurationGoal} mins</span>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-2.5 overflow-hidden">
+                            <div
+                              className="bg-indigo-600 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${Math.min(100, Math.round((todayDurationTotal / dailyDurationGoal) * 100))}%` }}
+                            />
+                          </div>
+                          <p className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-1.5 flex items-center justify-between">
+                            <span>Goal: {dailyDurationGoal}m</span>
+                            <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
+                              {Math.round((todayDurationTotal / dailyDurationGoal) * 100)}%
+                            </span>
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* KPI 2: Calories Burned */}
+                    <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
+                      <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                        <div className="flex items-start justify-between">
+                          <span className="text-3xs uppercase font-black tracking-wider text-amber-600 dark:text-amber-400">
+                            Calories Burned
+                          </span>
+                          <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                            <Flame className="w-5 h-5" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-3xl font-black text-slate-900 dark:text-white">{todayCaloriesTotal}</span>
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">kcal est.</span>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-2.5 overflow-hidden">
+                            <div
+                              className="bg-amber-500 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${Math.min(100, Math.round((todayCaloriesTotal / dailyCaloriesGoal) * 100))}%` }}
+                            />
+                          </div>
+                          <p className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-1.5 flex items-center justify-between">
+                            <span>Target: ~{dailyCaloriesGoal} kcal</span>
+                            <span className="font-extrabold text-amber-600 dark:text-amber-400">
+                              {Math.round((todayCaloriesTotal / dailyCaloriesGoal) * 100)}%
+                            </span>
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* KPI 3: Completed Workouts */}
+                    <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
+                      <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                        <div className="flex items-start justify-between">
+                          <span className="text-3xs uppercase font-black tracking-wider text-emerald-600 dark:text-emerald-400">
+                            Completed Workouts
+                          </span>
+                          <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                            <CheckCircle2 className="w-5 h-5" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-3xl font-black text-slate-900 dark:text-white">{todayWorkoutsCount}</span>
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">sessions today</span>
+                          </div>
+                          <p className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-2.5 flex items-center gap-1">
+                            <Dumbbell className="w-3 h-3 text-emerald-500" />
+                            {todayWorkoutsCount > 0 ? `${todayWorkoutsCount} logged active sets` : 'No workouts logged yet today'}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* KPI 4: Activity Streak */}
+                    <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
+                      <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                        <div className="flex items-start justify-between">
+                          <span className="text-3xs uppercase font-black tracking-wider text-purple-600 dark:text-purple-400">
+                            Activity Streak
+                          </span>
+                          <div className="p-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-xl border border-purple-100 dark:border-purple-900/30">
+                            <Trophy className="w-5 h-5" />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-3xl font-black text-slate-900 dark:text-white">{currentStreak}</span>
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">days active 🔥</span>
+                          </div>
+                          <p className="text-3xs font-semibold text-purple-600 dark:text-purple-400 mt-2.5 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-amber-500" /> Consistency Milestone Level {Math.max(1, Math.floor(currentStreak / 3))}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                  </div>
+                </div>
+
+                {/* 3. WEEKLY ACTIVITY OVERVIEW & TARGET PROGRESS RINGS */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="weekly-overview-section">
+                  
+                  {/* Weekly Activity Distribution Bar Chart (7 cols) */}
+                  <Card className="lg:col-span-7 border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs rounded-2xl text-left">
+                    <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                          <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          Weekly Activity Overview
+                        </CardTitle>
+                        <span className="text-3xs font-black uppercase text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-full border border-indigo-200/50">
+                          {weeklyTotalMinutes} mins total
+                        </span>
+                      </div>
+                      <CardDescription className="text-xs">
+                        Daily breakdown of physical movement duration across the last 7 days.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="flex items-end justify-between gap-2 h-48 pt-6 pb-2 px-2">
+                        {last7Days.map((day, idx) => {
+                          const maxMins = Math.max(60, ...last7Days.map(d => d.minutes));
+                          const barHeightPercent = Math.max(8, Math.round((day.minutes / maxMins) * 100));
+                          return (
+                            <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
+                              <span className="text-3xs font-extrabold text-slate-600 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {day.minutes}m
+                              </span>
+                              <div className="w-full max-w-[36px] bg-slate-100 dark:bg-slate-800 rounded-t-lg overflow-hidden flex flex-col justify-end h-36">
+                                <div
+                                  className={`w-full transition-all duration-500 rounded-t-lg ${
+                                    day.isToday
+                                      ? 'bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-sm'
+                                      : day.minutes > 0
+                                      ? 'bg-indigo-400 dark:bg-indigo-600/80 hover:bg-indigo-500'
+                                      : 'bg-slate-200/60 dark:bg-slate-800/60'
+                                  }`}
+                                  style={{ height: `${barHeightPercent}%` }}
+                                />
+                              </div>
+                              <span className={`text-2xs font-bold ${day.isToday ? 'text-indigo-600 dark:text-indigo-400 font-extrabold' : 'text-slate-400'}`}>
+                                {day.dayName}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-2xs text-slate-500 dark:text-slate-400 font-medium">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block" /> Today's Session
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block" /> Past Recorded Days
+                        </span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          Est. Calories: {weeklyTotalCalories} kcal
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Weekly Progress Ring & Goal Compliance (5 cols) */}
+                  <Card className="lg:col-span-5 border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs rounded-2xl text-left flex flex-col justify-between">
+                    <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                      <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        Weekly Target Progress Ring
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        Accumulated active time vs recommended {weeklyGoalMinutes}-min weekly baseline.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6 flex flex-col items-center justify-center my-auto gap-4">
+                      <div className="relative w-36 h-36 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            className="stroke-slate-100 dark:stroke-slate-800"
+                            strokeWidth="10"
+                            fill="transparent"
+                          />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            className="stroke-indigo-600 transition-all duration-1000 ease-out"
+                            strokeWidth="10"
+                            strokeDasharray={251.2}
+                            strokeDashoffset={251.2 - (251.2 * Math.min(100, Math.round((weeklyTotalMinutes / weeklyGoalMinutes) * 100))) / 100}
+                            strokeLinecap="round"
+                            fill="transparent"
+                          />
+                        </svg>
+                        <div className="absolute flex flex-col items-center text-center">
+                          <span className="text-2xl font-black text-slate-900 dark:text-white">
+                            {Math.min(100, Math.round((weeklyTotalMinutes / weeklyGoalMinutes) * 100))}%
+                          </span>
+                          <span className="text-3xs uppercase font-extrabold text-slate-400 tracking-wider">Target Met</span>
+                        </div>
+                      </div>
+
+                      <div className="w-full flex items-center justify-around bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                        <div className="text-center">
+                          <p className="text-2xs text-slate-400 uppercase font-black">Logged Time</p>
+                          <p className="text-sm font-black text-slate-900 dark:text-white">{weeklyTotalMinutes} mins</p>
+                        </div>
+                        <div className="h-8 w-px bg-slate-200 dark:bg-slate-800" />
+                        <div className="text-center">
+                          <p className="text-2xs text-slate-400 uppercase font-black">Weekly Goal</p>
+                          <p className="text-sm font-black text-slate-900 dark:text-white">{weeklyGoalMinutes} mins</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                </div>
+
+                {/* 4. EXERCISE MANAGEMENT REPOSITORY INTEGRATION */}
+                <div className="flex flex-col gap-3 text-left" id="managed-exercise-catalog">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                        <Dumbbell className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        Exercise Management Library Quick Launcher
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        Clinical routines from Exercise Management. Click "Log Session" to quickly register a completed workout.
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab('admin-exercise')}
+                      className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-50 dark:hover:bg-indigo-950/40 cursor-pointer"
+                    >
+                      Manage Repository →
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="managed-exercises-grid">
+                    {managedExercisesList.slice(0, 6).map((ex) => (
+                      <Card
+                        key={ex.id}
+                        className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-3xs hover:shadow-md transition-all duration-200 rounded-2xl flex flex-col justify-between"
+                      >
+                        <CardContent className="p-5 flex flex-col justify-between h-full gap-3 text-left">
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-3xs uppercase font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/40">
+                                {ex.category}
+                              </span>
+                              <span className="text-3xs font-extrabold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                {ex.difficulty}
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{ex.name}</h4>
+                            <p className="text-2xs text-slate-500 dark:text-slate-400 line-clamp-2">{ex.description || 'Clinical health exercise routine.'}</p>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80 mt-1">
+                            <div className="flex items-center gap-3 text-2xs font-extrabold text-slate-600 dark:text-slate-300">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-indigo-500" /> {ex.duration}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Flame className="w-3.5 h-3.5 text-amber-500" /> ~{ex.caloriesBurned || 120} kcal
+                              </span>
+                            </div>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              icon={<Plus className="w-3 h-3" />}
+                              onClick={() => handleQuickLogManagedExercise(ex)}
+                              className="text-xs font-bold border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-xl cursor-pointer"
+                            >
+                              Log Session
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 5. COMPLETED WORKOUTS ACTIVITY TIMELINE */}
+                <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs rounded-2xl text-left" id="card-workout-timeline">
+                  <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/80">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <History className="w-4 h-4 text-indigo-500" />
+                        Completed Workout Logs & Activity Timeline
+                      </CardTitle>
+                      <span className="text-3xs font-extrabold uppercase text-slate-400 tracking-wider">
+                        {workoutLogs.length} Records
+                      </span>
+                    </div>
+                    <CardDescription className="text-xs">
+                      Chronological activity stream of all recorded physical workout sessions.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-5">
+                    {workoutLogs.length === 0 ? (
+                      <EmptyState
+                        title="No Workout Logs Recorded"
+                        description="You have not logged any exercise sessions yet. Click below or pick a routine from the Exercise Management library above."
+                        actionLabel="Record Activity Session"
+                        onAction={() => setIsModalOpen(true)}
+                        id="fitness-timeline-empty"
+                      />
+                    ) : (
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        {workoutLogs.map((log) => (
+                          <div
+                            key={log.id}
+                            className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-0 last:pb-0 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 px-3 rounded-xl transition-colors"
+                          >
+                            <div className="flex items-start gap-3.5">
+                              <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-200/50 shrink-0 mt-0.5">
+                                <Dumbbell className="w-4 h-4" />
+                              </div>
+                              <div className="flex flex-col text-left">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-extrabold text-slate-900 dark:text-white">{log.name}</span>
+                                  <span className="text-3xs font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/40">
+                                    {log.category}
+                                  </span>
+                                  {log.difficulty && (
+                                    <span className="text-3xs font-extrabold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                      {log.difficulty}
+                                    </span>
+                                  )}
+                                </div>
+                                {log.notes && (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                                    "{log.notes}"
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-3 text-3xs font-extrabold text-slate-400 dark:text-slate-500 mt-1.5">
+                                  <span>📅 {log.date} at {log.timestamp}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800">
+                              <div className="flex items-center gap-3 text-2xs font-extrabold">
+                                <span className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-900/30 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" /> {log.duration} mins
+                                </span>
+                                <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-900/30 flex items-center gap-1">
+                                  <Flame className="w-3 h-3" /> ~{log.caloriesBurned} kcal
+                                </span>
+                              </div>
+
+                              <button
+                                onClick={() => handleDeleteWorkoutLog(log.id)}
+                                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
+                                title="Delete Workout Log"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+              </div>
+            );
+          })()}
+
+          {/* TAB 4: Admin Users Management */}
           {activeTab === 'admin' && (
             <div className="flex flex-col gap-6" id="tab-admin-users-content">
               <AdminUsersManagement />
             </div>
           )}
 
-          {/* TAB 6: Admin Food Management */}
+          {/* TAB 5: Admin Food Management */}
           {activeTab === 'admin-food' && (
             <div className="flex flex-col gap-6" id="tab-admin-food-content">
               <AdminFoodManagement />
+            </div>
+          )}
+
+          {/* TAB 6: Admin Exercise Management */}
+          {activeTab === 'admin-exercise' && (
+            <div className="flex flex-col gap-6" id="tab-admin-exercise-content">
+              <AdminExerciseManagement />
+            </div>
+          )}
+
+          {/* TAB 7: Admin Recommendations Management */}
+          {activeTab === 'admin-recommendations' && (
+            <div className="flex flex-col gap-6" id="tab-admin-recommendations-content">
+              <AdminRecommendationsManagement />
+            </div>
+          )}
+
+          {/* TAB 8: Admin Diseases & Conditions Management */}
+          {activeTab === 'admin-diseases' && (
+            <div className="flex flex-col gap-6" id="tab-admin-diseases-content">
+              <AdminDiseasesManagement />
             </div>
           )}
 
@@ -2227,14 +3565,43 @@ export default function DashboardPage() {
               Cancel
             </Button>
             <Button variant="primary" size="md" onClick={handleCreateWorkout} isLoading={isSavingWorkout} id="modal-save-btn">
-              Save Activity
+              Save Activity Log
             </Button>
           </div>
         }
       >
         <form onSubmit={handleCreateWorkout} className="flex flex-col gap-4 text-left" id="modal-workout-form">
+          
+          <Select
+            label="Preset Routine from Exercise Management"
+            id="modal-select-managed-exercise"
+            value={selectedExerciseId}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedExerciseId(val);
+              if (val !== 'custom') {
+                const matched = managedExercisesList.find(m => m.id === val);
+                if (matched) {
+                  setWorkoutName(matched.name);
+                  setWorkoutCategory(matched.category);
+                  const d = parseInt(matched.duration.replace(/\D/g, ''), 10) || 30;
+                  setWorkoutDuration(d.toString());
+                  setWorkoutCalories((matched.caloriesBurned || Math.round(d * 5.5)).toString());
+                  setWorkoutDifficulty(matched.difficulty);
+                }
+              }
+            }}
+            options={[
+              { value: 'custom', label: 'Custom Activity (Type Manual Routine Below)' },
+              ...managedExercisesList.map(m => ({
+                value: m.id,
+                label: `${m.name} (${m.category} • ${m.duration} • ~${m.caloriesBurned || 120} kcal)`
+              }))
+            ]}
+          />
+
           <Input
-            label="Workout Exercise Type"
+            label="Workout Exercise Name"
             id="modal-workout-name"
             placeholder="e.g. Cardiovascular Jogging, Yoga, Weight Lifting"
             value={workoutName}
@@ -2242,18 +3609,59 @@ export default function DashboardPage() {
             required
           />
 
-          <Select
-            label="Planned Session Duration"
-            id="modal-workout-duration"
-            value={workoutDuration}
-            onChange={(e) => setWorkoutDuration(e.target.value)}
-            options={[
-              { value: '15', label: '15 Minutes (Short/Active)' },
-              { value: '30', label: '30 Minutes (Recommended Daily)' },
-              { value: '45', label: '45 Minutes (Strength Intensity)' },
-              { value: '60', label: '60 Minutes (High Metabolism)' },
-            ]}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Exercise Category"
+              id="modal-workout-category"
+              value={workoutCategory}
+              onChange={(e) => setWorkoutCategory(e.target.value)}
+              options={[
+                { value: 'Cardio', label: 'Cardio' },
+                { value: 'Strength Training', label: 'Strength Training' },
+                { value: 'Flexibility', label: 'Flexibility' },
+                { value: 'Rehab & Recovery', label: 'Rehab & Recovery' },
+                { value: 'Mind-Body', label: 'Mind-Body' },
+              ]}
+            />
+
+            <Select
+              label="Difficulty Intensity"
+              id="modal-workout-difficulty"
+              value={workoutDifficulty}
+              onChange={(e) => setWorkoutDifficulty(e.target.value)}
+              options={[
+                { value: 'Beginner', label: 'Beginner' },
+                { value: 'Intermediate', label: 'Intermediate' },
+                { value: 'Advanced', label: 'Advanced' },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Session Duration (Minutes)"
+              type="number"
+              id="modal-workout-duration"
+              value={workoutDuration}
+              onChange={(e) => {
+                const d = e.target.value;
+                setWorkoutDuration(d);
+                const dNum = parseInt(d, 10);
+                if (!isNaN(dNum)) {
+                  setWorkoutCalories(Math.round(dNum * 5.5).toString());
+                }
+              }}
+              required
+            />
+
+            <Input
+              label="Estimated Calories Burned (kcal)"
+              type="number"
+              id="modal-workout-calories"
+              value={workoutCalories}
+              onChange={(e) => setWorkoutCalories(e.target.value)}
+            />
+          </div>
 
           <Textarea
             label="Physical Wellness Feeling & Notes (Optional)"
