@@ -9,13 +9,16 @@ function isAllergySafe(
   badge: string,
   allergies: string[]
 ): boolean {
-  const normAllergies = allergies.map(a => a.toLowerCase());
+  if (!allergies || allergies.length === 0) return true;
+  const normAllergies = allergies.filter(Boolean).map(a => a.toLowerCase().trim());
+  if (normAllergies.includes('none') && normAllergies.length === 1) return true;
+
   const combinedText = `${title} ${description} ${badge}`.toLowerCase();
 
-  if (normAllergies.includes('peanuts') && (combinedText.includes('peanut') || combinedText.includes('arachis'))) {
+  if (normAllergies.includes('peanuts') && (combinedText.includes('peanut') || combinedText.includes('arachis') || combinedText.includes('groundnut'))) {
     return false;
   }
-  if (normAllergies.includes('tree_nuts') && (
+  if ((normAllergies.includes('tree_nuts') || normAllergies.includes('tree nuts')) && (
     combinedText.includes('almond') || 
     combinedText.includes('walnut') || 
     combinedText.includes('cashew') || 
@@ -36,7 +39,8 @@ function isAllergySafe(
     combinedText.includes('spelt') || 
     combinedText.includes('bran') ||
     combinedText.includes('pasta') ||
-    combinedText.includes('bread')
+    combinedText.includes('bread') ||
+    combinedText.includes('sourdough')
   )) {
     return false;
   }
@@ -49,7 +53,8 @@ function isAllergySafe(
     combinedText.includes('kefir') || 
     combinedText.includes('whey') || 
     combinedText.includes('cream') ||
-    combinedText.includes('lactose')
+    combinedText.includes('lactose') ||
+    combinedText.includes('paneer')
   )) {
     return false;
   }
@@ -78,7 +83,8 @@ function isAllergySafe(
     combinedText.includes('oyster') || 
     combinedText.includes('mussel') || 
     combinedText.includes('clam') || 
-    combinedText.includes('prawn')
+    combinedText.includes('prawn') ||
+    combinedText.includes('periwinkle')
   )) {
     return false;
   }
@@ -102,6 +108,125 @@ function isAllergySafe(
       if (combinedText.includes(word)) {
         return false;
       }
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Filter that enforces dietary preferences.
+ */
+function isDietaryFriendly(
+  title: string,
+  description: string,
+  diet: string
+): boolean {
+  if (!diet || diet === 'None') return true;
+  const normDiet = diet.toLowerCase();
+  const text = `${title} ${description}`.toLowerCase();
+
+  if (normDiet === 'vegan') {
+    if (
+      text.includes('chicken') || 
+      text.includes('poultry') || 
+      text.includes('beef') || 
+      text.includes('bison') || 
+      text.includes('pork') ||
+      text.includes('meat') || 
+      text.includes('fish') || 
+      text.includes('salmon') || 
+      text.includes('cod') ||
+      text.includes('mackerel') ||
+      text.includes('bass') ||
+      text.includes('tilapia') ||
+      text.includes('barramundi') ||
+      text.includes('kingklip') ||
+      text.includes('sardine') || 
+      text.includes('seafood') || 
+      text.includes('shrimp') || 
+      text.includes('egg') || 
+      text.includes('paneer') ||
+      text.includes('kefir') || 
+      text.includes('yogurt') || 
+      text.includes('milk') || 
+      text.includes('cheese') || 
+      text.includes('dairy') || 
+      text.includes('collagen') || 
+      text.includes('bone broth') || 
+      text.includes('whey') ||
+      text.includes('goat')
+    ) {
+      return false;
+    }
+  }
+
+  if (normDiet === 'vegetarian') {
+    if (
+      text.includes('chicken') || 
+      text.includes('poultry') || 
+      text.includes('beef') || 
+      text.includes('bison') || 
+      text.includes('pork') ||
+      text.includes('meat') || 
+      text.includes('fish') || 
+      text.includes('salmon') || 
+      text.includes('cod') ||
+      text.includes('mackerel') ||
+      text.includes('bass') ||
+      text.includes('tilapia') ||
+      text.includes('barramundi') ||
+      text.includes('kingklip') ||
+      text.includes('sardine') || 
+      text.includes('seafood') || 
+      text.includes('shrimp') || 
+      text.includes('collagen') || 
+      text.includes('bone broth') ||
+      text.includes('goat')
+    ) {
+      return false;
+    }
+  }
+
+  if (normDiet === 'keto') {
+    if (
+      text.includes('sweet potato') || 
+      text.includes('quinoa') || 
+      text.includes('oat') || 
+      text.includes('rice') || 
+      text.includes('banana') || 
+      text.includes('sugar') || 
+      text.includes('maple') || 
+      text.includes('honey') || 
+      text.includes('pasta') || 
+      text.includes('bread') || 
+      text.includes('lentils') || 
+      text.includes('beans')
+    ) {
+      return false;
+    }
+  }
+
+  if (normDiet === 'paleo') {
+    if (
+      text.includes('oat') || 
+      text.includes('quinoa') || 
+      text.includes('rice') || 
+      text.includes('wheat') || 
+      text.includes('lentils') || 
+      text.includes('beans') || 
+      text.includes('soy') || 
+      text.includes('tofu') || 
+      text.includes('tempeh') || 
+      text.includes('dairy') || 
+      text.includes('milk') || 
+      text.includes('yogurt') || 
+      text.includes('kefir') || 
+      text.includes('cheese') || 
+      text.includes('bread') || 
+      text.includes('pasta')
+    ) {
+      return false;
     }
   }
 
@@ -2285,7 +2410,16 @@ function getRegionalRecommendations(
 
   // Helper to filter and format item
   const processItem = (item: { id: string; title: string; desc: string; badge: string; tags: string[]; category?: string }, isCombo: boolean) => {
-    // Check allergy safety
+    // Check allergy safety using robust filter
+    if (!isAllergySafe(item.title, item.desc, item.badge || '', allergies)) {
+      return null;
+    }
+
+    // Check dietary constraints
+    if (!isDietaryFriendly(item.title, item.desc, diet)) {
+      return null;
+    }
+
     const titleLower = item.title.toLowerCase();
     const descLower = item.desc.toLowerCase();
 

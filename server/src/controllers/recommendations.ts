@@ -18,15 +18,13 @@ export const getRecommendations = async (req: AuthenticatedRequest, res: Respons
     }
 
     const userId = req.user.id;
-    console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] Checking cached recommendations for user:', userId);
-
     const checkOnly = req.query.check === 'true';
+    const forceRefresh = req.query.refresh === 'true';
 
     // 1. Check for cached recommendations
-    let recs = await RecommendationService.getRecommendations(userId);
+    let recs = forceRefresh ? null : await RecommendationService.getRecommendations(userId);
 
-    if (checkOnly) {
-      console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] Check-only request. Recommendations exist:', !!recs);
+    if (checkOnly && !forceRefresh) {
       res.status(200).json({
         success: true,
         status: 'success',
@@ -37,12 +35,10 @@ export const getRecommendations = async (req: AuthenticatedRequest, res: Respons
     }
 
     if (!recs) {
-      console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] No cached recommendations found. Retrieving health profile for user:', userId);
       // 2. Fetch active health profile to generate suggestions
       const profile = await HealthProfileService.getProfile(userId);
       
       if (!profile) {
-        console.warn('[DEBUG_LOG] [GET_RECOMMENDATIONS] Health Profile not found for user:', userId);
         res.status(404).json({
           success: false,
           status: 'fail',
@@ -51,22 +47,17 @@ export const getRecommendations = async (req: AuthenticatedRequest, res: Respons
         return;
       }
 
-      console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] Profile found. Generating and saving new recommendations...');
       // 3. Generate and cache recommendations
       recs = await RecommendationService.generateAndSave(userId, profile);
-      console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] Successfully generated and saved recommendations for user:', userId);
-    } else {
-      console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] Cached recommendations found in database.');
     }
 
-    console.log('[DEBUG_LOG] [GET_RECOMMENDATIONS] Successfully retrieved recommendations:', !!recs);
     res.status(200).json({
       success: true,
       status: 'success',
       data: recs,
     });
   } catch (error: any) {
-    console.error('[DEBUG_LOG] [GET_RECOMMENDATIONS] Error in controller:', error);
+    console.error('Error in recommendations controller:', error);
     
     // Extract the most detailed Supabase error description possible
     let errMessage = 'Failed to retrieve or generate recommendations';

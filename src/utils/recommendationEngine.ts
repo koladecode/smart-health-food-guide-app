@@ -45,13 +45,16 @@ function isAllergySafe(
   badge: string,
   allergies: string[]
 ): boolean {
-  const normAllergies = allergies.map(a => a.toLowerCase());
+  if (!allergies || allergies.length === 0) return true;
+  const normAllergies = allergies.filter(Boolean).map(a => a.toLowerCase().trim());
+  if (normAllergies.includes('none') && normAllergies.length === 1) return true;
+
   const combinedText = `${title} ${description} ${badge}`.toLowerCase();
 
-  if (normAllergies.includes('peanuts') && (combinedText.includes('peanut') || combinedText.includes('arachis'))) {
+  if (normAllergies.includes('peanuts') && (combinedText.includes('peanut') || combinedText.includes('arachis') || combinedText.includes('groundnut'))) {
     return false;
   }
-  if (normAllergies.includes('tree_nuts') && (
+  if ((normAllergies.includes('tree_nuts') || normAllergies.includes('tree nuts')) && (
     combinedText.includes('almond') || 
     combinedText.includes('walnut') || 
     combinedText.includes('cashew') || 
@@ -72,7 +75,8 @@ function isAllergySafe(
     combinedText.includes('spelt') || 
     combinedText.includes('bran') ||
     combinedText.includes('pasta') ||
-    combinedText.includes('bread')
+    combinedText.includes('bread') ||
+    combinedText.includes('sourdough')
   )) {
     return false;
   }
@@ -85,7 +89,8 @@ function isAllergySafe(
     combinedText.includes('kefir') || 
     combinedText.includes('whey') || 
     combinedText.includes('cream') ||
-    combinedText.includes('lactose')
+    combinedText.includes('lactose') ||
+    combinedText.includes('paneer')
   )) {
     return false;
   }
@@ -114,7 +119,8 @@ function isAllergySafe(
     combinedText.includes('oyster') || 
     combinedText.includes('mussel') || 
     combinedText.includes('clam') || 
-    combinedText.includes('prawn')
+    combinedText.includes('prawn') ||
+    combinedText.includes('periwinkle')
   )) {
     return false;
   }
@@ -608,12 +614,15 @@ export function generateRecommendations(profile: HealthProfile): PersonalizedRec
 
   // Deduplicate and filter Foods to Eat based on Allergies and Diet Preferences
   const uniqueEatMap = new Map<string, RecommendationItem>();
+  const seenEatTitles = new Set<string>();
+
   rawFoodsToEat.forEach(item => {
-    // Clean up duplicates by ID
-    if (!uniqueEatMap.has(item.id)) {
+    const normTitle = item.title.toLowerCase().trim();
+    if (!uniqueEatMap.has(item.id) && !seenEatTitles.has(normTitle)) {
       const isSafe = isAllergySafe(item.title, item.description, item.badge || '', normAllergies);
       const isFriendly = isDietaryFriendly(item.title, item.description, diet);
       if (isSafe && isFriendly) {
+        seenEatTitles.add(normTitle);
         uniqueEatMap.set(item.id, item);
       }
     }
@@ -837,8 +846,12 @@ export function generateRecommendations(profile: HealthProfile): PersonalizedRec
 
   // Deduplicate avoids
   const uniqueAvoidsMap = new Map<string, RecommendationItem>();
+  const seenAvoidTitles = new Set<string>();
+
   rawFoodsToAvoid.forEach(item => {
-    if (!uniqueAvoidsMap.has(item.id)) {
+    const normTitle = item.title.toLowerCase().trim();
+    if (!uniqueAvoidsMap.has(item.id) && !seenAvoidTitles.has(normTitle)) {
+      seenAvoidTitles.add(normTitle);
       uniqueAvoidsMap.set(item.id, item);
     }
   });
@@ -1203,15 +1216,15 @@ export function generateRecommendations(profile: HealthProfile): PersonalizedRec
 
   // Filter Combinations based on Allergies and Diet Preferences
   const uniqueCombMap = new Map<string, RecommendationItem>();
+  const seenCombTitles = new Set<string>();
+
   rawHealthyCombinations.forEach(item => {
-    if (!uniqueCombMap.has(item.id)) {
-      if (item.id.startsWith('comb-breakfast') || item.id.startsWith('comb-lunch') || item.id.startsWith('comb-dinner') || item.id.startsWith('comb-snack')) {
-        uniqueCombMap.set(item.id, item);
-        return;
-      }
+    const normTitle = item.title.toLowerCase().trim();
+    if (!uniqueCombMap.has(item.id) && !seenCombTitles.has(normTitle)) {
       const isSafe = isAllergySafe(item.title, item.description, item.badge || '', normAllergies);
       const isFriendly = isDietaryFriendly(item.title, item.description, diet);
       if (isSafe && isFriendly) {
+        seenCombTitles.add(normTitle);
         uniqueCombMap.set(item.id, item);
       }
     }
@@ -2543,7 +2556,16 @@ function getRegionalRecommendations(
 
   // Helper to filter and format item
   const processItem = (item: { id: string; title: string; desc: string; badge: string; tags: string[]; category?: string }, isCombo: boolean) => {
-    // Check allergy safety
+    // Check allergy safety using robust filter
+    if (!isAllergySafe(item.title, item.desc, item.badge || '', allergies)) {
+      return null;
+    }
+
+    // Check dietary constraints
+    if (!isDietaryFriendly(item.title, item.desc, diet)) {
+      return null;
+    }
+
     const titleLower = item.title.toLowerCase();
     const descLower = item.desc.toLowerCase();
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Edit2,
   Heart,
@@ -23,7 +23,9 @@ import {
   Globe,
   FileText,
   Smile,
-  Apple
+  Apple,
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
@@ -33,10 +35,28 @@ import Alert from '../components/Alert';
 import ThemeToggle from '../components/ThemeToggle';
 import { ProfileSummarySkeleton } from '../components/Skeleton';
 import EmptyState from '../components/EmptyState';
+import Modal from '../components/Modal';
 
 export default function ProfileSummaryPage() {
   const { navigateTo } = useNavigation();
-  const { profile, loadingProfile, recsExist, justCreatedProfile } = useHealthProfile();
+  const { profile, loadingProfile, recsExist, justCreatedProfile, deleteProfile } = useHealthProfile();
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+
+  const handleResetProfile = async () => {
+    setIsResetting(true);
+    setResetError(null);
+    try {
+      await deleteProfile();
+      setIsResetModalOpen(false);
+      navigateTo('profile-form');
+    } catch (err: any) {
+      setResetError(err.message || 'Failed to reset profile');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   // If profile is loading, show loading spinner
   if (loadingProfile) {
@@ -225,6 +245,16 @@ export default function ProfileSummaryPage() {
               icon={<Edit2 className="w-4 h-4" />}
             >
               Edit Profile
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              className="border-red-200 hover:bg-red-50 text-red-600 dark:border-red-900/50 dark:hover:bg-red-950/30 dark:text-red-400 font-bold transition-all"
+              onClick={() => setIsResetModalOpen(true)}
+              id="summary-reset-btn"
+              icon={<RotateCcw className="w-4 h-4" />}
+            >
+              Reset Test Data
             </Button>
             {recsExist && !justCreatedProfile ? (
               <Button
@@ -701,6 +731,63 @@ export default function ProfileSummaryPage() {
       <footer className="px-4 py-6 md:px-8 border-t border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-950 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400" id="summary-footer">
         <span>© 2026 Smart Health Guide</span>
       </footer>
+
+      {/* Reset Health Profile Confirmation Modal */}
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        title="Reset Health Profile Test Data"
+        size="md"
+        id="reset-profile-modal"
+        footer={
+          <div className="flex justify-end gap-3 w-full">
+            <Button
+              variant="outline"
+              size="md"
+              onClick={() => setIsResetModalOpen(false)}
+              disabled={isResetting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="md"
+              className="bg-red-600 hover:bg-red-700 text-white font-bold"
+              onClick={handleResetProfile}
+              isLoading={isResetting}
+              icon={<Trash2 className="w-4 h-4" />}
+            >
+              Confirm Reset Profile
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4 text-left p-2">
+          {resetError && (
+            <Alert variant="error" title="Reset Failed">
+              {resetError}
+            </Alert>
+          )}
+
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+              <strong>Development Repair Action:</strong>
+              <p className="mt-1">
+                This will delete only your personal <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">health_profiles</code> row, conditions, recommendations, and logged workouts for your user account.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            Your login credentials (<strong className="text-slate-900 dark:text-slate-200">{profile?.fullName || 'User'}</strong>) and user account will be preserved. You will be redirected immediately to the Profile Setup wizard to create a fresh profile from scratch.
+          </p>
+
+          <p className="text-3xs text-slate-400 dark:text-slate-500 italic">
+            This operation is completely safe and does not affect any other users or database tables.
+          </p>
+        </div>
+      </Modal>
 
     </div>
   );

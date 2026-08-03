@@ -539,9 +539,9 @@ export default function AdminDiseasesManagement() {
       'Clinical Notes',
       'Updated At'
     ];
-    const rows = conditions.map((c) => [
+    const rows = filteredConditions.map((c) => [
       c.id,
-      `"${c.name.replace(/"/g, '""')}"`,
+      `"${(c.name || '').replace(/"/g, '""')}"`,
       `"${c.category}"`,
       c.riskLevel,
       c.status,
@@ -549,19 +549,22 @@ export default function AdminDiseasesManagement() {
       `"${(c.linkedFoods || []).join('; ')}"`,
       `"${(c.linkedExercises || []).join('; ')}"`,
       `"${(c.linkedRecommendations || []).join('; ')}"`,
-      `"${c.description.replace(/"/g, '""')}"`,
+      `"${(c.description || '').replace(/"/g, '""')}"`,
       `"${(c.clinicalNotes || '').replace(/"/g, '""')}"`,
       c.updatedAt
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute('download', `diseases_conditions_export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
     showToast('Exported conditions catalog to CSV');
   };
 

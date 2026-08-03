@@ -112,20 +112,31 @@ export class RecommendationService {
     const supabase = getSupabaseAdminClient();
 
     // Retrieve latest recommendation metadata
-    const { data: rec, error } = await supabase
+    const { data: recs, error } = await supabase
       .from('recommendations')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .order('created_at', { ascending: false });
 
     if (error) {
       if (error.code === 'PGRST116') {
-        // No cached recommendation found
         return null;
       }
       throw error;
+    }
+
+    if (!recs || recs.length === 0) {
+      return null;
+    }
+
+    const rec = recs[0];
+
+    // Clean up extra recommendation records for this user if duplicate rows exist
+    if (recs.length > 1) {
+      const extraIds = recs.slice(1).map((r) => r.id);
+      supabase.from('recommendations').delete().in('id', extraIds).then(({ error: delErr }) => {
+        if (delErr) console.warn('[RECOMMENDATION_SERVICE] Error cleaning up duplicate recommendations:', delErr);
+      });
     }
 
     // Fetch related exercise routine
@@ -133,9 +144,14 @@ export class RecommendationService {
       .from('exercises')
       .select('*')
       .eq('recommendation_id', rec.id)
-      .single();
+      .maybeSingle();
 
     if (exError) throw exError;
+
+    // If exercise record is missing for some reason, return null so it can be re-generated
+    if (!exercise) {
+      return null;
+    }
 
     // Fetch associated food items (eat, avoid, combination, lifestyle)
     const { data: foods, error: foodsError } = await supabase
@@ -177,17 +193,27 @@ export class RecommendationService {
         liters: Number(rec.water_liters),
         cups: Number(rec.water_cups),
         description: rec.water_description || '',
-        tips: [
-          'Drink 250ml of warm water immediately upon waking to trigger kidney filtration.',
-          'Sip fluid gradually throughout the day.',
-          'Monitor urine color: it should resemble light straw.'
-        ],
+        tips: (() => {
+          const tipsList = [
+            'Drink 250ml of warm water immediately upon waking to trigger kidney filtration.',
+            'Sip fluid gradually throughout the day.',
+            'Monitor urine color: it should resemble light straw.'
+          ];
+          const descLower = (rec.water_description || '').toLowerCase();
+          if (descLower.includes('renal') || descLower.includes('kidney') || descLower.includes('restricted')) {
+            tipsList.push('Measure your daily urine output. It must match your fluid intake to prevent swelling.');
+          }
+          if (descLower.includes('active') || descLower.includes('exercise') || descLower.includes('output')) {
+            tipsList.push('Add a small pinch of mineral sea salt and a squeeze of fresh lemon to your exercise bottle to maintain proper sodium channels.');
+          }
+          return tipsList;
+        })(),
       },
       exercise: {
-        type: exercise.type,
-        frequency: exercise.frequency,
-        duration: exercise.duration,
-        intensity: exercise.intensity,
+        type: exercise.type || 'Cardiovascular',
+        frequency: exercise.frequency || '3-5 days/week',
+        duration: exercise.duration || '30 mins/day',
+        intensity: exercise.intensity || 'Moderate',
         description: exercise.description || '',
         routine: exercise.routine || [],
         precautions: exercise.precautions || [],
@@ -205,7 +231,6 @@ export class RecommendationService {
     recs: Omit<PersonalizedRecommendations, 'createdAt'>
   ): Promise<PersonalizedRecommendations> {
     const supabase = getSupabaseAdminClient();
-    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Attempting to upsert recommendation for user:', userId);
 
     // Check if an existing recommendation already exists for this user
     const { data: existingRecs, error: findError } = await supabase
@@ -215,7 +240,6 @@ export class RecommendationService {
       .order('created_at', { ascending: false });
 
     if (findError) {
-      console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to query existing recommendations:', findError);
       throw findError;
     }
 
@@ -223,18 +247,16 @@ export class RecommendationService {
 
     if (existingRecs && existingRecs.length > 0) {
       const existingId = existingRecs[0].id;
-      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Found existing recommendation ID:', existingId, 'for user:', userId);
 
       // Clean up other legacy/extra records for this user if any exist
       if (existingRecs.length > 1) {
-        console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Cleaning up', existingRecs.length - 1, 'legacy extra rows for user:', userId);
         const extraIds = existingRecs.slice(1).map(r => r.id);
         const { error: cleanupError } = await supabase
           .from('recommendations')
           .delete()
           .in('id', extraIds);
         if (cleanupError) {
-          console.warn('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to clean up extra recommendations:', cleanupError);
+          console.warn('[RECOMMENDATION_SERVICE] Failed to clean up extra recommendations:', cleanupError);
         }
       }
 
@@ -250,24 +272,22 @@ export class RecommendationService {
           updated_at: new Date().toISOString()
         })
         .eq('id', existingId)
+        .eq('user_id', userId)
         .select()
         .single();
 
       if (updateError) {
-        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to update base recommendation:', updateError);
         throw updateError;
       }
 
       rec = updatedRec;
 
       // Delete old exercises and foods associated with this recommendation_id to avoid unique constraints and duplicates
-      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Cleaning up existing exercises and foods for recommendation ID:', existingId);
       const { error: delExError } = await supabase
         .from('exercises')
         .delete()
         .eq('recommendation_id', existingId);
       if (delExError) {
-        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to delete existing exercises:', delExError);
         throw delExError;
       }
 
@@ -276,12 +296,9 @@ export class RecommendationService {
         .delete()
         .eq('recommendation_id', existingId);
       if (delFoodsError) {
-        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to delete existing foods:', delFoodsError);
         throw delFoodsError;
       }
     } else {
-      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] No existing recommendation found. Inserting new one for user:', userId);
-      
       const { data: insertedRec, error: insertError } = await supabase
         .from('recommendations')
         .insert({
@@ -296,39 +313,32 @@ export class RecommendationService {
         .single();
 
       if (insertError) {
-        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to insert new recommendation:', insertError);
         throw insertError;
       }
 
       rec = insertedRec;
     }
 
-    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Base recommendation row prepared. ID:', rec.id);
-
     // 2. Insert exercises
-    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Attempting to insert exercises for recommendation_id:', rec.id);
     const { error: exError } = await supabase.from('exercises').insert({
       recommendation_id: rec.id,
-      type: recs.exercise.type,
-      frequency: recs.exercise.frequency,
-      duration: recs.exercise.duration,
-      intensity: recs.exercise.intensity,
-      description: recs.exercise.description,
-      routine: recs.exercise.routine,
-      precautions: recs.exercise.precautions,
+      type: recs.exercise.type || 'Cardiovascular',
+      frequency: recs.exercise.frequency || '3-5 days/week',
+      duration: recs.exercise.duration || '30 mins/day',
+      intensity: recs.exercise.intensity || 'Moderate',
+      description: recs.exercise.description || '',
+      routine: recs.exercise.routine || [],
+      precautions: recs.exercise.precautions || [],
     });
 
     if (exError) {
-      console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to insert exercises:', exError);
       throw exError;
     }
-
-    console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Exercises inserted successfully.');
 
     // 3. Collect foods records
     const foodRecords: any[] = [];
 
-    recs.foodsToEat.forEach((food) => {
+    (recs.foodsToEat || []).forEach((food) => {
       foodRecords.push({
         recommendation_id: rec.id,
         title: food.title,
@@ -338,7 +348,7 @@ export class RecommendationService {
       });
     });
 
-    recs.foodsToAvoid.forEach((food) => {
+    (recs.foodsToAvoid || []).forEach((food) => {
       foodRecords.push({
         recommendation_id: rec.id,
         title: food.title,
@@ -348,7 +358,7 @@ export class RecommendationService {
       });
     });
 
-    recs.healthyCombinations.forEach((food) => {
+    (recs.healthyCombinations || []).forEach((food) => {
       foodRecords.push({
         recommendation_id: rec.id,
         title: food.title,
@@ -358,7 +368,7 @@ export class RecommendationService {
       });
     });
 
-    recs.lifestyleTips.forEach((food) => {
+    (recs.lifestyleTips || []).forEach((food) => {
       foodRecords.push({
         recommendation_id: rec.id,
         title: food.title,
@@ -369,13 +379,10 @@ export class RecommendationService {
     });
 
     if (foodRecords.length > 0) {
-      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Attempting to insert food records:', foodRecords.length);
       const { error: foodsError } = await supabase.from('foods').insert(foodRecords);
       if (foodsError) {
-        console.error('[DEBUG_LOG] [SAVE_RECOMMENDATION] Failed to insert food records:', foodsError);
         throw foodsError;
       }
-      console.log('[DEBUG_LOG] [SAVE_RECOMMENDATION] Food records inserted successfully.');
     }
 
     return {

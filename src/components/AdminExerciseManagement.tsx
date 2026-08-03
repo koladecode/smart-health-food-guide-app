@@ -596,29 +596,32 @@ export default function AdminExerciseManagement() {
       'Status',
       'Created At'
     ];
-    const rows = exercises.map((e) => [
+    const rows = filteredExercises.map((e) => [
       e.id,
-      `"${e.name.replace(/"/g, '""')}"`,
+      `"${(e.name || '').replace(/"/g, '""')}"`,
       e.category,
       e.difficulty,
       e.duration,
-      `"${e.targetBodyArea}"`,
-      `"${e.healthGoal}"`,
+      `"${(e.targetBodyArea || '').replace(/"/g, '""')}"`,
+      `"${(e.healthGoal || '').replace(/"/g, '""')}"`,
       e.caloriesBurned || 0,
-      `"${e.equipmentNeeded || 'None'}"`,
-      `"${e.compatibleConditions.join('; ')}"`,
+      `"${(e.equipmentNeeded || 'None').replace(/"/g, '""')}"`,
+      `"${(e.compatibleConditions || []).join('; ')}"`,
       e.status,
       e.createdAt
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute('download', `exercise_protocols_export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
     showToast('Exported exercise protocols catalog to CSV');
   };
 

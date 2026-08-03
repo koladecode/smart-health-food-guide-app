@@ -436,23 +436,25 @@ export default function AdminUsersManagement() {
     const headers = ['User ID', 'Full Name', 'Email', 'Role', 'Status', 'Health Goal', 'Created Date', 'Last Login'];
     const rows = filteredUsers.map((u) => [
       u.id,
-      `"${u.fullName}"`,
+      `"${(u.fullName || '').replace(/"/g, '""')}"`,
       u.email,
       u.role,
       u.status,
-      `"${u.healthGoal || ''}"`,
+      `"${(u.healthGoal || '').replace(/"/g, '""')}"`,
       u.createdAt,
       u.lastLogin
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute('download', `admin_users_export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     showToast('User directory exported successfully as CSV.', 'info');
   };

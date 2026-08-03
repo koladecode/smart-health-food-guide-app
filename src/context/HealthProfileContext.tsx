@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 
 export interface HealthProfile {
@@ -79,6 +79,7 @@ interface HealthProfileContextType {
   profile: HealthProfile | null;
   saveProfile: (newProfile: HealthProfile) => Promise<void>;
   clearProfile: () => void;
+  deleteProfile: () => Promise<void>;
   loadingProfile: boolean;
   fetchProfile: () => Promise<void>;
   isProfileFetched: boolean;
@@ -94,28 +95,16 @@ const HealthProfileContext = createContext<HealthProfileContextType | undefined>
 const LOCAL_STORAGE_KEY = 'smart_health_guide_profile';
 
 export function HealthProfileProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, token, fetchWithAuth } = useAuth();
+  const { isAuthenticated, token, user, fetchWithAuth } = useAuth();
   const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
   const [isProfileFetched, setIsProfileFetched] = useState<boolean>(false);
   const [syncedToken, setSyncedToken] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
   const [recsExist, setRecsExist] = useState<boolean | null>(null);
   const [justCreatedProfile, setJustCreatedProfile] = useState<boolean>(false);
-  const [profile, setProfile] = useState<HealthProfile | null>(() => {
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return decodeProfile(parsed);
-      }
-      return null;
-    } catch (e) {
-      console.error('Error reading health profile from localStorage:', e);
-      return null;
-    }
-  });
+  const [profile, setProfile] = useState<HealthProfile | null>(null);
 
-  const checkRecommendationsExist = async (): Promise<boolean> => {
+  const checkRecommendationsExist = useCallback(async (): Promise<boolean> => {
     if (!isAuthenticated) return false;
     try {
       const response = await fetchWithAuth('/api/recommendations?check=true');
@@ -129,17 +118,20 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
       console.error('Error checking recommendations existence:', err);
     }
     return false;
-  };
+  }, [isAuthenticated, fetchWithAuth]);
 
-  const fetchProfile = async () => {
-    if (!isAuthenticated) {
-      console.log('[DEBUG_FRONTEND] fetchProfile called but isAuthenticated is false. Returning.');
+  const fetchProfile = useCallback(async () => {
+    if (!isAuthenticated || !user?.id) {
+      console.log('[DEBUG_FRONTEND] fetchProfile called but user or isAuthenticated is false. Returning.');
+      setProfile(null);
       return;
     }
     if (isFetchingRef.current) {
       console.log('[DEBUG_FRONTEND] fetchProfile: fetch already in progress, skipping concurrent call.');
       return;
     }
+    const currentUserId = user.id;
+    const userStorageKey = `smart_health_guide_profile_${currentUserId}`;
     try {
       isFetchingRef.current = true;
       setLoadingProfile(true);
@@ -154,7 +146,9 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
           const fetchedProfile = decodeProfile(profileData);
           console.log('[DEBUG_FRONTEND] fetchProfile mapping success. Setting profile state to:', JSON.stringify(fetchedProfile, null, 2));
           setProfile(fetchedProfile);
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fetchedProfile));
+          try {
+            localStorage.setItem(userStorageKey, JSON.stringify(fetchedProfile));
+          } catch (e) {}
           await checkRecommendationsExist();
         } else {
           console.log('[DEBUG_FRONTEND] fetchProfile result did not have status success or profile data. Setting profile to null.');
@@ -166,7 +160,10 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         if (response.status === 404) {
           setProfile(null);
           setRecsExist(false);
-          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          try {
+            localStorage.removeItem(userStorageKey);
+            localStorage.removeItem('smart_health_guide_profile');
+          } catch (e) {}
         }
       }
     } catch (err) {
@@ -177,13 +174,14 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
       setIsProfileFetched(true);
       console.log('[DEBUG_FRONTEND] fetchProfile complete. loadingProfile set to false, isProfileFetched set to true.');
     }
-  };
+  }, [isAuthenticated, user?.id, fetchWithAuth, checkRecommendationsExist]);
 
   useEffect(() => {
-    if (isAuthenticated && token) {
+    if (isAuthenticated && token && user?.id) {
+      const userStorageKey = `smart_health_guide_profile_${user.id}`;
       let hasCache = false;
       try {
-        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+        const stored = localStorage.getItem(userStorageKey);
         if (stored) {
           const profileData = JSON.parse(stored);
           const mappedProfile = decodeProfile(profileData);
@@ -201,22 +199,25 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         console.error('Error loading cached profile:', e);
       }
       if (!hasCache) {
+        setProfile(null);
         setIsProfileFetched(false);
       }
       fetchProfile().then(() => {
         setSyncedToken(token);
       });
-    } else if (!isAuthenticated) {
+    } else if (!isAuthenticated || !user) {
       setProfile(null);
       setIsProfileFetched(true);
       setRecsExist(false);
       setJustCreatedProfile(false);
       setSyncedToken(null);
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      try {
+        localStorage.removeItem('smart_health_guide_profile');
+      } catch (e) {}
     }
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, user?.id]);
 
-  const saveProfile = async (newProfile: HealthProfile) => {
+  const saveProfile = useCallback(async (newProfile: HealthProfile) => {
     console.log('[INSTRUMENT_WEIGHT] [saveProfile] Method saveProfile called with newProfile weight:', newProfile.weight);
     const previousProfile = profile;
     const isNew = !profile;
@@ -224,6 +225,9 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
     if (isNew) {
       setJustCreatedProfile(true);
     }
+
+    const currentUserId = user?.id;
+    const userStorageKey = currentUserId ? `smart_health_guide_profile_${currentUserId}` : 'smart_health_guide_profile';
 
     // Encode sleep and stress into health conditions before saving to DB
     const sleepTag = newProfile.sleepDuration === 'Less than 6 hours' ? 'sleep_less_6' 
@@ -246,12 +250,13 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
     console.log('[INSTRUMENT_WEIGHT] [saveProfile] decodedOptimisticProfile constructed. weight:', decodedOptimisticProfile.weight);
     setProfile(decodedOptimisticProfile);
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(decodedOptimisticProfile));
+      localStorage.setItem(userStorageKey, JSON.stringify(decodedOptimisticProfile));
     } catch (e) {
       console.error('Error saving health profile to localStorage:', e);
     }
 
-    if (isAuthenticated) {
+    const activeToken = token || localStorage.getItem('smart_health_guide_token');
+    if (activeToken || isAuthenticated) {
       try {
         setLoadingProfile(true);
         console.log('[INSTRUMENT_WEIGHT] [saveProfile] Immediately before fetchWithAuth POST /api/profile. Payload weight:', profileToSave.weight);
@@ -274,7 +279,9 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
           const savedDbProfile = decodeProfile(result.data.profile);
           console.log('[INSTRUMENT_WEIGHT] [saveProfile] Setting state with decoded backend returned profile. weight:', savedDbProfile.weight);
           setProfile(savedDbProfile);
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(savedDbProfile));
+          try {
+            localStorage.setItem(userStorageKey, JSON.stringify(savedDbProfile));
+          } catch (e) {}
           setRecsExist(true); // Generated automatically on save
         } else {
           throw new Error(result.message || 'Failed to save health profile to backend database.');
@@ -286,9 +293,9 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         setJustCreatedProfile(false);
         try {
           if (previousProfile) {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(previousProfile));
+            localStorage.setItem(userStorageKey, JSON.stringify(previousProfile));
           } else {
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
+            localStorage.removeItem(userStorageKey);
           }
         } catch (e) {
           console.error('Error rolling back localStorage:', e);
@@ -298,37 +305,81 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         setLoadingProfile(false);
       }
     }
-  };
+  }, [profile, user?.id, token, isAuthenticated, fetchWithAuth]);
 
-  const clearProfile = () => {
+  const clearProfile = useCallback(() => {
     setProfile(null);
     setIsProfileFetched(true);
     setRecsExist(false);
     setJustCreatedProfile(false);
     try {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
+      if (user?.id) {
+        localStorage.removeItem(`smart_health_guide_profile_${user.id}`);
+        localStorage.removeItem(`smart_health_logged_workouts_${user.id}`);
+        localStorage.removeItem(`smart_health_guide_logged_workouts_${user.id}`);
+        localStorage.removeItem(`health_goal_weight_start_${user.id}`);
+        localStorage.removeItem(`health_goal_weight_current_${user.id}`);
+      }
+      localStorage.removeItem('smart_health_guide_profile');
     } catch (e) {
       console.error('Error clearing health profile from localStorage:', e);
     }
-  };
+  }, [user?.id]);
+
+  const deleteProfile = useCallback(async (): Promise<void> => {
+    if (!isAuthenticated) return;
+    try {
+      setLoadingProfile(true);
+      const response = await fetchWithAuth('/api/profile', {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete health profile');
+      }
+
+      // Clear client state & local caches
+      clearProfile();
+    } catch (err) {
+      console.error('Error deleting health profile:', err);
+      throw err;
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, [isAuthenticated, fetchWithAuth, clearProfile]);
 
   const isProfileSynced = isAuthenticated ? (syncedToken === token && !loadingProfile && isProfileFetched) : true;
 
+  const value = useMemo(() => ({
+    profile,
+    saveProfile,
+    clearProfile,
+    deleteProfile,
+    loadingProfile,
+    fetchProfile,
+    isProfileFetched,
+    recsExist,
+    justCreatedProfile,
+    setJustCreatedProfile,
+    checkRecommendationsExist,
+    isProfileSynced
+  }), [
+    profile,
+    saveProfile,
+    clearProfile,
+    deleteProfile,
+    loadingProfile,
+    fetchProfile,
+    isProfileFetched,
+    recsExist,
+    justCreatedProfile,
+    checkRecommendationsExist,
+    isProfileSynced
+  ]);
+
   return (
     <HealthProfileContext.Provider
-      value={{
-        profile,
-        saveProfile,
-        clearProfile,
-        loadingProfile,
-        fetchProfile,
-        isProfileFetched,
-        recsExist,
-        justCreatedProfile,
-        setJustCreatedProfile,
-        checkRecommendationsExist,
-        isProfileSynced
-      }}
+      value={value}
       id="health-profile-provider-wrapper"
     >
       {children}

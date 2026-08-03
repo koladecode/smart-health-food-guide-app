@@ -49,14 +49,8 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response, next:
  * Controller for creating or updating the active user's Health Profile
  */
 export const createOrUpdateProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  console.log('[DEBUG_LOG] Received request at POST/PUT /api/profile');
-  console.log('[DEBUG_LOG] [REQ_USER_ID_EXISTS] Whether req.user.id exists:', !!(req.user && req.user.id), '- User ID:', req.user?.id);
-  console.log('[DEBUG_LOG] [JSON_BODY_RECEIVED] Exact JSON body received by the controller:', JSON.stringify(req.body));
-  console.log('[DEBUG_LOG] Incoming request body (formatted):', JSON.stringify(req.body, null, 2));
-
   try {
     if (!req.user) {
-      console.log('[DEBUG_LOG] Unauthorized request: req.user is missing');
       res.status(401).json({
         success: false,
         status: 'fail',
@@ -68,12 +62,8 @@ export const createOrUpdateProfile = async (req: AuthenticatedRequest, res: Resp
     const userId = req.user.id;
     const profileData = req.body;
 
-    console.log('[INSTRUMENT_WEIGHT] [Backend Controller] Raw req.body weight field value received:', profileData.weight);
-
     // Validate Input
     const { fullName, age, height, weight, activityLevel, healthGoal, healthGoals } = profileData;
-
-    console.log('[INSTRUMENT_WEIGHT] [Backend Controller] Destructured weight value:', weight);
 
     if (!fullName || typeof fullName !== 'string' || fullName.trim().length === 0) {
       res.status(400).json({
@@ -135,34 +125,20 @@ export const createOrUpdateProfile = async (req: AuthenticatedRequest, res: Resp
     }
 
     // Process creation or updates in Supabase
-    console.log('[DEBUG_LOG] Checking if profile exists for userId:', userId);
     const existingProfile = await HealthProfileService.getProfile(userId);
     let profile;
 
-    console.log("PROFILE SAVE REQUEST RECEIVED");
-    console.log("User ID:", req.user ? req.user.id : userId);
-    console.log("Request Body:", JSON.stringify(req.body, null, 2));
-
     if (existingProfile) {
-      console.log('[DEBUG_LOG] Existing profile found. Calling updateProfile() for userId:', userId);
       profile = await HealthProfileService.updateProfile(userId, profileData);
-      console.log('[DEBUG_LOG] updateProfile() complete. Returned profile ID:', profile?.id);
     } else {
-      console.log('[DEBUG_LOG] No existing profile found. Calling createProfile() for userId:', userId);
       profile = await HealthProfileService.createProfile(userId, profileData);
-      console.log('[DEBUG_LOG] createProfile() complete. Returned profile ID:', profile?.id);
     }
-
-    console.log("PROFILE SAVE COMPLETED");
-    console.log("Returned Profile:", JSON.stringify(profile, null, 2));
 
     // Automatically generate and save recommendations to make sure recommendations table is populated
     try {
-      console.log('[DEBUG_LOG] Generating and saving updated recommendations for user:', userId);
       await RecommendationService.generateAndSave(userId, profile);
-      console.log('[DEBUG_LOG] Recommendations successfully updated and saved in DB.');
     } catch (recError: any) {
-      console.error('[DEBUG_LOG] Non-blocking error generating/saving recommendations on profile change:', recError);
+      console.error('Non-blocking error generating/saving recommendations on profile change:', recError);
     }
 
     res.status(200).json({
@@ -200,6 +176,38 @@ export const createOrUpdateProfile = async (req: AuthenticatedRequest, res: Resp
       success: false,
       status: 'fail',
       message: errMessage
+    });
+  }
+};
+
+/**
+ * Deletes the authenticated user's health profile and related clinical data
+ */
+export const deleteProfile = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        status: 'fail',
+        message: 'Unauthorized: User ID missing'
+      });
+      return;
+    }
+
+    await HealthProfileService.deleteProfile(userId);
+
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Health profile and associated test data deleted successfully.'
+    });
+  } catch (error: any) {
+    console.error('Error in deleteProfile controller:', error);
+    res.status(500).json({
+      success: false,
+      status: 'fail',
+      message: error.message || 'Failed to delete health profile'
     });
   }
 };

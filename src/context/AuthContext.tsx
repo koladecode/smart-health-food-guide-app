@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigation } from './NavigationContext';
 
 export interface User {
@@ -81,15 +81,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     verifySession();
   }, []);
 
-  const handleSessionCleanup = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem('smart_health_guide_profile'); // Clear local profile cache
+  const clearAllUserSessionData = () => {
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key !== 'smart_health_guide_managed_foods' && key !== 'theme') {
+          if (
+            key.startsWith('smart_health_guide_') ||
+            key.startsWith('health_') ||
+            key.startsWith('user_')
+          ) {
+            keysToRemove.push(key);
+          }
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+    } catch (e) {
+      console.error('[AUTH_CONTEXT] Error clearing user localStorage:', e);
+    }
   };
 
-  const register = async (email: string, password: string) => {
+  const handleSessionCleanup = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    clearAllUserSessionData();
+  }, []);
+
+  const register = useCallback(async (email: string, password: string) => {
+    clearAllUserSessionData();
     setLoading(true);
     setError(null);
     try {
@@ -108,10 +128,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const registeredUser = result.data.user;
       const sessionToken = result.data.session?.access_token || null;
 
-      if (sessionToken) {
-        localStorage.setItem(TOKEN_KEY, sessionToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(registeredUser));
+      if (!sessionToken) {
+        throw new Error('Registration completed, but an active authentication token could not be obtained. Please sign in.');
       }
+
+      localStorage.setItem(TOKEN_KEY, sessionToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(registeredUser));
 
       setUser(registeredUser);
       setToken(sessionToken);
@@ -124,9 +146,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       throw err;
     }
-  };
+  }, [navigateTo]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
+    clearAllUserSessionData();
     setLoading(true);
     setError(null);
     try {
@@ -163,8 +186,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const profileResult = await profileResponse.json();
         if (profileResult.status === 'success' && profileResult.data?.profile) {
           hasProfile = true;
-          // Store profile in localStorage cache
-          localStorage.setItem('smart_health_guide_profile', JSON.stringify(profileResult.data.profile));
+          // Store profile in user-scoped localStorage cache
+          localStorage.setItem(`smart_health_guide_profile_${loggedInUser.id}`, JSON.stringify(profileResult.data.profile));
         }
       }
 
@@ -182,9 +205,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       throw err;
     }
-  };
+  }, [navigateTo]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setLoading(true);
     try {
       if (token) {
@@ -203,9 +226,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       navigateTo('landing');
     }
-  };
+  }, [token, handleSessionCleanup, navigateTo]);
 
-  const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const fetchWithAuth = useCallback(async (url: string, options: RequestInit = {}) => {
     const headers = {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
@@ -220,27 +243,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...options,
       headers,
     });
-  };
+  }, [token]);
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
-  const isAuthenticated = !!user;
+  const isAuthenticated = !!user && !!token;
+
+  const value = useMemo(() => ({
+    user,
+    token,
+    isAuthenticated,
+    loading,
+    error,
+    register,
+    login,
+    logout,
+    fetchWithAuth,
+    clearError,
+  }), [user, token, isAuthenticated, loading, error, register, login, logout, fetchWithAuth, clearError]);
 
   return (
     <AuthContext.Provider
       id="auth-provider-wrapper"
-      value={{
-        user,
-        token,
-        isAuthenticated,
-        loading,
-        error,
-        register,
-        login,
-        logout,
-        fetchWithAuth,
-        clearError,
-      }}
+      value={value}
     >
       {children}
     </AuthContext.Provider>

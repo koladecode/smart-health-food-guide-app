@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProfile, createOrUpdateProfile } from '../controllers/healthProfile';
+import { getProfile, createOrUpdateProfile, deleteProfile } from '../controllers/healthProfile';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
@@ -8,5 +8,6 @@ const router = Router();
 router.get('/', requireAuth, getProfile);
 router.post('/', requireAuth, createOrUpdateProfile);
 router.put('/', requireAuth, createOrUpdateProfile);
+router.delete('/', requireAuth, deleteProfile);
 
 export default router;

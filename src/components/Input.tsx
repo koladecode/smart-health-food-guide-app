@@ -32,6 +32,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={uniqueId}
             type={type}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${uniqueId}-error` : helperText ? `${uniqueId}-helper` : undefined}
             className={`w-full rounded-xl bg-white dark:bg-gray-900 border ${
               error
                 ? 'border-red-500 focus:ring-red-500/10 focus:border-red-500 hover:border-red-400'
@@ -87,6 +89,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           id={uniqueId}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${uniqueId}-error` : helperText ? `${uniqueId}-helper` : undefined}
           className={`w-full rounded-xl bg-white dark:bg-gray-900 border ${
             error
               ? 'border-red-500 focus:ring-red-500/10 focus:border-red-500 hover:border-red-400'
@@ -140,6 +144,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={uniqueId}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${uniqueId}-error` : helperText ? `${uniqueId}-helper` : undefined}
           className={`w-full rounded-xl bg-white dark:bg-gray-900 border ${
             error
               ? 'border-red-500 focus:ring-red-500/10 focus:border-red-500 hover:border-red-400'

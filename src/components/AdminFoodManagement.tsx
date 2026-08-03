@@ -481,25 +481,27 @@ export default function AdminFoodManagement() {
     const headers = ['Food ID', 'Food Name', 'Category', 'Meal Type', 'Diet Type', 'Country/Region', 'Medical Compatibility', 'Status', 'Calories', 'Created Date'];
     const rows = filteredFoods.map((f) => [
       f.id,
-      `"${f.name.replace(/"/g, '""')}"`,
-      `"${f.category}"`,
+      `"${(f.name || '').replace(/"/g, '""')}"`,
+      `"${(f.category || '').replace(/"/g, '""')}"`,
       f.mealType,
       f.dietType,
-      `"${f.country}"`,
-      `"${f.medicalCompatibility.join('; ')}"`,
+      `"${(f.country || '').replace(/"/g, '""')}"`,
+      `"${(f.medicalCompatibility || []).join('; ')}"`,
       f.status,
       f.calories || '',
       f.createdAt
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute('download', `admin_food_directory_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     showToast('Food directory exported successfully as CSV.', 'info');
   };

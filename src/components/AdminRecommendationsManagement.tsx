@@ -586,28 +586,31 @@ export default function AdminRecommendationsManagement() {
       'Summary',
       'Last Updated'
     ];
-    const rows = recommendations.map((r) => [
+    const rows = filteredRecommendations.map((r) => [
       r.id,
-      `"${r.title.replace(/"/g, '""')}"`,
+      `"${(r.title || '').replace(/"/g, '""')}"`,
       r.type,
-      `"${r.targetUsers.join('; ')}"`,
+      `"${(r.targetUsers || []).join('; ')}"`,
       `"${r.healthCondition}"`,
       `"${r.healthGoal}"`,
       `"${r.dietType}"`,
       r.priority,
       r.status,
-      `"${r.summary.replace(/"/g, '""')}"`,
+      `"${(r.summary || '').replace(/"/g, '""')}"`,
       r.updatedAt
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.href = url;
     link.setAttribute('download', `clinical_recommendations_export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
     showToast('Exported recommendations catalog to CSV');
   };
 

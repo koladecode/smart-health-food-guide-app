@@ -197,7 +197,8 @@ export default function DashboardPage() {
   // Workout Logs State
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>(() => {
     try {
-      const saved = localStorage.getItem('smart_health_guide_logged_workouts');
+      const uKey = user?.id ? `smart_health_guide_logged_workouts_${user.id}` : 'smart_health_guide_logged_workouts';
+      const saved = localStorage.getItem(uKey);
       if (saved) return JSON.parse(saved);
     } catch (e) {}
 
@@ -360,8 +361,9 @@ export default function DashboardPage() {
   }, [activeTab, refreshFitnessData]);
 
   React.useEffect(() => {
-    localStorage.setItem('smart_health_guide_logged_workouts', JSON.stringify(workoutLogs));
-  }, [workoutLogs]);
+    const uKey = user?.id ? `smart_health_guide_logged_workouts_${user.id}` : 'smart_health_guide_logged_workouts';
+    localStorage.setItem(uKey, JSON.stringify(workoutLogs));
+  }, [workoutLogs, user?.id]);
 
   // Allergen warning interaction states
   const [selectedAllergen, setSelectedAllergen] = useState('none');
@@ -443,18 +445,20 @@ export default function DashboardPage() {
   }, [activeTab, refreshAdminStats]);
 
   // Local states for goal tracker adjustments
+  const uSuffix = user?.id ? `_${user.id}` : '';
+
   const [goalStartWeight, setGoalStartWeight] = useState<number>(() => {
-    const saved = localStorage.getItem('health_goal_weight_start');
+    const saved = localStorage.getItem(`health_goal_weight_start${uSuffix}`);
     if (saved) return parseFloat(saved);
     return profile?.weight ? Number(profile.weight) : 80;
   });
   const [goalCurrentWeight, setGoalCurrentWeight] = useState<number>(() => {
-    const saved = localStorage.getItem('health_goal_weight_current');
+    const saved = localStorage.getItem(`health_goal_weight_current${uSuffix}`);
     if (saved) return parseFloat(saved);
     return profile?.weight ? Number(profile.weight) : 80;
   });
   const [goalTargetWeight, setGoalTargetWeight] = useState<number>(() => {
-    const saved = localStorage.getItem('health_goal_weight_target');
+    const saved = localStorage.getItem(`health_goal_weight_target${uSuffix}`);
     if (saved) return parseFloat(saved);
     const w = profile?.weight ? Number(profile.weight) : 80;
     const g = profile?.healthGoal || 'Improve Overall Health';
@@ -463,17 +467,17 @@ export default function DashboardPage() {
   });
 
   const [goalTargetExercise, setGoalTargetExercise] = useState<number>(() => {
-    const saved = localStorage.getItem('health_goal_exercise_target');
+    const saved = localStorage.getItem(`health_goal_exercise_target${uSuffix}`);
     return saved ? parseInt(saved, 10) : 150;
   });
 
   const [goalTargetWellness, setGoalTargetWellness] = useState<number>(() => {
-    const saved = localStorage.getItem('health_goal_wellness_target');
+    const saved = localStorage.getItem(`health_goal_wellness_target${uSuffix}`);
     return saved ? parseInt(saved, 10) : 85;
   });
 
   const [goalTargetMeals, setGoalTargetMeals] = useState<number>(() => {
-    const saved = localStorage.getItem('health_goal_meals_target');
+    const saved = localStorage.getItem(`health_goal_meals_target${uSuffix}`);
     return saved ? parseInt(saved, 10) : 18;
   });
 
@@ -481,13 +485,13 @@ export default function DashboardPage() {
   React.useEffect(() => {
     if (profile && profile.weight) {
       const w = Number(profile.weight);
-      if (!localStorage.getItem('health_goal_weight_start')) {
+      if (!localStorage.getItem(`health_goal_weight_start${uSuffix}`)) {
         setGoalStartWeight(w);
       }
-      if (!localStorage.getItem('health_goal_weight_current')) {
+      if (!localStorage.getItem(`health_goal_weight_current${uSuffix}`)) {
         setGoalCurrentWeight(w);
       }
-      if (!localStorage.getItem('health_goal_weight_target')) {
+      if (!localStorage.getItem(`health_goal_weight_target${uSuffix}`)) {
         const g = profile.healthGoal;
         if (g === 'Weight Gain' || g === 'Gain Weight') {
           setGoalTargetWeight(w + 5);
@@ -496,71 +500,71 @@ export default function DashboardPage() {
         }
       }
     }
-  }, [profile]);
+  }, [profile, uSuffix]);
 
   // Persist goal changes to local storage
   React.useEffect(() => {
-    localStorage.setItem('health_goal_weight_start', goalStartWeight.toString());
-  }, [goalStartWeight]);
+    localStorage.setItem(`health_goal_weight_start${uSuffix}`, goalStartWeight.toString());
+  }, [goalStartWeight, uSuffix]);
 
   React.useEffect(() => {
-    localStorage.setItem('health_goal_weight_current', goalCurrentWeight.toString());
-  }, [goalCurrentWeight]);
+    localStorage.setItem(`health_goal_weight_current${uSuffix}`, goalCurrentWeight.toString());
+  }, [goalCurrentWeight, uSuffix]);
 
   React.useEffect(() => {
-    localStorage.setItem('health_goal_weight_target', goalTargetWeight.toString());
-  }, [goalTargetWeight]);
+    localStorage.setItem(`health_goal_weight_target${uSuffix}`, goalTargetWeight.toString());
+  }, [goalTargetWeight, uSuffix]);
 
   React.useEffect(() => {
-    localStorage.setItem('health_goal_exercise_target', goalTargetExercise.toString());
-  }, [goalTargetExercise]);
+    localStorage.setItem(`health_goal_exercise_target${uSuffix}`, goalTargetExercise.toString());
+  }, [goalTargetExercise, uSuffix]);
 
   React.useEffect(() => {
-    localStorage.setItem('health_goal_wellness_target', goalTargetWellness.toString());
-  }, [goalTargetWellness]);
+    localStorage.setItem(`health_goal_wellness_target${uSuffix}`, goalTargetWellness.toString());
+  }, [goalTargetWellness, uSuffix]);
 
   React.useEffect(() => {
-    localStorage.setItem('health_goal_meals_target', goalTargetMeals.toString());
-  }, [goalTargetMeals]);
+    localStorage.setItem(`health_goal_meals_target${uSuffix}`, goalTargetMeals.toString());
+  }, [goalTargetMeals, uSuffix]);
 
   // Daily Plan Completion States
   const [planCompletedMorning, setPlanCompletedMorning] = useState(() => {
-    return localStorage.getItem('health_plan_completed_morning') === 'true';
+    return localStorage.getItem(`health_plan_completed_morning${uSuffix}`) === 'true';
   });
   const [planCompletedAfternoon, setPlanCompletedAfternoon] = useState(() => {
-    return localStorage.getItem('health_plan_completed_afternoon') === 'true';
+    return localStorage.getItem(`health_plan_completed_afternoon${uSuffix}`) === 'true';
   });
   const [planCompletedEvening, setPlanCompletedEvening] = useState(() => {
-    return localStorage.getItem('health_plan_completed_evening') === 'true';
+    return localStorage.getItem(`health_plan_completed_evening${uSuffix}`) === 'true';
   });
   const [planCompletedNight, setPlanCompletedNight] = useState(() => {
-    return localStorage.getItem('health_plan_completed_night') === 'true';
+    return localStorage.getItem(`health_plan_completed_night${uSuffix}`) === 'true';
   });
 
   React.useEffect(() => {
-    localStorage.setItem('health_plan_completed_morning', planCompletedMorning.toString());
-  }, [planCompletedMorning]);
+    localStorage.setItem(`health_plan_completed_morning${uSuffix}`, planCompletedMorning.toString());
+  }, [planCompletedMorning, uSuffix]);
 
   React.useEffect(() => {
-    localStorage.setItem('health_plan_completed_afternoon', planCompletedAfternoon.toString());
-  }, [planCompletedAfternoon]);
+    localStorage.setItem(`health_plan_completed_afternoon${uSuffix}`, planCompletedAfternoon.toString());
+  }, [planCompletedAfternoon, uSuffix]);
 
   React.useEffect(() => {
-    localStorage.setItem('health_plan_completed_evening', planCompletedEvening.toString());
-  }, [planCompletedEvening]);
+    localStorage.setItem(`health_plan_completed_evening${uSuffix}`, planCompletedEvening.toString());
+  }, [planCompletedEvening, uSuffix]);
 
   React.useEffect(() => {
-    localStorage.setItem('health_plan_completed_night', planCompletedNight.toString());
-  }, [planCompletedNight]);
+    localStorage.setItem(`health_plan_completed_night${uSuffix}`, planCompletedNight.toString());
+  }, [planCompletedNight, uSuffix]);
 
   // Daily Tracking States
-  const WATER_KEY = 'health_tracker_water';
-  const WATER_TARGET_KEY = 'health_tracker_water_target';
-  const EXERCISE_KEY = 'health_tracker_exercise';
-  const EXERCISE_TARGET_KEY = 'health_tracker_exercise_target';
-  const MEAL_BREAKFAST_KEY = 'health_tracker_meal_breakfast';
-  const MEAL_LUNCH_KEY = 'health_tracker_meal_lunch';
-  const MEAL_DINNER_KEY = 'health_tracker_meal_dinner';
+  const WATER_KEY = `health_tracker_water${uSuffix}`;
+  const WATER_TARGET_KEY = `health_tracker_water_target${uSuffix}`;
+  const EXERCISE_KEY = `health_tracker_exercise${uSuffix}`;
+  const EXERCISE_TARGET_KEY = `health_tracker_exercise_target${uSuffix}`;
+  const MEAL_BREAKFAST_KEY = `health_tracker_meal_breakfast${uSuffix}`;
+  const MEAL_LUNCH_KEY = `health_tracker_meal_lunch${uSuffix}`;
+  const MEAL_DINNER_KEY = `health_tracker_meal_dinner${uSuffix}`;
 
   const [waterIntake, setWaterIntake] = useState(() => {
     const saved = localStorage.getItem(WATER_KEY);
@@ -590,37 +594,100 @@ export default function DashboardPage() {
     return localStorage.getItem(MEAL_DINNER_KEY) === 'true';
   });
 
+  // Re-synchronize state whenever active user switches
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    try {
+      const savedLogs = localStorage.getItem(`smart_health_guide_logged_workouts_${user.id}`);
+      if (savedLogs) setWorkoutLogs(JSON.parse(savedLogs));
+    } catch (e) {}
+
+    const savedStart = localStorage.getItem(`health_goal_weight_start_${user.id}`);
+    if (savedStart) setGoalStartWeight(parseFloat(savedStart));
+    else if (profile?.weight) setGoalStartWeight(Number(profile.weight));
+
+    const savedCurrent = localStorage.getItem(`health_goal_weight_current_${user.id}`);
+    if (savedCurrent) setGoalCurrentWeight(parseFloat(savedCurrent));
+    else if (profile?.weight) setGoalCurrentWeight(Number(profile.weight));
+
+    const savedTarget = localStorage.getItem(`health_goal_weight_target_${user.id}`);
+    if (savedTarget) setGoalTargetWeight(parseFloat(savedTarget));
+    else if (profile?.weight) {
+      const w = Number(profile.weight);
+      const g = profile.healthGoal || 'Improve Overall Health';
+      setGoalTargetWeight(g === 'Weight Gain' || g === 'Gain Weight' ? w + 5 : w - 5);
+    }
+
+    const savedExGoal = localStorage.getItem(`health_goal_exercise_target_${user.id}`);
+    if (savedExGoal) setGoalTargetExercise(parseInt(savedExGoal, 10));
+
+    const savedWellGoal = localStorage.getItem(`health_goal_wellness_target_${user.id}`);
+    if (savedWellGoal) setGoalTargetWellness(parseInt(savedWellGoal, 10));
+
+    const savedMealGoal = localStorage.getItem(`health_goal_meals_target_${user.id}`);
+    if (savedMealGoal) setGoalTargetMeals(parseInt(savedMealGoal, 10));
+
+    setPlanCompletedMorning(localStorage.getItem(`health_plan_completed_morning_${user.id}`) === 'true');
+    setPlanCompletedAfternoon(localStorage.getItem(`health_plan_completed_afternoon_${user.id}`) === 'true');
+    setPlanCompletedEvening(localStorage.getItem(`health_plan_completed_evening_${user.id}`) === 'true');
+    setPlanCompletedNight(localStorage.getItem(`health_plan_completed_night_${user.id}`) === 'true');
+
+    const savedWater = localStorage.getItem(`health_tracker_water_${user.id}`);
+    setWaterIntake(savedWater ? parseInt(savedWater, 10) : 1000);
+
+    const savedWaterTarget = localStorage.getItem(`health_tracker_water_target_${user.id}`);
+    setWaterTarget(savedWaterTarget ? parseInt(savedWaterTarget, 10) : 2500);
+
+    const savedExercise = localStorage.getItem(`health_tracker_exercise_${user.id}`);
+    setExerciseProgress(savedExercise ? parseInt(savedExercise, 10) : 15);
+
+    const savedExerciseTarget = localStorage.getItem(`health_tracker_exercise_target_${user.id}`);
+    setExerciseTarget(savedExerciseTarget ? parseInt(savedExerciseTarget, 10) : 30);
+
+    setMealBreakfast(localStorage.getItem(`health_tracker_meal_breakfast_${user.id}`) === 'true');
+    setMealLunch(localStorage.getItem(`health_tracker_meal_lunch_${user.id}`) === 'true');
+    setMealDinner(localStorage.getItem(`health_tracker_meal_dinner_${user.id}`) === 'true');
+
+    const savedHist = localStorage.getItem(`health_tracker_history_${user.id}`);
+    if (savedHist) {
+      try {
+        setHistory(JSON.parse(savedHist));
+      } catch (e) {}
+    }
+  }, [user?.id, profile]);
+
   // Effects to synchronize tracker state to localStorage
   React.useEffect(() => {
     localStorage.setItem(WATER_KEY, waterIntake.toString());
-  }, [waterIntake]);
+  }, [waterIntake, WATER_KEY]);
 
   React.useEffect(() => {
     localStorage.setItem(WATER_TARGET_KEY, waterTarget.toString());
-  }, [waterTarget]);
+  }, [waterTarget, WATER_TARGET_KEY]);
 
   React.useEffect(() => {
     localStorage.setItem(EXERCISE_KEY, exerciseProgress.toString());
-  }, [exerciseProgress]);
+  }, [exerciseProgress, EXERCISE_KEY]);
 
   React.useEffect(() => {
     localStorage.setItem(EXERCISE_TARGET_KEY, exerciseTarget.toString());
-  }, [exerciseTarget]);
+  }, [exerciseTarget, EXERCISE_TARGET_KEY]);
 
   React.useEffect(() => {
     localStorage.setItem(MEAL_BREAKFAST_KEY, mealBreakfast.toString());
-  }, [mealBreakfast]);
+  }, [mealBreakfast, MEAL_BREAKFAST_KEY]);
 
   React.useEffect(() => {
     localStorage.setItem(MEAL_LUNCH_KEY, mealLunch.toString());
-  }, [mealLunch]);
+  }, [mealLunch, MEAL_LUNCH_KEY]);
 
   React.useEffect(() => {
     localStorage.setItem(MEAL_DINNER_KEY, mealDinner.toString());
-  }, [mealDinner]);
+  }, [mealDinner, MEAL_DINNER_KEY]);
 
   // Daily Progress History State
-  const HISTORY_KEY = 'health_tracker_history';
+  const HISTORY_KEY = `health_tracker_history${uSuffix}`;
   const [history, setHistory] = useState<HistoryEntry[]>(() => {
     const saved = localStorage.getItem(HISTORY_KEY);
     if (saved) {

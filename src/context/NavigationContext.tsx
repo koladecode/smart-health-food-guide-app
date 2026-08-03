@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 
 export type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'profile-form' | 'profile-summary' | 'recommendations' | 'admin' | 'admin-users' | 'admin-food' | 'admin-exercise' | 'admin-recommendations' | 'admin-diseases';
 
@@ -60,7 +60,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const navigateTo = (page: Page) => {
+  const navigateTo = useCallback((page: Page) => {
     if (page === 'landing') {
       window.location.hash = '#/';
     } else {
@@ -68,10 +68,12 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     }
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
+
+  const value = useMemo(() => ({ currentPage, navigateTo }), [currentPage, navigateTo]);
 
   return (
-    <NavigationContext.Provider value={{ currentPage, navigateTo }} id="navigation-provider-wrapper">
+    <NavigationContext.Provider value={value} id="navigation-provider-wrapper">
       {children}
     </NavigationContext.Provider>
   );

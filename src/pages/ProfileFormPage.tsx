@@ -279,6 +279,7 @@ export default function ProfileFormPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loadingProfile) return;
     if (!validateStep(1) || !validateStep(2)) {
       setStep(1);
       return;

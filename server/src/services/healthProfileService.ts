@@ -69,21 +69,35 @@ export class HealthProfileService {
   public static async getProfile(userId: string): Promise<any | null> {
     const supabase = getSupabaseAdminClient();
     
-    const { data: profile, error } = await supabase
+    // Fetch profile(s) for user_id ordered by updated_at desc
+    const { data: profiles, error } = await supabase
       .from('health_profiles')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .order('updated_at', { ascending: false });
 
     if (error) {
       if (error.code === 'PGRST116') {
-        // Profile not found
         return null;
       }
       throw error;
     }
 
-    // Fetch conditions and allergies associated with this profile
+    if (!profiles || profiles.length === 0) {
+      return null;
+    }
+
+    const profile = profiles[0];
+
+    // Clean up duplicate profiles if any exist for this user_id
+    if (profiles.length > 1) {
+      const extraIds = profiles.slice(1).map((p) => p.id);
+      supabase.from('health_profiles').delete().in('id', extraIds).then(({ error: delErr }) => {
+        if (delErr) console.warn('[HEALTH_PROFILE_SERVICE] Error cleaning up duplicate profiles:', delErr);
+      });
+    }
+
+    // Fetch conditions and allergies associated with this specific profile_id
     const { data: conditions, error: condError } = await supabase
       .from('health_conditions')
       .select('name, type')
@@ -117,44 +131,40 @@ export class HealthProfileService {
       current_medications: profileData.currentMedications || null,
     };
 
-    console.log('[INSTRUMENT_WEIGHT] [healthProfileService.createProfile] dbPayload.weight before database insert:', dbPayload.weight);
-
     if (profileData.gender !== undefined) {
       dbPayload.gender = profileData.gender;
     }
 
     let profile;
     try {
-      console.log('[DEBUG_LOG] Preparing to insert health_profiles with payload:', JSON.stringify(dbPayload, null, 2));
+      // Upsert by user_id to ensure single record per user
       const res = await supabase
         .from('health_profiles')
-        .insert(dbPayload)
+        .upsert(dbPayload, { onConflict: 'user_id' })
         .select()
         .single();
-
-      console.log('[DEBUG_LOG] Supabase insert response (health_profiles):', JSON.stringify({ data: res.data, error: res.error }, null, 2));
 
       if (res.error) throw res.error;
       profile = res.data;
     } catch (err: any) {
-      console.error('[DEBUG_LOG] Exception caught during health_profiles insert:', err);
       if (err.message && err.message.includes('gender')) {
-        console.warn('[HEALTH_PROFILE_SERVICE] Gender column does not exist in DB. Retrying insert without gender.');
+        console.warn('[HEALTH_PROFILE_SERVICE] Gender column issue. Retrying insert without gender.');
         delete dbPayload.gender;
-        console.log('[DEBUG_LOG] Retrying insert health_profiles with payload:', JSON.stringify(dbPayload, null, 2));
         const res = await supabase
           .from('health_profiles')
-          .insert(dbPayload)
+          .upsert(dbPayload, { onConflict: 'user_id' })
           .select()
           .single();
 
-        console.log('[DEBUG_LOG] Supabase retry insert response (health_profiles):', JSON.stringify({ data: res.data, error: res.error }, null, 2));
         if (res.error) throw res.error;
         profile = res.data;
       } else {
         throw err;
       }
     }
+
+    // Clear old conditions for this profile_id before inserting new ones
+    await supabase.from('health_conditions').delete().eq('profile_id', profile.id);
 
     // Insert associated conditions and allergies in health_conditions table
     const conditionRecords: any[] = [];
@@ -190,12 +200,10 @@ export class HealthProfileService {
     });
 
     if (conditionRecords.length > 0) {
-      console.log('[DEBUG_LOG] Preparing to insert health_conditions records:', JSON.stringify(conditionRecords, null, 2));
       const res = await supabase
         .from('health_conditions')
         .insert(conditionRecords);
 
-      console.log('[DEBUG_LOG] Supabase insert response (health_conditions):', JSON.stringify({ error: res.error }, null, 2));
       if (res.error) throw res.error;
     }
 
@@ -211,25 +219,33 @@ export class HealthProfileService {
   ): Promise<any> {
     const supabase = getSupabaseAdminClient();
 
-    // Retrieve profile first to get ID
-    console.log('[DEBUG_LOG] Retrieving health profile ID for user_id:', userId);
-    const { data: existing, error: findError } = await supabase
+    // Retrieve profile first to get ID for this user_id
+    const { data: existingProfiles, error: findError } = await supabase
       .from('health_profiles')
       .select('id')
       .eq('user_id', userId)
-      .single();
-
-    console.log('[DEBUG_LOG] Retrieve profile ID response:', JSON.stringify({ data: existing, error: findError }, null, 2));
+      .order('updated_at', { ascending: false });
 
     if (findError) throw findError;
+
+    if (!existingProfiles || existingProfiles.length === 0) {
+      // If profile doesn't exist, route to createProfile
+      return this.createProfile(userId, profileData);
+    }
+
+    const existingId = existingProfiles[0].id;
+
+    // Clean extra profile records for this user if duplicate rows exist
+    if (existingProfiles.length > 1) {
+      const extraIds = existingProfiles.slice(1).map((p) => p.id);
+      await supabase.from('health_profiles').delete().in('id', extraIds);
+    }
 
     const dbPayload: any = {};
     if (profileData.fullName !== undefined) dbPayload.full_name = profileData.fullName;
     if (profileData.age !== undefined) dbPayload.age = Number(profileData.age);
     if (profileData.weight !== undefined) dbPayload.weight = Number(profileData.weight);
     if (profileData.height !== undefined) dbPayload.height = Number(profileData.height);
-
-    console.log('[INSTRUMENT_WEIGHT] [healthProfileService.updateProfile] dbPayload.weight before database update:', dbPayload.weight);
     if (profileData.activityLevel !== undefined) dbPayload.activity_level = profileData.activityLevel;
     if (profileData.healthGoal !== undefined || profileData.healthGoals !== undefined) {
       dbPayload.health_goal = profileData.healthGoal || profileData.healthGoals;
@@ -244,32 +260,27 @@ export class HealthProfileService {
 
     let updated;
     try {
-      console.log('[DEBUG_LOG] Preparing to update health_profiles with payload:', JSON.stringify(dbPayload, null, 2), 'for profile id:', existing.id);
       const res = await supabase
         .from('health_profiles')
         .update(dbPayload)
-        .eq('id', existing.id)
+        .eq('id', existingId)
+        .eq('user_id', userId)
         .select()
         .single();
-
-      console.log('[DEBUG_LOG] Supabase update response (health_profiles):', JSON.stringify({ data: res.data, error: res.error }, null, 2));
 
       if (res.error) throw res.error;
       updated = res.data;
     } catch (err: any) {
-      console.error('[DEBUG_LOG] Exception caught during health_profiles update:', err);
       if (err.message && err.message.includes('gender')) {
-        console.warn('[HEALTH_PROFILE_SERVICE] Gender column does not exist in DB. Retrying update without gender.');
         delete dbPayload.gender;
-        console.log('[DEBUG_LOG] Retrying update health_profiles with payload:', JSON.stringify(dbPayload, null, 2));
         const res = await supabase
           .from('health_profiles')
           .update(dbPayload)
-          .eq('id', existing.id)
+          .eq('id', existingId)
+          .eq('user_id', userId)
           .select()
           .single();
 
-        console.log('[DEBUG_LOG] Supabase retry update response (health_profiles):', JSON.stringify({ data: res.data, error: res.error }, null, 2));
         if (res.error) throw res.error;
         updated = res.data;
       } else {
@@ -282,14 +293,11 @@ export class HealthProfileService {
     const foodAllergies = profileData.foodAllergies || profileData.allergies;
 
     if (healthConditions !== undefined || foodAllergies !== undefined || profileData.countryOrRegion !== undefined) {
-      // Clear old health_conditions
-      console.log('[DEBUG_LOG] Preparing to delete existing health_conditions for profile_id:', existing.id);
+      // Clear old health_conditions specifically for this profile_id
       const deleteRes = await supabase
         .from('health_conditions')
         .delete()
-        .eq('profile_id', existing.id);
-
-      console.log('[DEBUG_LOG] Supabase delete response (health_conditions):', JSON.stringify({ error: deleteRes.error }, null, 2));
+        .eq('profile_id', existingId);
 
       if (deleteRes.error) throw deleteRes.error;
 
@@ -300,7 +308,7 @@ export class HealthProfileService {
       activeConditions.forEach((cond: string) => {
         if (cond && cond !== 'none' && !cond.startsWith('region:')) {
           conditionRecords.push({
-            profile_id: existing.id,
+            profile_id: existingId,
             name: cond,
             type: 'condition',
           });
@@ -309,7 +317,7 @@ export class HealthProfileService {
 
       const selectedRegion = profileData.countryOrRegion || 'Global/Other';
       conditionRecords.push({
-        profile_id: existing.id,
+        profile_id: existingId,
         name: `region:${selectedRegion}`,
         type: 'condition',
       });
@@ -317,7 +325,7 @@ export class HealthProfileService {
       activeAllergies.forEach((allergy: string) => {
         if (allergy && allergy !== 'none') {
           conditionRecords.push({
-            profile_id: existing.id,
+            profile_id: existingId,
             name: allergy,
             type: 'allergy',
           });
@@ -325,16 +333,61 @@ export class HealthProfileService {
       });
 
       if (conditionRecords.length > 0) {
-        console.log('[DEBUG_LOG] Preparing to insert health_conditions records:', JSON.stringify(conditionRecords, null, 2));
         const insertRes = await supabase
           .from('health_conditions')
           .insert(conditionRecords);
 
-        console.log('[DEBUG_LOG] Supabase insert response (health_conditions):', JSON.stringify({ error: insertRes.error }, null, 2));
         if (insertRes.error) throw insertRes.error;
       }
     }
 
     return this.getProfile(userId);
+  }
+
+  /**
+   * Deletes a user's health profile and associated data (health_conditions, recommendations, exercises)
+   * while preserving the auth account and public.users row.
+   */
+  public static async deleteProfile(userId: string): Promise<boolean> {
+    const supabase = getSupabaseAdminClient();
+
+    // 1. Get all health profile IDs for this user
+    const { data: profiles, error: findError } = await supabase
+      .from('health_profiles')
+      .select('id')
+      .eq('user_id', userId);
+
+    if (findError) throw findError;
+
+    if (profiles && profiles.length > 0) {
+      const profileIds = profiles.map((p) => p.id);
+
+      // Delete health_conditions associated with these profile IDs
+      await supabase
+        .from('health_conditions')
+        .delete()
+        .in('profile_id', profileIds);
+
+      // Delete health_profiles row(s) for this user
+      const { error: deleteProfErr } = await supabase
+        .from('health_profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteProfErr) throw deleteProfErr;
+    }
+
+    // Delete user's generated recommendations & exercises associated with this user
+    await supabase
+      .from('recommendations')
+      .delete()
+      .eq('user_id', userId);
+
+    await supabase
+      .from('exercises')
+      .delete()
+      .eq('user_id', userId);
+
+    return true;
   }
 }

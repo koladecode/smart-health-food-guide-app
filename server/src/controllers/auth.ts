@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { getSupabaseClient } from '../config/supabase';
+import { getSupabaseAdminClient } from '../services/supabase';
 import { AuthenticatedRequest } from '../middleware/auth';
 
 /**
@@ -17,15 +18,35 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
     const supabase = getSupabaseClient();
+    const adminSupabase = getSupabaseAdminClient();
 
-    // Sign up user with Supabase Auth
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    // 1. Pre-check if user already exists in public.users DB table
+    const { data: existingDbUser } = await adminSupabase
+      .from('users')
+      .select('id, email')
+      .ilike('email', normalizedEmail)
+      .maybeSingle();
 
-    if (error) {
+    if (existingDbUser) {
       res.status(400).json({
         status: 'fail',
-        message: error.message
+        message: 'User already exists with this email'
+      });
+      return;
+    }
+
+    // 2. Sign up user with Supabase Auth
+    const { data, error } = await supabase.auth.signUp({ email: normalizedEmail, password });
+
+    if (error) {
+      const isAlreadyExists = error.message.toLowerCase().includes('already registered') ||
+                              error.message.toLowerCase().includes('already exists') ||
+                              error.message.toLowerCase().includes('already in use');
+      res.status(400).json({
+        status: 'fail',
+        message: isAlreadyExists ? 'User already exists with this email' : error.message
       });
       return;
     }
@@ -39,16 +60,37 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       return;
     }
 
-    // Insert user into our public.users table to satisfy DB foreign keys
-    const { error: dbError } = await supabase
+    // Check if Supabase returned an existing user (Supabase returns identities = [] for pre-existing emails)
+    if (supabaseUser.identities && supabaseUser.identities.length === 0) {
+      res.status(400).json({
+        status: 'fail',
+        message: 'User already exists with this email'
+      });
+      return;
+    }
+
+    // Insert new user into our public.users table to satisfy DB foreign keys
+    const { error: dbError } = await adminSupabase
       .from('users')
       .upsert({
         id: supabaseUser.id,
-        email: supabaseUser.email,
+        email: supabaseUser.email || normalizedEmail,
       });
 
     if (dbError) {
       console.error('Error inserting user to public.users table:', dbError);
+    }
+
+    let session = data.session;
+    if (!session) {
+      // For newly created user only, attempt immediate login if auto-confirm was required/bypassed
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password
+      });
+      if (!signInError && signInData?.session) {
+        session = signInData.session;
+      }
     }
 
     res.status(201).json({
@@ -57,10 +99,10 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       data: {
         user: {
           id: supabaseUser.id,
-          email: supabaseUser.email,
+          email: supabaseUser.email || normalizedEmail,
           createdAt: supabaseUser.created_at
         },
-        session: data.session
+        session
       }
     });
   } catch (error) {
@@ -83,10 +125,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
     const supabase = getSupabaseClient();
+    const adminSupabase = getSupabaseAdminClient();
 
     // Sign in with Supabase Auth
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
 
     if (error) {
       res.status(401).json({
@@ -106,11 +150,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     // Ensure the user exists in our public.users table (auto-repair missing records)
-    const { error: dbError } = await supabase
+    const { error: dbError } = await adminSupabase
       .from('users')
       .upsert({
         id: supabaseUser.id,
-        email: supabaseUser.email,
+        email: supabaseUser.email || normalizedEmail,
       });
 
     if (dbError) {
@@ -123,7 +167,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       data: {
         user: {
           id: supabaseUser.id,
-          email: supabaseUser.email,
+          email: supabaseUser.email || normalizedEmail,
           createdAt: supabaseUser.created_at
         },
         session: data.session
