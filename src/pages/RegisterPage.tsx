@@ -129,125 +129,147 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Error/Success alerts */}
+              {/* Error alerts */}
               {error && (
                 <Alert variant="error" title="Registration Issue" id="register-alert-error" className="rounded-2xl border-rose-100/80 dark:border-rose-950/50 text-sm">
                   {error}
                 </Alert>
               )}
 
-              {success && (
-                <Alert variant="success" title="Account Provisioned" id="register-alert-success" className="rounded-2xl border-emerald-100/80 dark:border-emerald-950/50 text-sm">
-                  Launching personalized wellness dashboard...
-                </Alert>
+              {success ? (
+                <div className="flex flex-col items-center text-center gap-6 py-4" id="register-success-state">
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-600 dark:text-emerald-400 shadow-2xs" id="register-success-icon">
+                    <Mail className="w-10 h-10" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <h2 className="text-2xl font-bold text-slate-950 dark:text-white" id="register-success-title">
+                      Registration Successful
+                    </h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 max-w-sm leading-relaxed" id="register-success-message">
+                      We've sent a verification email to your inbox. Please verify your email before signing in.
+                    </p>
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full mt-2 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-emerald-500/10 dark:shadow-none"
+                    onClick={() => navigateTo('login')}
+                    id="register-return-login-btn"
+                  >
+                    <span>Return to Login</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {/* Form fields */}
+                  <form onSubmit={handleRegister} className="flex flex-col gap-5" id="register-form">
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="Your Name"
+                        id="register-name-input"
+                        placeholder="e.g. Alex Smith"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        icon={<User className="w-4 h-4 text-slate-400" />}
+                        required
+                        disabled={loading}
+                      />
+                      <Input
+                        label="Email Address"
+                        type="email"
+                        id="register-email-input"
+                        placeholder="your.email@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        icon={<Mail className="w-4 h-4 text-slate-400" />}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="Password"
+                        type={showPassword ? 'text' : 'password'}
+                        id="register-password-input"
+                        placeholder="Min 6 characters"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        icon={<Lock className="w-4 h-4 text-slate-400" />}
+                        endIcon={
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        }
+                        required
+                        disabled={loading}
+                      />
+                      <Input
+                        label="Confirm Password"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        id="register-confirm-input"
+                        placeholder="Re-enter password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        icon={<Lock className="w-4 h-4 text-slate-400" />}
+                        endIcon={
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        }
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+
+                    {/* Primary Health Goal drop-down (Theme-specific reusable select component) */}
+                    <Select
+                      label="Primary Health Goal Focus"
+                      id="register-goal-select"
+                      value={goal}
+                      onChange={(e) => setGoal(e.target.value)}
+                      options={goalOptions}
+                      disabled={loading}
+                    />
+
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="lg"
+                      className="w-full mt-2 font-bold py-3.5 shadow-md shadow-emerald-500/10 dark:shadow-none rounded-xl flex items-center justify-center gap-2"
+                      isLoading={loading}
+                      id="register-submit-btn"
+                    >
+                      <span>Create Account</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </form>
+
+                  {/* Redirect footer link */}
+                  <p className="text-center text-sm text-slate-550 dark:text-slate-400 mt-1" id="register-footer-text">
+                    Already registered?{' '}
+                    <button
+                      id="register-link-login"
+                      onClick={() => navigateTo('login')}
+                      className="font-black text-emerald-600 dark:text-emerald-400 hover:underline hover:text-emerald-700"
+                    >
+                      Sign in here
+                    </button>
+                  </p>
+                </>
               )}
-
-              {/* Form fields */}
-              <form onSubmit={handleRegister} className="flex flex-col gap-5" id="register-form">
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Your Name"
-                    id="register-name-input"
-                    placeholder="e.g. Alex Smith"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    icon={<User className="w-4 h-4 text-slate-400" />}
-                    required
-                    disabled={loading || success}
-                  />
-                  <Input
-                    label="Email Address"
-                    type="email"
-                    id="register-email-input"
-                    placeholder="your.email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    icon={<Mail className="w-4 h-4 text-slate-400" />}
-                    required
-                    disabled={loading || success}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="Password"
-                    type={showPassword ? 'text' : 'password'}
-                    id="register-password-input"
-                    placeholder="Min 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    icon={<Lock className="w-4 h-4 text-slate-400" />}
-                    endIcon={
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    }
-                    required
-                    disabled={loading || success}
-                  />
-                  <Input
-                    label="Confirm Password"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="register-confirm-input"
-                    placeholder="Re-enter password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    icon={<Lock className="w-4 h-4 text-slate-400" />}
-                    endIcon={
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
-                        tabIndex={-1}
-                      >
-                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    }
-                    required
-                    disabled={loading || success}
-                  />
-                </div>
-
-                {/* Primary Health Goal drop-down (Theme-specific reusable select component) */}
-                <Select
-                  label="Primary Health Goal Focus"
-                  id="register-goal-select"
-                  value={goal}
-                  onChange={(e) => setGoal(e.target.value)}
-                  options={goalOptions}
-                  disabled={loading || success}
-                />
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  className="w-full mt-2 font-bold py-3.5 shadow-md shadow-emerald-500/10 dark:shadow-none rounded-xl flex items-center justify-center gap-2"
-                  isLoading={loading}
-                  id="register-submit-btn"
-                >
-                  <span>Create Account</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </form>
-
-              {/* Redirect footer link */}
-              <p className="text-center text-sm text-slate-550 dark:text-slate-400 mt-1" id="register-footer-text">
-                Already registered?{' '}
-                <button
-                  id="register-link-login"
-                  onClick={() => navigateTo('login')}
-                  className="font-black text-emerald-600 dark:text-emerald-400 hover:underline hover:text-emerald-700"
-                >
-                  Sign in here
-                </button>
-              </p>
 
             </CardContent>
           </Card>

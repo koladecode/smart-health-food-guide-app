@@ -41,6 +41,15 @@ export const requireAuth = async (
       return;
     }
 
+    if (!user.email_confirmed_at) {
+      res.status(403).json({
+        success: false,
+        status: 'fail',
+        message: 'Please verify your email before signing in.',
+      });
+      return;
+    }
+
     req.user = {
       id: user.id,
       email: user.email,

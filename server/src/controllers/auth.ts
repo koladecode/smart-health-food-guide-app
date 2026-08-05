@@ -12,6 +12,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     if (!email || !password) {
       res.status(400).json({
+        success: false,
         status: 'fail',
         message: 'Please provide email and password'
       });
@@ -23,14 +24,19 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const adminSupabase = getSupabaseAdminClient();
 
     // 1. Pre-check if user already exists in public.users DB table
-    const { data: existingDbUser } = await adminSupabase
+    const { data: existingDbUser, error: checkError } = await adminSupabase
       .from('users')
       .select('id, email')
       .ilike('email', normalizedEmail)
       .maybeSingle();
 
+    if (checkError) {
+      console.error('Error checking existing user record:', checkError);
+    }
+
     if (existingDbUser) {
       res.status(400).json({
+        success: false,
         status: 'fail',
         message: 'User already exists with this email'
       });
@@ -38,13 +44,19 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }
 
     // 2. Sign up user with Supabase Auth
-    const { data, error } = await supabase.auth.signUp({ email: normalizedEmail, password });
+    const { data, error } = await supabase.auth.signUp({
+      email: normalizedEmail,
+      password
+    });
 
     if (error) {
-      const isAlreadyExists = error.message.toLowerCase().includes('already registered') ||
-                              error.message.toLowerCase().includes('already exists') ||
-                              error.message.toLowerCase().includes('already in use');
+      const errorMsg = error.message.toLowerCase();
+      const isAlreadyExists = errorMsg.includes('already registered') ||
+                              errorMsg.includes('already exists') ||
+                              errorMsg.includes('already in use') ||
+                              errorMsg.includes('unique constraint');
       res.status(400).json({
+        success: false,
         status: 'fail',
         message: isAlreadyExists ? 'User already exists with this email' : error.message
       });
@@ -54,6 +66,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const supabaseUser = data.user;
     if (!supabaseUser) {
       res.status(400).json({
+        success: false,
         status: 'fail',
         message: 'Could not complete registration. Please try again.'
       });
@@ -63,6 +76,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     // Check if Supabase returned an existing user (Supabase returns identities = [] for pre-existing emails)
     if (supabaseUser.identities && supabaseUser.identities.length === 0) {
       res.status(400).json({
+        success: false,
         status: 'fail',
         message: 'User already exists with this email'
       });
@@ -81,32 +95,26 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       console.error('Error inserting user to public.users table:', dbError);
     }
 
-    let session = data.session;
-    if (!session) {
-      // For newly created user only, attempt immediate login if auto-confirm was required/bypassed
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password
-      });
-      if (!signInError && signInData?.session) {
-        session = signInData.session;
-      }
-    }
-
+    // Return success response WITHOUT session or tokens (requiring email verification)
     res.status(201).json({
+      success: true,
       status: 'success',
-      message: 'User registered successfully',
+      message: "We've sent a verification email to your inbox. Please verify your email before signing in.",
       data: {
         user: {
           id: supabaseUser.id,
           email: supabaseUser.email || normalizedEmail,
           createdAt: supabaseUser.created_at
-        },
-        session
+        }
       }
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    console.error('Registration exception:', error);
+    res.status(500).json({
+      success: false,
+      status: 'error',
+      message: 'Unexpected server error during registration. Please try again later.'
+    });
   }
 };
 
@@ -119,6 +127,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     if (!email || !password) {
       res.status(400).json({
+        success: false,
         status: 'fail',
         message: 'Please provide email and password'
       });
@@ -130,10 +139,38 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const adminSupabase = getSupabaseAdminClient();
 
     // Sign in with Supabase Auth
-    const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password
+    });
 
     if (error) {
+      const errorMsg = error.message.toLowerCase();
+      // Block sign in if email is unconfirmed / unverified
+      if (
+        errorMsg.includes('email not confirmed') ||
+        errorMsg.includes('email_not_confirmed') ||
+        errorMsg.includes('not verified')
+      ) {
+        res.status(403).json({
+          success: false,
+          status: 'fail',
+          message: 'Please verify your email before signing in.'
+        });
+        return;
+      }
+
+      if (errorMsg.includes('invalid login credentials')) {
+        res.status(401).json({
+          success: false,
+          status: 'fail',
+          message: 'Invalid email or password.'
+        });
+        return;
+      }
+
       res.status(401).json({
+        success: false,
         status: 'fail',
         message: error.message
       });
@@ -143,8 +180,19 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const supabaseUser = data.user;
     if (!supabaseUser) {
       res.status(401).json({
+        success: false,
         status: 'fail',
         message: 'Could not log in. User session is invalid.'
+      });
+      return;
+    }
+
+    // Check email_confirmed_at on user object
+    if (!supabaseUser.email_confirmed_at) {
+      res.status(403).json({
+        success: false,
+        status: 'fail',
+        message: 'Please verify your email before signing in.'
       });
       return;
     }
@@ -162,6 +210,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 
     res.status(200).json({
+      success: true,
       status: 'success',
       message: 'User logged in successfully',
       data: {
@@ -173,8 +222,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         session: data.session
       }
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    console.error('Login exception:', error);
+    res.status(500).json({
+      success: false,
+      status: 'error',
+      message: 'Unexpected server error during login. Please try again later.'
+    });
   }
 };
 

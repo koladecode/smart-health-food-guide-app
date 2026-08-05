@@ -121,32 +121,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const result = await response.json();
 
-      if (!response.ok || result.status === 'fail' || result.status === 'error') {
+      if (!response.ok || result.status === 'fail' || result.status === 'error' || result.success === false) {
         throw new Error(result.message || 'Registration failed');
       }
 
-      const registeredUser = result.data.user;
-      const sessionToken = result.data.session?.access_token || null;
-
-      if (!sessionToken) {
-        throw new Error('Registration completed, but an active authentication token could not be obtained. Please sign in.');
-      }
-
-      localStorage.setItem(TOKEN_KEY, sessionToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(registeredUser));
-
-      setUser(registeredUser);
-      setToken(sessionToken);
-
       setLoading(false);
-      // Redirect to profile-form to complete profile
-      navigateTo('profile-form');
+      return result;
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred during registration.');
       setLoading(false);
       throw err;
     }
-  }, [navigateTo]);
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     clearAllUserSessionData();
@@ -161,17 +147,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const result = await response.json();
 
-      if (!response.ok || result.status === 'fail' || result.status === 'error') {
+      if (!response.ok || result.status === 'fail' || result.status === 'error' || result.success === false) {
         throw new Error(result.message || 'Login failed');
       }
 
       const loggedInUser = result.data.user;
       const sessionToken = result.data.session?.access_token || null;
 
-      if (sessionToken) {
-        localStorage.setItem(TOKEN_KEY, sessionToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(loggedInUser));
+      if (!sessionToken) {
+        throw new Error('Could not obtain authentication token. Please sign in again.');
       }
+
+      localStorage.setItem(TOKEN_KEY, sessionToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(loggedInUser));
 
       // Check if user has an existing Health Profile in Supabase
       const profileResponse = await fetch('/api/profile', {
