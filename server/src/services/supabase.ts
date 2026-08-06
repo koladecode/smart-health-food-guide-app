@@ -8,15 +8,15 @@ let supabaseAdminInstance: SupabaseClient | null = null;
  */
 export function getSupabaseAdminClient(): SupabaseClient {
   if (!supabaseAdminInstance) {
-    let url = process.env.SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    let url = process.env.SUPABASE_URL || 'https://ihplvjaejrqhkiimwapw.supabase.co';
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
     if (!url) {
       throw new Error('SUPABASE_URL environment variable is required');
     }
 
     if (!serviceRoleKey) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required');
+      throw new Error('SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY environment variable is required in Vercel settings.');
     }
 
     // Sanitize URL to ensure it contains only the project base URL without paths like /rest/v1

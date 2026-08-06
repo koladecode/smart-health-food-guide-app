@@ -2,7 +2,14 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load environment variables from .env file
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config();
+try {
+  if (typeof __dirname !== 'undefined') {
+    dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+  }
+} catch {
+  // Ignore fallback if path resolution fails
+}
 
 export const config = {
   port: process.env.PORT ? parseInt(process.env.PORT, 10) : 5000,

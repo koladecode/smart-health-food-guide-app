@@ -38,8 +38,9 @@ app.get('/api/ping', (req: Request, res: Response) => {
   });
 });
 
-// Mount modular sub-routes under the "/api" namespace
+// Mount modular sub-routes under "/api" and root (for Vercel serverless rewrites)
 app.use('/api', apiRouter);
+app.use('/', apiRouter);
 
 // Fallback for unhandled API wildcards (404 Not Found)
 app.use('/api/*', (req: Request, res: Response) => {
