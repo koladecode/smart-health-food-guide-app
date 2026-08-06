@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, ShieldAlert } from 'lucide-react';
 
 type AlertVariant = 'success' | 'warning' | 'error' | 'info' | 'disclaimer';
@@ -18,7 +18,8 @@ export default function Alert({
   className = '',
   id
 }: AlertProps) {
-  const uniqueId = id || `alert-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const uniqueId = id || `alert-${generatedId}`;
 
   const styles = {
     success: {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -762,15 +762,24 @@ export default function DashboardPage() {
   };
 
   const menuItems = [
-    { id: 'overview', label: 'Admin Control Center', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'overview', label: user?.role === 'admin' ? 'Admin Control Center' : 'Health Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'nutrition', label: 'Nutrition & Meals', icon: <Apple className="w-5 h-5" /> },
     { id: 'fitness', label: 'Fitness & Motion', icon: <Activity className="w-5 h-5" /> },
-    { id: 'admin', label: 'Admin Users', icon: <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" /> },
-    { id: 'admin-food', label: 'Food Management', icon: <UtensilsCrossed className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> },
-    { id: 'admin-exercise', label: 'Exercise Management', icon: <Dumbbell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> },
-    { id: 'admin-recommendations', label: 'Recommendations', icon: <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" /> },
-    { id: 'admin-diseases', label: 'Diseases & Conditions', icon: <Stethoscope className="w-5 h-5 text-rose-600 dark:text-rose-400" /> },
+    ...(user?.role === 'admin' ? [
+      { id: 'admin', label: 'Admin Users', icon: <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" /> },
+      { id: 'admin-food', label: 'Food Management', icon: <UtensilsCrossed className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> },
+      { id: 'admin-exercise', label: 'Exercise Management', icon: <Dumbbell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> },
+      { id: 'admin-recommendations', label: 'Recommendations', icon: <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" /> },
+      { id: 'admin-diseases', label: 'Diseases & Conditions', icon: <Stethoscope className="w-5 h-5 text-rose-600 dark:text-rose-400" /> },
+    ] : []),
   ];
+
+  useEffect(() => {
+    const adminTabs = ['admin', 'admin-food', 'admin-exercise', 'admin-recommendations', 'admin-diseases'];
+    if (user?.role !== 'admin' && adminTabs.includes(activeTab)) {
+      setActiveTab('overview');
+    }
+  }, [user?.role, activeTab]);
 
   const handleCreateWorkout = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1025,6 +1034,8 @@ export default function DashboardPage() {
           {activeTab === 'overview' && (
             <div className="flex flex-col gap-8 animate-fade-in" id="tab-overview-content">
               
+              {user?.role === 'admin' && (
+                <>
               {/* PRIMARY ADMIN CONTROL CENTER HEADER */}
               <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl border border-indigo-500/20" id="admin-control-center-banner">
                 <div className="flex flex-col gap-2 max-w-2xl text-left">
@@ -1520,6 +1531,8 @@ export default function DashboardPage() {
                   </div>
                 </CardContent>
               </Card>
+              </>
+              )}
 
               {/* PRESERVED PERSONAL HEALTH OVERVIEW WORKSPACE */}
               <div className="border-t border-slate-200/80 dark:border-slate-800/80 pt-8 mt-2 flex flex-col gap-8" id="personal-health-overview-section">

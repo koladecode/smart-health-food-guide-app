@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
+import { safeJsonResponse } from '../utils/apiUtils';
 
 export interface HealthProfile {
   fullName: string;
@@ -109,7 +110,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
     try {
       const response = await fetchWithAuth('/api/recommendations?check=true');
       if (response.ok) {
-        const result = await response.json();
+        const result = await safeJsonResponse(response);
         const exists = !!result.exists;
         setRecsExist(exists);
         return exists;
@@ -139,7 +140,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
       const response = await fetchWithAuth('/api/profile');
       console.log('[DEBUG_FRONTEND] fetchProfile response status:', response.status);
       if (response.ok) {
-        const result = await response.json();
+        const result = await safeJsonResponse(response);
         console.log('[DEBUG_FRONTEND] fetchProfile response JSON result:', JSON.stringify(result, null, 2));
         if (result.status === 'success' && result.data?.profile) {
           const profileData = result.data.profile;
@@ -189,7 +190,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
           setIsProfileFetched(true);
           hasCache = true;
           fetchWithAuth('/api/recommendations?check=true')
-            .then(res => res.json())
+            .then(res => safeJsonResponse(res))
             .then(result => {
               setRecsExist(!!result.exists);
             })
@@ -267,10 +268,10 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         console.log('[INSTRUMENT_WEIGHT] [saveProfile] fetchWithAuth POST completed. response status:', response.status);
         let result: any;
         try {
-          result = await response.json();
+          result = await safeJsonResponse(response);
           console.log('[INSTRUMENT_WEIGHT] [saveProfile] Response body received. Result status:', result.status, 'Result weight:', result.data?.profile?.weight);
-        } catch (e) {
-          // ignore
+        } catch (e: any) {
+          result = { message: e.message };
         }
         if (!response.ok) {
           throw new Error(result?.message || 'Failed to save health profile to backend database.');
@@ -334,7 +335,7 @@ export function HealthProfileProvider({ children }: { children: React.ReactNode 
         method: 'DELETE',
       });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = await safeJsonResponse(response).catch((e) => ({ message: e.message }));
         throw new Error(errorData.message || 'Failed to delete health profile');
       }
 

@@ -1,89 +1,156 @@
 === COMPACT DATABASE INSPECTION ===
 
 --- AUTH USERS ---
-Total Auth Users: 1
+Total Auth Users: 2
+  - ID: ab4556a2-6e6e-4018-aef1-13e3652622bb, Email: akanjiolanrewaju12@gmail.com
   - ID: 2340f31e-4439-4d01-80cf-f41ca2cfa0bf, Email: akanjicornelius@gmail.com
 
 --- PUBLIC.USERS TABLE ---
-Total public.users: 1
+Total public.users: 2
   - ID: 2340f31e-4439-4d01-80cf-f41ca2cfa0bf, Email: akanjicornelius@gmail.com, CreatedAt: 2026-07-05T18:23:19.323028+00:00
+  - ID: ab4556a2-6e6e-4018-aef1-13e3652622bb, Email: akanjiolanrewaju12@gmail.com, CreatedAt: 2026-08-05T14:46:43.300909+00:00
 
 --- HEALTH PROFILES ---
-Total health profiles: 1
+Total health profiles: 2
   - Profile ID: 695eb37a-33a3-4dca-8165-43534e57f95a
     Full Profile Row JSON: {
   "id": "695eb37a-33a3-4dca-8165-43534e57f95a",
   "user_id": "2340f31e-4439-4d01-80cf-f41ca2cfa0bf",
-  "full_name": "Akanji Cornelius",
-  "age": 28,
+  "full_name": "olanrewaju",
+  "age": 26,
   "gender": "Male",
-  "weight": 68,
-  "height": 180,
-  "activity_level": "Very Active",
-  "health_goal": "Improve Overall Health",
+  "weight": 60,
+  "height": 160,
+  "activity_level": "Moderately Active",
+  "health_goal": "Blood Sugar Control",
   "dietary_preference": "None",
-  "smoking_status": "Never",
+  "smoking_status": "Non-smoker",
   "alcohol_consumption": "None",
   "current_medications": "None",
   "created_at": "2026-07-14T13:56:23.101271+00:00",
-  "updated_at": "2026-07-22T12:13:15.433562+00:00"
+  "updated_at": "2026-07-30T13:15:18.137329+00:00"
+}
+  - Profile ID: 0df2c9fc-6ea3-4380-a08d-3311a3ef76b3
+    Full Profile Row JSON: {
+  "id": "0df2c9fc-6ea3-4380-a08d-3311a3ef76b3",
+  "user_id": "ab4556a2-6e6e-4018-aef1-13e3652622bb",
+  "full_name": "Kolade",
+  "age": 20,
+  "gender": "Male",
+  "weight": 45,
+  "height": 150,
+  "activity_level": "Very Active",
+  "health_goal": "Muscle Gain",
+  "dietary_preference": "None",
+  "smoking_status": "Non-smoker",
+  "alcohol_consumption": "None",
+  "current_medications": null,
+  "created_at": "2026-08-05T19:04:34.202611+00:00",
+  "updated_at": "2026-08-05T19:04:34.202611+00:00"
 }
 
 --- HEALTH CONDITIONS ---
-Total health conditions: 5
-  - Condition ID: 7c834ff9-96d6-4ef4-b1f7-81c46049a373, ProfileID: 695eb37a-33a3-4dca-8165-43534e57f95a, Name: Asthma, Type: condition
-  - Condition ID: dd5d0a49-a302-4076-94d6-7f7198008726, ProfileID: 695eb37a-33a3-4dca-8165-43534e57f95a, Name: sleep_6_8, Type: condition
-  - Condition ID: d7620ddd-de30-412f-820c-6d386236ae21, ProfileID: 695eb37a-33a3-4dca-8165-43534e57f95a, Name: stress_moderate, Type: condition
-  - Condition ID: 7e438db9-66b9-4a82-bdca-376c2145ba50, ProfileID: 695eb37a-33a3-4dca-8165-43534e57f95a, Name: region:Nigeria, Type: condition
-  - Condition ID: f7025ef1-6926-4395-a487-799117e71f9e, ProfileID: 695eb37a-33a3-4dca-8165-43534e57f95a, Name: Shellfish, Type: allergy
+Total health conditions: 6
+  - Condition ID: 1d652db3-b593-4aba-adfd-9f62651ef9d6, ProfileID: 695eb37a-33a3-4dca-8165-43534e57f95a, Name: sleep_6_8, Type: condition
+  - Condition ID: 49726565-b226-4534-bb98-c299cc8f7f8a, ProfileID: 695eb37a-33a3-4dca-8165-43534e57f95a, Name: stress_moderate, Type: condition
+  - Condition ID: 9d0457b8-f0e1-4fd9-ae9b-c011bfc08477, ProfileID: 695eb37a-33a3-4dca-8165-43534e57f95a, Name: region:Nigeria, Type: condition
+  - Condition ID: 9738a59e-8d01-42e0-a33d-ce84817e2e4d, ProfileID: 0df2c9fc-6ea3-4380-a08d-3311a3ef76b3, Name: sleep_6_8, Type: condition
+  - Condition ID: 6c4025a4-39db-4fff-8aec-7b1b026cbe9f, ProfileID: 0df2c9fc-6ea3-4380-a08d-3311a3ef76b3, Name: stress_moderate, Type: condition
+  - Condition ID: d990a244-cacf-4a87-850c-f25c1dcb39d5, ProfileID: 0df2c9fc-6ea3-4380-a08d-3311a3ef76b3, Name: region:Nigeria, Type: condition
 
 --- RECOMMENDATIONS ---
-Total recommendations: 1
+Total recommendations: 2
   - Rec ID: ed396b7c-0646-41b3-b9f9-4259cc2d844f
     UserID: 2340f31e-4439-4d01-80cf-f41ca2cfa0bf
-    BMI: 21 (Healthy Weight)
-    Water: 3.9L
+    BMI: 23.4 (Healthy Weight)
+    Water: 3.4L
     CreatedAt: 2026-07-17T11:58:21.626522+00:00
-    UpdatedAt: 2026-07-22T12:13:15.741447+00:00
+    UpdatedAt: 2026-07-30T13:15:18.572156+00:00
+  - Rec ID: d4739bd0-93e4-4494-8147-d31ce9e1e31e
+    UserID: ab4556a2-6e6e-4018-aef1-13e3652622bb
+    BMI: 20 (Healthy Weight)
+    Water: 3.3L
+    CreatedAt: 2026-08-05T19:04:36.045854+00:00
+    UpdatedAt: 2026-08-05T19:04:36.045854+00:00
 
 --- EXERCISES TABLE ---
-Total exercises: 1
-  - ID: ef9fa82b-cb3f-4295-b377-5a5b21359c02, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Type: Airway-Safe Conditioning
+Total exercises: 2
+  - ID: 6427af22-6322-4d69-89c3-1f38af0b7895, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Type: Balanced Conditioning
+  - ID: afa2b768-b968-4d52-89d9-14de24c1f362, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Type: Progressive Strength & Hypertrophy Program
 
 --- FOODS TABLE ---
-Total foods: 35
-  - ID: 53b0dc0e-a633-4f45-bedb-03bd51e59d35, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Optimize Sleep Architecture & REM/Deep Phase, Type: lifestyle
-  - ID: 5a2451ea-8f53-4a3e-bcc5-3f6743fcc957, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Proactive Cortisol Buffering & Stress Resiliency, Type: lifestyle
-  - ID: 321ad475-4ce6-4833-891f-1aa1db5d43dd, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Support High Performance with Strategic Recovery, Type: lifestyle
-  - ID: 2ebe875d-d810-49ca-908b-5aa6b19ae88f, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Preserve Mitochondrial Oxygen Delivery, Type: lifestyle
-  - ID: 0b81606b-2567-49ed-bf54-45a76044ad65, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Optimize Liver Function and Unfragmented Sleep Stages, Type: lifestyle
-  - ID: e59d9490-9dc4-4179-903c-217ce5062f88, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Steamed Honey-Bean Moin Moin with Warm Spiced Millet Koko, Type: eat
-  - ID: 6c2f9147-b2e4-4fb5-b06b-2c2c8a64db15, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Tom Brown Multi-Grain Porridge topped with Ground Almonds, Type: eat
-  - ID: d3620438-9b64-47b1-842a-a6ff72b59358, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Oven-Baked Akara (Bean Cakes) served with Date-Sweetened Pap, Type: eat
-  - ID: ce2613fe-6c88-4f0f-a27a-9727d195afb3, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Unpolished Ofada Brown Rice served with Rich Efo Riro Spinach Stew, Type: eat
-  - ID: ef8d3180-7299-4832-aaf2-a060256d8db1, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Fiber-Rich Oat Swallow served with Slippery Ewedu Soup & Tilapia Stew, Type: eat
-  - ID: 937c86c8-5f6b-4306-94b5-27f66de2f765, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Creamy Gbegiri Bean Soup & Ewedu Layer over unpolished Ofada Rice, Type: eat
-  - ID: 8302d86f-cc5e-4dcf-a827-b839ed44dd1d, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Aromatic Catfish Pepper Soup with Boiled Green Plantains & Scent Leaves, Type: eat
-  - ID: f4f84278-6302-46a8-a783-6b78d7c50b84, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Lemon-Grilled Lake Tilapia with Steamed Ugu Greens & Sweet Potato, Type: eat
-  - ID: 7b614335-8df4-4f24-a60b-2d88d9df6a6b, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Unripe Green Plantain Porridge slow-cooked with Flaked Mackerel, Type: eat
-  - ID: 47f78b0b-c0ec-4009-9b52-0842f1426f47, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Crispy Sliced Garden Eggs with Pure Unsweetened Peanut Paste, Type: eat
-  - ID: 90fbe6ee-6e7d-46fb-8828-5857169be096, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Steam-Baked Sweet Potato Wedges with Creamy Avocado-Scent Leaf Dip, Type: eat
-  - ID: 097ad0f5-0976-4819-a5e7-3a30de1af2bb, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Plant Iron + Vitamin C, Type: combination
-  - ID: 2adf1ff8-3c1f-4c38-9d38-6bfebabadd6f, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Raw Tiger Nuts (Ofio) mixed with Shaved Coconut Flakes, Type: eat
-  - ID: 4d6683eb-d3b9-431c-aaef-9956c54dae1d, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Unsweetened Red Hibiscus Zobo Infused with Ginger & Date Purée, Type: eat
-  - ID: f0b20f3c-3308-435c-9de3-25a655848f0e, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Kunun Aya (Tiger Nut Coconut Milk) fortified with dates, Type: eat
-  - ID: d22b2180-7ed5-4167-a937-3bcc41766449, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Warm Scent Leaf (Efinrin) & Crushed Ginger Anti-Bloat Tea, Type: eat
-  - ID: 1c6c208d-40f1-428f-9921-7e97507ca99b, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Skinless Chicken or Turkey Breast, Type: eat
-  - ID: 60fbefa4-7635-4668-8d0f-9370b3793b11, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Cold-water Fatty Fish, Type: eat
-  - ID: b0385f87-4a1d-43d9-9b73-cea9cc8f236a, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Unsweetened Kefir or Sauerkraut, Type: eat
-  - ID: 390e1e10-4ae1-4766-a443-8e3a2b4200d6, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Dark Leafy Greens (Spinach & Kale), Type: eat
-  - ID: cb640851-349c-45ad-a835-37bed4fc2cd9, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Refined Sugar & High-Fructose Corn Syrup, Type: avoid
-  - ID: 9a83e22e-bd59-411a-aa7e-e73bfd813ad1, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Hydrogenated & Trans-Fats, Type: avoid
-  - ID: 939d0747-59a9-4f22-8264-0093991b1fd5, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Hydrogenated Seed & Vegetable Oils, Type: avoid
-  - ID: 17930587-a8f9-4eef-b1ea-f10bdeecd180, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Oat Fufu served with Ewedu Jute Leaves & Fish Stew, Type: combination
-  - ID: 49d4a0af-6070-4e4b-9313-88b310737cee, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Brown Rice Jollof served with Sautéed Ugu Leaves & Grilled Chicken/Tofu, Type: combination
-  - ID: 6ad70f63-6ed9-4087-b3f7-e91b3a8a4458, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: 🌅 Synergistic Breakfast Bowl, Type: combination
-  - ID: aac54beb-b380-460c-8b9c-8f05a2b6b541, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: 🥗 Macronutrient Balanced Lunch, Type: combination
-  - ID: f307b61b-7823-4551-84c6-da863fbfe215, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: 🍽️ Nourishing Restorative Dinner, Type: combination
-  - ID: 887dad88-d024-440a-a0c2-87089aa37f84, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: 🍏 Glycemic-Stabilizing Snack, Type: combination
-  - ID: 0487025e-9c7f-40fc-ba1c-b3522aca363c, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Whole Grains + Legumes, Type: combination
+Total foods: 74
+  - ID: dfe4b92f-0416-4a28-ba85-df6864bcd1b0, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Tom Brown Multi-Grain Porridge topped with Ground Almonds, Type: eat
+  - ID: 6ada28c6-bc41-49fc-82e1-bb77cf902fb7, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Steamed Honey-Bean Moin Moin with Warm Spiced Millet Koko, Type: eat
+  - ID: ca16d357-8537-4bc8-9a3e-64cfe9aba80f, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Oven-Baked Akara (Bean Cakes) served with Date-Sweetened Pap, Type: eat
+  - ID: 29b27f8f-8065-4e22-a37a-d28c83c7f076, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Unpolished Ofada Brown Rice served with Rich Efo Riro Spinach Stew, Type: eat
+  - ID: 324f0ef3-687c-414a-b2fe-d30b8132d26d, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Prebiotic Okra Ila Alasepo with Oat Swallow & Herb-Grilled Chicken, Type: eat
+  - ID: ff0a7696-922d-410b-ac8b-72f6783a0097, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Fiber-Rich Oat Swallow served with Slippery Ewedu Soup & Tilapia Stew, Type: eat
+  - ID: 43809ed1-1e9e-425e-8369-12dc417fd2b0, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Aromatic Catfish Pepper Soup with Boiled Green Plantains & Scent Leaves, Type: eat
+  - ID: f5aa3305-27dc-40bb-9700-65b61dfc449d, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Lemon-Grilled Lake Tilapia with Steamed Ugu Greens & Sweet Potato, Type: eat
+  - ID: d2637b65-5f61-4f65-8ac1-209b85323e35, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Thoroughly Washed Bitterleaf Soup (Ofe Onugbu) with Lean Goat Meat, Type: eat
+  - ID: 74dad589-aee2-45c8-bd00-471df1ed4c97, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Steam-Baked Sweet Potato Wedges with Creamy Avocado-Scent Leaf Dip, Type: eat
+  - ID: f288d044-6cab-4c0e-9faa-1b1ec6bd28d7, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Crispy Sliced Garden Eggs with Pure Unsweetened Peanut Paste, Type: eat
+  - ID: 9e7e805f-da94-4282-b6a1-0a313ca2aab9, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Raw Tiger Nuts (Ofio) mixed with Shaved Coconut Flakes, Type: eat
+  - ID: 1c67ffbe-160f-4754-b0c0-41b93960d412, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Kunun Aya (Tiger Nut Coconut Milk) fortified with dates, Type: eat
+  - ID: 25d2ee2d-e1cb-4b1a-b36c-9463aef6410f, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Unsweetened Red Hibiscus Zobo Infused with Ginger & Date Purée, Type: eat
+  - ID: 95be7042-ad69-4baa-800b-04b18f5f580d, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Warm Scent Leaf (Efinrin) & Crushed Ginger Anti-Bloat Tea, Type: eat
+  - ID: 160eee73-91e6-4f30-8117-270c3335d715, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Skinless Chicken or Turkey Breast, Type: eat
+  - ID: 95de38b0-c9fc-4dea-ab17-be466e28aeae, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Cold-water Fatty Fish, Type: eat
+  - ID: 02f63522-8d70-40b9-9588-8f86b4aa9d4c, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Organic Tempeh or Grass-Fed Bison, Type: eat
+  - ID: 88435e9f-dd9f-4b7e-baba-b169dec2011a, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Pasture-Raised Eggs or Whey Isolated Protein, Type: eat
+  - ID: 856674be-1379-4ead-aa04-eb9719af4437, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Refined Sugar & High-Fructose Corn Syrup, Type: avoid
+  - ID: e320caf4-5e48-4993-8508-939cba11f303, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Hydrogenated & Trans-Fats, Type: avoid
+  - ID: 9ff0d6e3-6113-4251-8838-d8d17e9611fa, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Excessive Alcohol Consumption, Type: avoid
+  - ID: aef37919-89e5-4bce-97ac-4e9a8093fc80, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Refined Sugar & High-Fructose Sweets, Type: avoid
+  - ID: a15900a3-102f-4c9a-a3ab-5577060f8682, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Oat Fufu served with Ewedu Jute Leaves & Fish Stew, Type: combination
+  - ID: 202f65d3-9781-47b2-8756-112a271877f4, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Brown Rice Jollof served with Sautéed Ugu Leaves & Grilled Chicken/Tofu, Type: combination
+  - ID: 4cb3e9a5-84e4-4649-98f7-d75e004b9c12, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: 🌅 Synergistic Breakfast Bowl, Type: combination
+  - ID: f955b598-5abb-40c8-9dd4-2b18f3919316, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: 🥗 Macronutrient Balanced Lunch, Type: combination
+  - ID: dd96ff33-af7b-4b13-97ab-3058cfb9d9e8, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: 🍽️ Nourishing Restorative Dinner, Type: combination
+  - ID: 611a0b90-4958-4b08-baab-47846176f201, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: 💪 Muscle Recovery Snack, Type: combination
+  - ID: 0b66ce47-7142-4ba8-8f49-016746c6691a, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Plant Iron + Vitamin C, Type: combination
+  - ID: 1668aeee-7f2c-4350-b0a0-cf64a3be6ec9, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: High-GI Fruit or Carb + High Biological Value Protein, Type: combination
+  - ID: e713c175-1553-42a4-bc29-5718056b0bb5, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Optimize Sleep Architecture & REM/Deep Phase, Type: lifestyle
+  - ID: 83c0d5ad-a685-491a-9f92-439fc87eceaa, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Proactive Cortisol Buffering & Stress Resiliency, Type: lifestyle
+  - ID: 0f40b15c-e95a-4465-ba5a-c2afb4f6cc53, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Support High Performance with Strategic Recovery, Type: lifestyle
+  - ID: 7e0c4629-fc17-4f9f-a551-d1d64f9e6374, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Preserve Mitochondrial Oxygen Delivery, Type: lifestyle
+  - ID: 60b65305-ad6e-4621-8ce7-529f4f8af8b2, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Optimize Liver Function and Unfragmented Sleep Stages, Type: lifestyle
+  - ID: a4576c0a-7a69-480a-a5c4-8d7ec139f43f, RecID: d4739bd0-93e4-4494-8147-d31ce9e1e31e, Title: Distribute Protein Intake Evenly, Type: lifestyle
+  - ID: 3725395f-be95-4954-8867-ccc4f9c9a0e0, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Unripe Green Plantain Porridge slow-cooked with Flaked Mackerel, Type: eat
+  - ID: 8166f4eb-3155-46ec-bbb6-23694ec379a8, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Crispy Sliced Garden Eggs with Pure Unsweetened Peanut Paste, Type: eat
+  - ID: 32c9e3a4-ed00-4696-923e-58593721b95e, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Steamed Honey-Bean Moin Moin with Warm Spiced Millet Koko, Type: eat
+  - ID: 8e42b2f1-be22-4625-8ad3-93f21ae30b3e, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Tom Brown Multi-Grain Porridge topped with Ground Almonds, Type: eat
+  - ID: 193d0ded-27ef-4348-98dc-5394c6d2216e, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Oven-Baked Akara (Bean Cakes) served with Date-Sweetened Pap, Type: eat
+  - ID: b0a95fd0-520a-4864-8522-8afebb4150b0, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Unpolished Ofada Brown Rice served with Rich Efo Riro Spinach Stew, Type: eat
+  - ID: dff8edef-16b1-4706-91ca-18824da80ca3, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Fiber-Rich Oat Swallow served with Slippery Ewedu Soup & Tilapia Stew, Type: eat
+  - ID: 0431d58a-b11f-4e67-b637-30110af34dc4, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Prebiotic Okra Ila Alasepo with Oat Swallow & Herb-Grilled Chicken, Type: eat
+  - ID: 02954760-d387-4847-8dcb-15bcefee5a58, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Aromatic Catfish Pepper Soup with Boiled Green Plantains & Scent Leaves, Type: eat
+  - ID: 8d8a3837-710d-461f-8838-9a296cfd5158, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Lemon-Grilled Lake Tilapia with Steamed Ugu Greens & Sweet Potato, Type: eat
+  - ID: a397c25d-a0e2-4f5c-bbb2-cf0bb87078b9, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: 🔋 Blood Sugar Balancing Snack, Type: combination
+  - ID: cec30250-5035-42a2-88e0-69159e5643f0, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Raw Tiger Nuts (Ofio) mixed with Shaved Coconut Flakes, Type: eat
+  - ID: f9baa498-e55f-4efb-9deb-0a54638bed80, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Steam-Baked Sweet Potato Wedges with Creamy Avocado-Scent Leaf Dip, Type: eat
+  - ID: 340e82b8-060b-47d4-9b51-1ed0ac82e7e1, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Unsweetened Red Hibiscus Zobo Infused with Ginger & Date Purée, Type: eat
+  - ID: 3fa482aa-29f6-4e36-82dc-2881f7805168, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Warm Scent Leaf (Efinrin) & Crushed Ginger Anti-Bloat Tea, Type: eat
+  - ID: e57159b6-f8bc-400d-8813-840601dec2d1, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Kunun Aya (Tiger Nut Coconut Milk) fortified with dates, Type: eat
+  - ID: b8b0f4bc-51fc-453b-b4be-10bd85e93ae2, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Skinless Chicken or Turkey Breast, Type: eat
+  - ID: 941c343e-5897-4e4e-9e92-0cbad0fa9e25, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Cold-water Fatty Fish, Type: eat
+  - ID: 52b49de9-9d7e-42ce-a7d4-a923db8d3d2c, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Organic Apple Cider Vinegar & Ceylon Cinnamon, Type: eat
+  - ID: 7562183c-7d33-4b30-a886-11dbdb56ae75, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Soaked Chia & Flax Seeds, Type: eat
+  - ID: 8f2e7957-405e-420e-8d5d-f37dacc05b9e, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Refined Sugar & High-Fructose Corn Syrup, Type: avoid
+  - ID: c0ce03d2-0946-46a5-a67a-58d06cb56a78, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Hydrogenated & Trans-Fats, Type: avoid
+  - ID: 5e47466c-a3ef-43a6-8d62-2a6774004bdf, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: White Bread, White Rice & Processed Cereals, Type: avoid
+  - ID: 140ee2e7-8db1-4c77-9da3-39d437c9132d, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Dried Glazed Fruits with Added Syrups, Type: avoid
+  - ID: 1bfbd73f-6cee-41c9-81e6-39604d6bd25e, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Oat Fufu served with Ewedu Jute Leaves & Fish Stew, Type: combination
+  - ID: a00ee375-08cc-4b68-92d0-3016f6297b86, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Brown Rice Jollof served with Sautéed Ugu Leaves & Grilled Chicken/Tofu, Type: combination
+  - ID: 0b24e122-44cf-4918-aefd-03ec82401dbc, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: 🌅 Synergistic Breakfast Bowl, Type: combination
+  - ID: f2a8d23b-d182-47e3-891e-6bca0440d91b, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: 🥗 Macronutrient Balanced Lunch, Type: combination
+  - ID: 7cfd4b12-ee4e-408f-93b6-cb4fc7b92f71, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: 🍽️ Nourishing Restorative Dinner, Type: combination
+  - ID: 784eac58-62ed-4e41-90b8-49f2cf04a7de, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Plant Iron + Vitamin C, Type: combination
+  - ID: 64fc3b5c-3d99-416b-b936-d4ff1782c681, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Carbohydrates + High Fiber + Lean Protein, Type: combination
+  - ID: be5a9994-9db2-468e-88b4-6aad22b10fbe, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Optimize Sleep Architecture & REM/Deep Phase, Type: lifestyle
+  - ID: 7f134bbe-1bbb-46b4-80a6-9e5ad1811857, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Proactive Cortisol Buffering & Stress Resiliency, Type: lifestyle
+  - ID: 3e3e0232-47d7-4a30-8b5e-25c1fff53c78, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Structure Periodized Training & Skeletal Muscle Density, Type: lifestyle
+  - ID: 1b788935-61cb-49ba-a3d7-c999e5ea54ae, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Preserve Mitochondrial Oxygen Delivery, Type: lifestyle
+  - ID: 215f9453-8347-4f64-a3dd-ef83bcb53e45, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Optimize Liver Function and Unfragmented Sleep Stages, Type: lifestyle
+  - ID: 5d3535a4-749e-4756-b8d6-e19e94404ac1, RecID: ed396b7c-0646-41b3-b9f9-4259cc2d844f, Title: Perform 10-Minute Post-Meal Strolls, Type: lifestyle

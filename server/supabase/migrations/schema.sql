@@ -21,6 +21,7 @@ $$ language 'plpgsql';
 CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY,
     email TEXT NOT NULL,
+    role TEXT DEFAULT 'user' NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );

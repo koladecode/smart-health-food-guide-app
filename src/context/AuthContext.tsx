@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigation } from './NavigationContext';
+import { safeJsonResponse } from '../utils/apiUtils';
 
 export interface User {
   id: string;
   email: string;
+  role?: string;
   createdAt?: string;
 }
 
@@ -59,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (response.ok) {
-          const result = await response.json();
+          const result = await safeJsonResponse(response);
           if (result.status === 'success' && result.data?.user) {
             setUser(result.data.user);
             setToken(savedToken);
@@ -119,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const result = await response.json();
+      const result = await safeJsonResponse(response);
 
       if (!response.ok || result.status === 'fail' || result.status === 'error' || result.success === false) {
         throw new Error(result.message || 'Registration failed');
@@ -145,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const result = await response.json();
+      const result = await safeJsonResponse(response);
 
       if (!response.ok || result.status === 'fail' || result.status === 'error' || result.success === false) {
         throw new Error(result.message || 'Login failed');
@@ -171,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       let hasProfile = false;
       if (profileResponse.ok) {
-        const profileResult = await profileResponse.json();
+        const profileResult = await safeJsonResponse(profileResponse);
         if (profileResult.status === 'success' && profileResult.data?.profile) {
           hasProfile = true;
           // Store profile in user-scoped localStorage cache
@@ -227,10 +229,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       headers['Authorization'] = `Bearer ${activeToken}`;
     }
 
-    return fetch(url, {
-      ...options,
-      headers,
-    });
+    let controller: AbortController | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+    let fetchSignal = options.signal;
+
+    if (!fetchSignal && typeof AbortController !== 'undefined') {
+      controller = new AbortController();
+      fetchSignal = controller.signal;
+      timeoutId = setTimeout(() => {
+        controller?.abort();
+      }, 15000); // 15-second network timeout guard
+    }
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        signal: fetchSignal,
+      });
+
+      if (response.status === 401 && !url.includes('/api/auth/login') && !url.includes('/api/auth/register')) {
+        console.warn('[AUTH_CONTEXT] 401 Unauthorized encountered on endpoint:', url);
+        handleSessionCleanup();
+      }
+
+      return response;
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        throw new Error('Network request timed out. Please check your connection and try again.');
+      }
+      throw err;
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
   }, [token]);
 
   const clearError = useCallback(() => setError(null), []);

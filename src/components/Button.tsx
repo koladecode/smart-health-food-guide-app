@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import Spinner from './Spinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -17,6 +17,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export default function Button(props: ButtonProps) {
+  const generatedId = useId();
   const {
     children,
     variant = 'primary',
@@ -43,12 +44,12 @@ export default function Button(props: ButtonProps) {
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm gap-1.5',
-    md: 'px-5 py-2.5 text-sm md:text-base gap-2',
-    lg: 'px-6 py-3.5 text-base md:text-lg gap-2.5',
+    sm: 'px-3 py-1.5 text-sm gap-1.5 min-h-[36px]',
+    md: 'px-5 py-2.5 text-sm md:text-base gap-2 min-h-[44px]',
+    lg: 'px-6 py-3.5 text-base md:text-lg gap-2.5 min-h-[48px]',
   };
 
-  const buttonId = id || `btn-${Math.random().toString(36).substr(2, 9)}`;
+  const buttonId = id || `btn-${generatedId}`;
 
   return (
     <button
@@ -63,7 +64,7 @@ export default function Button(props: ButtonProps) {
       {!isLoading && icon && iconPosition === 'left' && (
         <span className="flex-shrink-0">{icon}</span>
       )}
-      <span>{children}</span>
+      {children && <span>{children}</span>}
       {!isLoading && icon && iconPosition === 'right' && (
         <span className="flex-shrink-0">{icon}</span>
       )}

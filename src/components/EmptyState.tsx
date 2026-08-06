@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { Sparkles } from 'lucide-react';
 import Button from './Button';
 
@@ -19,7 +19,8 @@ export default function EmptyState({
   onAction,
   id
 }: EmptyStateProps) {
-  const uniqueId = id || `empty-${Math.random().toString(36).substr(2, 9)}`;
+  const generatedId = useId();
+  const uniqueId = id || `empty-${generatedId}`;
 
   return (
     <div

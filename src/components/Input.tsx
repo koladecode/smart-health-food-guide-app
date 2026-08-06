@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -10,7 +10,8 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, icon, endIcon, className = '', type = 'text', ...props }, ref) => {
-    const uniqueId = props.id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const uniqueId = props.id || `input-${generatedId}`;
 
     return (
       <div className="w-full flex flex-col gap-1.5" id={`${uniqueId}-wrapper`}>
@@ -74,7 +75,8 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, helperText, options, children, className = '', ...props }, ref) => {
-    const uniqueId = props.id || `select-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const uniqueId = props.id || `select-${generatedId}`;
 
     return (
       <div className="w-full flex flex-col gap-1.5" id={`${uniqueId}-wrapper`}>
@@ -129,7 +131,8 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, helperText, className = '', ...props }, ref) => {
-    const uniqueId = props.id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const uniqueId = props.id || `textarea-${generatedId}`;
 
     return (
       <div className="w-full flex flex-col gap-1.5" id={`${uniqueId}-wrapper`}>

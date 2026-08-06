@@ -28,6 +28,7 @@ import {
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
 import { useAuth } from '../context/AuthContext';
+import { safeJsonResponse } from '../utils/apiUtils';
 import { generateRecommendations } from '../utils/recommendationEngine';
 import Button from '../components/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/Card';
@@ -48,7 +49,7 @@ export default function RecommendationsPage() {
       fetchWithAuth('/api/recommendations')
         .then(async (res) => {
           if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
+            const errData = await safeJsonResponse(res).catch(() => ({}));
             console.error('[DEBUG_LOG] [RECOMMENDATIONS_PAGE] Failed to sync recommendations to database:', errData?.message || res.statusText);
           } else {
             console.log('[DEBUG_LOG] [RECOMMENDATIONS_PAGE] Recommendations synchronized with backend successfully.');

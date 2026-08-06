@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { getSupabaseClient } from '../config/supabase';
 import { getSupabaseAdminClient } from '../services/supabase';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { AuthenticatedRequest, getUserRole } from '../middleware/auth';
 
 /**
  * Register a brand-new user with Supabase Auth
@@ -46,7 +46,12 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     // 2. Sign up user with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email: normalizedEmail,
-      password
+      password,
+      options: {
+        data: {
+          role: 'user'
+        }
+      }
     });
 
     if (error) {
@@ -83,12 +88,19 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       return;
     }
 
-    // Insert new user into our public.users table to satisfy DB foreign keys
+    // Explicitly set user_metadata and app_metadata to role = 'user'
+    await adminSupabase.auth.admin.updateUserById(supabaseUser.id, {
+      user_metadata: { role: 'user' },
+      app_metadata: { role: 'user' },
+    }).catch(err => console.error('Error setting auth user role metadata:', err));
+
+    // Insert new user into our public.users table with role = 'user'
     const { error: dbError } = await adminSupabase
       .from('users')
       .upsert({
         id: supabaseUser.id,
         email: supabaseUser.email || normalizedEmail,
+        role: 'user',
       });
 
     if (dbError) {
@@ -104,6 +116,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         user: {
           id: supabaseUser.id,
           email: supabaseUser.email || normalizedEmail,
+          role: 'user',
           createdAt: supabaseUser.created_at
         }
       }
@@ -187,8 +200,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return;
     }
 
-    // Check email_confirmed_at on user object
-    if (!supabaseUser.email_confirmed_at) {
+    // Check if email confirmation was sent and user is unconfirmed
+    if (!supabaseUser.email_confirmed_at && !supabaseUser.confirmed_at && supabaseUser.confirmation_sent_at) {
       res.status(403).json({
         success: false,
         status: 'fail',
@@ -197,12 +210,16 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return;
     }
 
+    // Resolve user role
+    const userRole = await getUserRole(supabaseUser.id, supabaseUser.email || normalizedEmail);
+
     // Ensure the user exists in our public.users table (auto-repair missing records)
     const { error: dbError } = await adminSupabase
       .from('users')
       .upsert({
         id: supabaseUser.id,
         email: supabaseUser.email || normalizedEmail,
+        role: userRole,
       });
 
     if (dbError) {
@@ -217,6 +234,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         user: {
           id: supabaseUser.id,
           email: supabaseUser.email || normalizedEmail,
+          role: userRole,
           createdAt: supabaseUser.created_at
         },
         session: data.session
