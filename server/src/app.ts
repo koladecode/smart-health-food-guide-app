@@ -21,8 +21,8 @@ app.use(express.json());
 // Enable URL-encoded request body parsing
 app.use(express.urlencoded({ extended: true }));
 
-// Central base health-check route
-app.get('/api/health', (req: Request, res: Response) => {
+// Central base health-check route (supports /api/health, /health, /api, and /)
+app.get(['/api/health', '/health', '/api', '/'], (req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
     message: 'Smart Health & Food Guide API is running'
@@ -30,7 +30,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 // Temporary ping route for debugging connectivity
-app.get('/api/ping', (req: Request, res: Response) => {
+app.get(['/api/ping', '/ping'], (req: Request, res: Response) => {
   console.log("PING ENDPOINT HIT");
   res.status(200).json({
     success: true,
@@ -42,12 +42,12 @@ app.get('/api/ping', (req: Request, res: Response) => {
 app.use('/api', apiRouter);
 app.use('/', apiRouter);
 
-// Fallback for unhandled API wildcards (404 Not Found)
-app.use('/api/*', (req: Request, res: Response) => {
+// Fallback for any unhandled routes (404 Not Found)
+app.use((req: Request, res: Response) => {
   res.status(404).json({
     status: 'error',
     statusCode: 404,
-    message: `Cannot handle ${req.method} on requested path ${req.baseUrl || req.path}`
+    message: `Cannot handle ${req.method} on requested path ${req.originalUrl || req.url || req.path}`
   });
 });
 
