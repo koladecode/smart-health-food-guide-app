@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { AlertCircle, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { useNavigation } from './NavigationContext';
 import { safeJsonResponse } from '../utils/apiUtils';
 
@@ -7,6 +8,12 @@ export interface User {
   email: string;
   role?: string;
   createdAt?: string;
+}
+
+interface ToastNotification {
+  id: string;
+  message: string;
+  type: 'error' | 'success' | 'info';
 }
 
 interface AuthContextType {
@@ -20,6 +27,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   fetchWithAuth: (url: string, options?: RequestInit) => Promise<Response>;
   clearError: () => void;
+  showToast: (message: string, type?: 'error' | 'success' | 'info') => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastNotification | null>(null);
+
+  const showToast = useCallback((message: string, type: 'error' | 'success' | 'info' = 'error') => {
+    const id = Date.now().toString();
+    setToast({ id, message, type });
+    setTimeout(() => {
+      setToast((current) => (current?.id === id ? null : current));
+    }, 6000);
+  }, []);
 
   useEffect(() => {
     // Verify saved session on startup
@@ -61,20 +78,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (response.ok) {
-          const result = await safeJsonResponse(response);
-          if (result.status === 'success' && result.data?.user) {
-            setUser(result.data.user);
-            setToken(savedToken);
-          } else {
-            // Clean up invalid session
-            handleSessionCleanup();
+          try {
+            const result = await safeJsonResponse(response);
+            if (result.status === 'success' && result.data?.user) {
+              setUser(result.data.user);
+              setToken(savedToken);
+            } else {
+              handleSessionCleanup();
+            }
+          } catch (parseErr: any) {
+            console.error('[AUTH_DEBUG] Session verification response parsing error:', parseErr);
+            // On non-JSON or server error during session check, don't crash or forcibly purge session cache
           }
         } else {
           handleSessionCleanup();
         }
       } catch (err) {
         console.warn('[AUTH_CONTEXT] Connection error verifying session:', err);
-        // Do not force logout on temporary network glitch if we have local user cache
       } finally {
         setLoading(false);
       }
@@ -121,20 +141,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const result = await safeJsonResponse(response);
+      let result: any;
+      try {
+        result = await safeJsonResponse(response);
+      } catch (parseErr: any) {
+        const rawServerMessage = parseErr?.message || 'Unexpected non-JSON response';
+        console.error('[AUTH_DEBUG] Raw server authentication response text during registration:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          rawError: rawServerMessage,
+        });
+
+        const userFriendlyMessage = 'A server error occurred during registration. Please try again in a few moments.';
+        showToast(userFriendlyMessage, 'error');
+        setError(userFriendlyMessage);
+        setLoading(false);
+        throw new Error(userFriendlyMessage);
+      }
 
       if (!response.ok || result.status === 'fail' || result.status === 'error' || result.success === false) {
-        throw new Error(result.message || 'Registration failed');
+        const errorMsg = result.message || 'Registration failed';
+        showToast(errorMsg, 'error');
+        throw new Error(errorMsg);
       }
 
       setLoading(false);
       return result;
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred during registration.');
+      const isServerParsingErr = err.message && (err.message.includes('FUNCTION_INVOCATION_FAILED') || err.message.includes('non-JSON') || err.message.includes('HTML'));
+      const friendlyMsg = isServerParsingErr
+        ? 'A server error occurred during registration. Please try again in a few moments.'
+        : (err.message || 'An unexpected error occurred during registration.');
+
+      setError(friendlyMsg);
       setLoading(false);
-      throw err;
+      throw new Error(friendlyMsg);
     }
-  }, []);
+  }, [showToast]);
 
   const login = useCallback(async (email: string, password: string) => {
     clearAllUserSessionData();
@@ -147,55 +191,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const result = await safeJsonResponse(response);
+      let result: any;
+      try {
+        result = await safeJsonResponse(response);
+      } catch (parseErr: any) {
+        const rawServerMessage = parseErr?.message || 'Unexpected non-JSON response';
+        console.error('[AUTH_DEBUG] Raw server authentication response text during login:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          rawError: rawServerMessage,
+        });
 
-      if (!response.ok || result.status === 'fail' || result.status === 'error' || result.success === false) {
-        throw new Error(result.message || 'Login failed');
+        const userFriendlyMessage = 'A server error occurred during authentication. Please try again in a few moments.';
+        showToast(userFriendlyMessage, 'error');
+        setError(userFriendlyMessage);
+        setLoading(false);
+        throw new Error(userFriendlyMessage);
       }
 
-      const loggedInUser = result.data.user;
-      const sessionToken = result.data.session?.access_token || null;
+      if (!response.ok || result.status === 'fail' || result.status === 'error' || result.success === false) {
+        const errorMsg = result.message || 'Login failed';
+        showToast(errorMsg, 'error');
+        throw new Error(errorMsg);
+      }
+
+      const loggedInUser = result.data?.user;
+      const sessionToken = result.data?.session?.access_token || null;
 
       if (!sessionToken) {
-        throw new Error('Could not obtain authentication token. Please sign in again.');
+        const errorMsg = 'Could not obtain authentication token. Please sign in again.';
+        showToast(errorMsg, 'error');
+        throw new Error(errorMsg);
       }
 
       localStorage.setItem(TOKEN_KEY, sessionToken);
       localStorage.setItem(USER_KEY, JSON.stringify(loggedInUser));
 
       // Check if user has an existing Health Profile in Supabase
-      const profileResponse = await fetch('/api/profile', {
-        headers: {
-          'Authorization': `Bearer ${sessionToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
       let hasProfile = false;
-      if (profileResponse.ok) {
-        const profileResult = await safeJsonResponse(profileResponse);
-        if (profileResult.status === 'success' && profileResult.data?.profile) {
-          hasProfile = true;
-          // Store profile in user-scoped localStorage cache
-          localStorage.setItem(`smart_health_guide_profile_${loggedInUser.id}`, JSON.stringify(profileResult.data.profile));
+      try {
+        const profileResponse = await fetch('/api/profile', {
+          headers: {
+            'Authorization': `Bearer ${sessionToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (profileResponse.ok) {
+          try {
+            const profileResult = await safeJsonResponse(profileResponse);
+            if (profileResult.status === 'success' && profileResult.data?.profile) {
+              hasProfile = true;
+              localStorage.setItem(`smart_health_guide_profile_${loggedInUser.id}`, JSON.stringify(profileResult.data.profile));
+            }
+          } catch (profileParseErr: any) {
+            console.warn('[AUTH_DEBUG] Non-JSON or error response checking profile on login:', profileParseErr);
+          }
         }
+      } catch (profileErr: any) {
+        console.warn('[AUTH_DEBUG] Profile fetch network error on login:', profileErr);
       }
 
       setUser(loggedInUser);
       setToken(sessionToken);
-
       setLoading(false);
+
       if (hasProfile) {
         navigateTo('dashboard');
       } else {
         navigateTo('profile-form');
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred during login.');
+      const isServerParsingErr = err.message && (err.message.includes('FUNCTION_INVOCATION_FAILED') || err.message.includes('non-JSON') || err.message.includes('HTML'));
+      const friendlyMsg = isServerParsingErr
+        ? 'A server error occurred during authentication. Please try again in a few moments.'
+        : (err.message || 'An unexpected error occurred during login.');
+
+      setError(friendlyMsg);
       setLoading(false);
-      throw err;
+      throw new Error(friendlyMsg);
     }
-  }, [navigateTo]);
+  }, [showToast, navigateTo]);
 
   const logout = useCallback(async () => {
     setLoading(true);
@@ -264,7 +341,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(timeoutId);
       }
     }
-  }, [token]);
+  }, [token, handleSessionCleanup]);
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -281,7 +358,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     fetchWithAuth,
     clearError,
-  }), [user, token, isAuthenticated, loading, error, register, login, logout, fetchWithAuth, clearError]);
+    showToast,
+  }), [user, token, isAuthenticated, loading, error, register, login, logout, fetchWithAuth, clearError, showToast]);
 
   return (
     <AuthContext.Provider
@@ -289,6 +367,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={value}
     >
       {children}
+      {toast && (
+        <div
+          id="auth-toast-notification"
+          className="fixed bottom-6 right-6 z-[9999] max-w-md bg-white dark:bg-slate-900 border border-rose-200/80 dark:border-rose-900/60 shadow-2xl rounded-2xl p-4 flex items-start gap-3.5 animate-in fade-in slide-in-from-bottom-4 duration-300"
+          role="alert"
+        >
+          <div className={`p-2 rounded-xl flex-shrink-0 ${
+            toast.type === 'error'
+              ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/80 dark:text-rose-400'
+              : toast.type === 'success'
+              ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-400'
+              : 'bg-sky-100 text-sky-600 dark:bg-sky-950/80 dark:text-sky-400'
+          }`}>
+            {toast.type === 'error' ? (
+              <AlertCircle className="w-5 h-5" />
+            ) : toast.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5" />
+            ) : (
+              <AlertTriangle className="w-5 h-5" />
+            )}
+          </div>
+          <div className="flex-1 pr-2">
+            <h5 className="text-xs font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-0.5">
+              {toast.type === 'error' ? 'Authentication Notice' : 'System Notice'}
+            </h5>
+            <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+              {toast.message}
+            </p>
+          </div>
+          <button
+            onClick={() => setToast(null)}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg transition-colors"
+            aria-label="Close notification"
+            id="auth-toast-close-btn"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }
@@ -300,3 +417,4 @@ export function useAuth() {
   }
   return context;
 }
+
