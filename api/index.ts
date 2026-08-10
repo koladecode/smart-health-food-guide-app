@@ -1,4 +1,4 @@
-import rawApp from '../server/src/app';
+import rawApp from '../dist/app.cjs';
 
 // Gracefully resolve default export across CJS / ESM module interop
 const app = typeof rawApp === 'function' ? rawApp : (rawApp as any).default || rawApp;
