@@ -25,6 +25,8 @@ interface AuthContextType {
   register: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
+  resetPassword: (params: { accessToken?: string; code?: string; refreshToken?: string; password: string }) => Promise<{ success: boolean; message: string }>;
   fetchWithAuth: (url: string, options?: RequestInit) => Promise<Response>;
   clearError: () => void;
   showToast: (message: string, type?: 'error' | 'success' | 'info') => void;
@@ -343,6 +345,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token, handleSessionCleanup]);
 
+  const requestPasswordReset = useCallback(async (email: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      let result: any;
+      try {
+        result = await safeJsonResponse(response);
+      } catch (parseErr: any) {
+        const msg = 'A server error occurred while requesting password reset. Please try again.';
+        showToast(msg, 'error');
+        setError(msg);
+        setLoading(false);
+        throw new Error(msg);
+      }
+
+      if (!response.ok || result.status === 'fail' || result.status === 'error' || result.success === false) {
+        const errorMsg = result.message || 'Request failed. Please try again.';
+        showToast(errorMsg, 'error');
+        setError(errorMsg);
+        setLoading(false);
+        throw new Error(errorMsg);
+      }
+
+      setLoading(false);
+      return result;
+    } catch (err: any) {
+      const msg = err.message || 'Failed to request password reset.';
+      setError(msg);
+      setLoading(false);
+      throw err;
+    }
+  }, [showToast]);
+
+  const resetPassword = useCallback(async (params: { accessToken?: string; code?: string; refreshToken?: string; password: string }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+
+      let result: any;
+      try {
+        result = await safeJsonResponse(response);
+      } catch (parseErr: any) {
+        const msg = 'A server error occurred while updating your password. Please try again.';
+        showToast(msg, 'error');
+        setError(msg);
+        setLoading(false);
+        throw new Error(msg);
+      }
+
+      if (!response.ok || result.status === 'fail' || result.status === 'error' || result.success === false) {
+        const errorMsg = result.message || 'Password reset failed. Please try again.';
+        showToast(errorMsg, 'error');
+        setError(errorMsg);
+        setLoading(false);
+        throw new Error(errorMsg);
+      }
+
+      setLoading(false);
+      return result;
+    } catch (err: any) {
+      const msg = err.message || 'Failed to update password.';
+      setError(msg);
+      setLoading(false);
+      throw err;
+    }
+  }, [showToast]);
+
   const clearError = useCallback(() => setError(null), []);
 
   const isAuthenticated = !!user && !!token;
@@ -356,10 +436,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     register,
     login,
     logout,
+    requestPasswordReset,
+    resetPassword,
     fetchWithAuth,
     clearError,
     showToast,
-  }), [user, token, isAuthenticated, loading, error, register, login, logout, fetchWithAuth, clearError, showToast]);
+  }), [user, token, isAuthenticated, loading, error, register, login, logout, requestPasswordReset, resetPassword, fetchWithAuth, clearError, showToast]);
 
   return (
     <AuthContext.Provider

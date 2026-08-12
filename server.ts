@@ -18,6 +18,7 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     console.log('[SERVER] Booting Vite in middleware mode...');
+    app.use(express.static(path.join(process.cwd(), 'public')));
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',

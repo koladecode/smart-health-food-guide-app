@@ -21,6 +21,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -78,7 +79,8 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(email, password);
+      const res = await register(email, password);
+      setSuccessMessage(res?.message || 'Registration successful!');
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please check your credentials and try again.');
@@ -146,7 +148,7 @@ export default function RegisterPage() {
                       Registration Successful
                     </h2>
                     <p className="text-sm text-slate-600 dark:text-slate-300 max-w-sm leading-relaxed" id="register-success-message">
-                      We've sent a verification email to your inbox. Please verify your email before signing in.
+                      {successMessage || "Account created successfully. You can now sign in with your credentials."}
                     </p>
                   </div>
                   <Button
@@ -156,7 +158,7 @@ export default function RegisterPage() {
                     onClick={() => navigateTo('login')}
                     id="register-return-login-btn"
                   >
-                    <span>Return to Login</span>
+                    <span>{successMessage.toLowerCase().includes('verify') ? 'Return to Login' : 'Proceed to Sign In'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>

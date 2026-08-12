@@ -1,5 +1,5 @@
 {
-  "name": "Smart Health & Food Guide",
+  "name": "Smart Health Guide",
   "description": "Personalized health, nutrition, and lifestyle educational guide based on health profiles.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

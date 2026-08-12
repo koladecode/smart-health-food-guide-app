@@ -18,4 +18,8 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'fallback_secret_for_dev_mode',
   supabaseUrl: process.env.SUPABASE_URL || 'https://ihplvjaejrqhkiimwapw.supabase.co',
   supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+  // Single configuration point for requiring email verification before sign-in
+  emailVerificationRequired: process.env.EMAIL_VERIFICATION_REQUIRED !== undefined
+    ? process.env.EMAIL_VERIFICATION_REQUIRED === 'true'
+    : false,
 };

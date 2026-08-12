@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 
-export type Page = 'landing' | 'login' | 'register' | 'dashboard' | 'profile-form' | 'profile-summary' | 'recommendations' | 'admin' | 'admin-users' | 'admin-food' | 'admin-exercise' | 'admin-recommendations' | 'admin-diseases';
+export type Page = 'landing' | 'login' | 'register' | 'forgot-password' | 'reset-password' | 'dashboard' | 'profile-form' | 'profile-summary' | 'recommendations' | 'admin' | 'admin-users' | 'admin-food' | 'admin-exercise' | 'admin-recommendations' | 'admin-diseases';
 
 interface NavigationContextType {
   currentPage: Page;
@@ -9,55 +9,50 @@ interface NavigationContextType {
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
+function getPageFromLocation(): Page {
+  const hash = window.location.hash || '';
+  const path = window.location.pathname || '';
+  const search = window.location.search || '';
+
+  if (hash.startsWith('#/forgot-password') || path === '/forgot-password') return 'forgot-password';
+  if (
+    hash.startsWith('#/reset-password') ||
+    path === '/reset-password' ||
+    hash.includes('type=recovery') ||
+    search.includes('type=recovery') ||
+    hash.includes('access_token=') ||
+    search.includes('code=')
+  ) {
+    return 'reset-password';
+  }
+  if (hash === '#/login' || path === '/login') return 'login';
+  if (hash === '#/register' || path === '/register') return 'register';
+  if (hash === '#/dashboard' || path === '/dashboard') return 'dashboard';
+  if (hash === '#/profile-form' || path === '/profile-form') return 'profile-form';
+  if (hash === '#/profile-summary' || path === '/profile-summary') return 'profile-summary';
+  if (hash === '#/recommendations' || path === '/recommendations') return 'recommendations';
+  if (hash === '#/admin' || hash === '#/admin-users' || path === '/admin') return 'admin';
+  if (hash === '#/admin-food' || path === '/admin-food') return 'admin-food';
+  if (hash === '#/admin-exercise' || hash === '#/admin-exercises' || path === '/admin-exercise') return 'admin-exercise';
+  if (hash === '#/admin-recommendations' || path === '/admin-recommendations') return 'admin-recommendations';
+  if (hash === '#/admin-diseases' || hash === '#/admin-conditions' || path === '/admin-diseases') return 'admin-diseases';
+  return 'landing';
+}
+
 export function NavigationProvider({ children }: { children: React.ReactNode }) {
-  const [currentPage, setCurrentPage] = useState<Page>(() => {
-    const hash = window.location.hash;
-    if (hash === '#/login') return 'login';
-    if (hash === '#/register') return 'register';
-    if (hash === '#/dashboard') return 'dashboard';
-    if (hash === '#/profile-form') return 'profile-form';
-    if (hash === '#/profile-summary') return 'profile-summary';
-    if (hash === '#/recommendations') return 'recommendations';
-    if (hash === '#/admin' || hash === '#/admin-users') return 'admin';
-    if (hash === '#/admin-food') return 'admin-food';
-    if (hash === '#/admin-exercise' || hash === '#/admin-exercises') return 'admin-exercise';
-    if (hash === '#/admin-recommendations') return 'admin-recommendations';
-    if (hash === '#/admin-diseases' || hash === '#/admin-conditions') return 'admin-diseases';
-    return 'landing';
-  });
+  const [currentPage, setCurrentPage] = useState<Page>(() => getPageFromLocation());
 
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === '#/login') {
-        setCurrentPage('login');
-      } else if (hash === '#/register') {
-        setCurrentPage('register');
-      } else if (hash === '#/dashboard') {
-        setCurrentPage('dashboard');
-      } else if (hash === '#/profile-form') {
-        setCurrentPage('profile-form');
-      } else if (hash === '#/profile-summary') {
-        setCurrentPage('profile-summary');
-      } else if (hash === '#/recommendations') {
-        setCurrentPage('recommendations');
-      } else if (hash === '#/admin' || hash === '#/admin-users') {
-        setCurrentPage('admin');
-      } else if (hash === '#/admin-food') {
-        setCurrentPage('admin-food');
-      } else if (hash === '#/admin-exercise' || hash === '#/admin-exercises') {
-        setCurrentPage('admin-exercise');
-      } else if (hash === '#/admin-recommendations') {
-        setCurrentPage('admin-recommendations');
-      } else if (hash === '#/admin-diseases' || hash === '#/admin-conditions') {
-        setCurrentPage('admin-diseases');
-      } else {
-        setCurrentPage('landing');
-      }
+      setCurrentPage(getPageFromLocation());
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
   }, []);
 
   const navigateTo = useCallback((page: Page) => {

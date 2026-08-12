@@ -118,7 +118,7 @@ export default function LandingPage() {
   const faqs = [
     {
       q: "Is this platform a replacement for professional medical advice?",
-      a: "Absolutely not. Smart Health & Food Guide is solely an educational tool designed to promote nutritional awareness. You must consult your primary physician or a clinical dietitian before starting any restrictive dietary regimen."
+      a: "Absolutely not. Smart Health Guide is solely an educational tool designed to promote nutritional awareness. You must consult your primary physician or a clinical dietitian before starting any restrictive dietary regimen."
     },
     {
       q: "How secure is my health and biometric profile?",
@@ -650,7 +650,7 @@ export default function LandingPage() {
 
           {/* Bottom Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs sm:text-sm text-slate-400" id="footer-bottom-bar">
-            <span className="font-medium">© 2026 Smart Health & Food Guide. All rights reserved.</span>
+            <span className="font-medium">© 2026 Smart Health Guide. All rights reserved.</span>
             <div className="flex flex-wrap gap-6">
               <a href="#" className="hover:text-emerald-400 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-xs">Privacy Policy</a>
               <a href="#" className="hover:text-emerald-400 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-xs">Terms of Use</a>

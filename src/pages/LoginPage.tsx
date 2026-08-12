@@ -137,9 +137,14 @@ export default function LoginPage() {
                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                       Password
                     </label>
-                    <a href="#" className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => navigateTo('forgot-password')}
+                      className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                      id="login-forgot-password-btn"
+                    >
                       Forgot Password?
-                    </a>
+                    </button>
                   </div>
                   <Input
                     type={showPassword ? 'text' : 'password'}

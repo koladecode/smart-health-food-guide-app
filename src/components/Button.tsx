@@ -38,7 +38,7 @@ export default function Button(props: ButtonProps) {
   const variants = {
     primary: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm shadow-emerald-600/10 hover:shadow-emerald-600/20',
     secondary: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40',
-    outline: 'border border-gray-300 dark:border-gray-750 text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30',
+    outline: 'border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30',
     ghost: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800/40',
     danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-red-600/20 focus-visible:ring-red-500',
   };

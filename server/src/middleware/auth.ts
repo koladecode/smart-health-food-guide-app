@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { config } from '../config';
 import { getSupabaseClient } from '../config/supabase';
 import { getSupabaseAdminClient } from '../services/supabase';
 
@@ -85,7 +86,7 @@ export const requireAuth = async (
       return;
     }
 
-    if (!user.email_confirmed_at && !user.confirmed_at && user.confirmation_sent_at) {
+    if (config.emailVerificationRequired && !user.email_confirmed_at && !user.confirmed_at && user.confirmation_sent_at) {
       res.status(403).json({
         success: false,
         status: 'fail',

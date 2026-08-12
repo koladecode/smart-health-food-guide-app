@@ -12,6 +12,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ProfileFormPage = lazy(() => import('./pages/ProfileFormPage'));
 const ProfileSummaryPage = lazy(() => import('./pages/ProfileSummaryPage'));
@@ -101,6 +103,10 @@ function AppContent() {
             return <LoginPage />;
           case 'register':
             return <RegisterPage />;
+          case 'forgot-password':
+            return <ForgotPasswordPage />;
+          case 'reset-password':
+            return <ResetPasswordPage />;
           case 'profile-form':
             return <ProfileFormPage />;
           case 'profile-summary':
@@ -129,6 +135,8 @@ function AppContent() {
   );
 }
 
+import { InstallPWA } from './components/InstallPWA';
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -136,6 +144,7 @@ export default function App() {
         <AuthProvider>
           <HealthProfileProvider>
             <AppContent />
+            <InstallPWA />
           </HealthProfileProvider>
         </AuthProvider>
       </NavigationProvider>
