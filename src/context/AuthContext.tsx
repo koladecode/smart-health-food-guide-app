@@ -22,7 +22,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
-  register: (email: string, password: string) => Promise<void>;
+  register: (nameOrEmail: string, emailOrPassword: string, password?: string) => Promise<any>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
@@ -132,15 +132,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearAllUserSessionData();
   }, []);
 
-  const register = useCallback(async (email: string, password: string) => {
+  const register = useCallback(async (nameOrEmail: string, emailOrPassword: string, passParam?: string) => {
     clearAllUserSessionData();
     setLoading(true);
     setError(null);
+
+    let name = '';
+    let email = '';
+    let password = '';
+
+    if (passParam !== undefined) {
+      name = nameOrEmail;
+      email = emailOrPassword;
+      password = passParam;
+    } else if (nameOrEmail.includes('@')) {
+      email = nameOrEmail;
+      password = emailOrPassword;
+    } else {
+      name = nameOrEmail;
+      email = emailOrPassword;
+    }
+
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       let result: any;

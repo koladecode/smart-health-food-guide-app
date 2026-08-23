@@ -394,9 +394,6 @@ export default function LandingPage() {
                     <span className="text-3xl sm:text-4xl font-black text-emerald-600/30 dark:text-emerald-400/30 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-200 select-none">
                       {step.num}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-100/60 dark:border-emerald-900/40">
-                      0{idx + 1}
-                    </div>
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 tracking-tight">

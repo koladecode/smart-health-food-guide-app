@@ -3,24 +3,57 @@ import { config } from '../config';
 import { getSupabaseClient } from '../config/supabase';
 import { getSupabaseAdminClient } from '../services/supabase';
 import { AuthenticatedRequest, getUserRole } from '../middleware/auth';
+import { validateName, validateEmail } from '../utils/validation';
 
 /**
  * Register a brand-new user with Supabase Auth
  */
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!email || !password) {
+    // 1. Authoritative Backend Name Validation
+    const nameVal = validateName(name);
+    if (!nameVal.valid) {
       res.status(400).json({
         success: false,
         status: 'fail',
-        message: 'Please provide email and password'
+        message: nameVal.message || 'Please provide a valid name.'
+      });
+      return;
+    }
+    const normalizedName = nameVal.trimmed;
+
+    // 2. Authoritative Backend Email Validation
+    const emailVal = validateEmail(email);
+    if (!emailVal.valid) {
+      res.status(400).json({
+        success: false,
+        status: 'fail',
+        message: emailVal.message || 'Please provide a valid email address.'
+      });
+      return;
+    }
+    const normalizedEmail = emailVal.trimmed;
+
+    // 3. Password Validation
+    if (!password || typeof password !== 'string') {
+      res.status(400).json({
+        success: false,
+        status: 'fail',
+        message: 'Please define a password.'
+      });
+      return;
+    }
+    if (password.length < 6) {
+      res.status(400).json({
+        success: false,
+        status: 'fail',
+        message: 'Password must contain at least 6 characters.'
       });
       return;
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
     const supabase = getSupabaseClient();
     const adminSupabase = getSupabaseAdminClient();
 
@@ -53,7 +86,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         email: normalizedEmail,
         password,
         email_confirm: true,
-        user_metadata: { role: 'user' },
+        user_metadata: { role: 'user', full_name: normalizedName, name: normalizedName },
         app_metadata: { role: 'user' },
       });
 
@@ -90,7 +123,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         options: {
           emailRedirectTo,
           data: {
-            role: 'user'
+            role: 'user',
+            full_name: normalizedName,
+            name: normalizedName
           }
         }
       });

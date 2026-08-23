@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, Heart, Lock, Mail, ShieldCheck, User, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Heart, Lock, Mail, ShieldCheck, User, Eye, EyeOff } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useAuth } from '../context/AuthContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
@@ -8,6 +8,7 @@ import { Card, CardContent } from '../components/Card';
 import { Input, Select } from '../components/Input';
 import ThemeToggle from '../components/ThemeToggle';
 import Alert from '../components/Alert';
+import { validateName, validateEmail } from '../utils/validation';
 
 export default function RegisterPage() {
   const { navigateTo } = useNavigation();
@@ -55,14 +56,18 @@ export default function RegisterPage() {
     if (loading) return;
     setError('');
 
-    if (!name) {
-      setError('Please tell us your name.');
+    const nameVal = validateName(name);
+    if (!nameVal.valid) {
+      setError(nameVal.message || 'Please provide a valid name.');
       return;
     }
-    if (!email) {
-      setError('Please enter your email.');
+
+    const emailVal = validateEmail(email);
+    if (!emailVal.valid) {
+      setError(emailVal.message || 'Please enter a valid email address.');
       return;
     }
+
     if (!password) {
       setError('Please define a secure password.');
       return;
@@ -79,7 +84,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await register(email, password);
+      const res = await register(nameVal.trimmed, emailVal.trimmed, password);
       setSuccessMessage(res?.message || 'Registration successful!');
       setSuccess(true);
     } catch (err: any) {
@@ -206,34 +211,59 @@ export default function RegisterPage() {
                             onClick={() => setShowPassword(!showPassword)}
                             className="text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
                             tabIndex={-1}
+                            aria-label={showPassword ? "Hide password" : "Show password"}
                           >
                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         }
+                        autoCapitalize="none"
+                        autoComplete="new-password"
+                        autoCorrect="off"
+                        spellCheck={false}
                         required
                         disabled={loading}
                       />
-                      <Input
-                        label="Confirm Password"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        id="register-confirm-input"
-                        placeholder="Re-enter password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        icon={<Lock className="w-4 h-4 text-slate-400" />}
-                        endIcon={
-                          <button
-                            type="button"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
-                            tabIndex={-1}
-                          >
-                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                        }
-                        required
-                        disabled={loading}
-                      />
+                      <div className="flex flex-col">
+                        <Input
+                          label="Confirm Password"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          id="register-confirm-input"
+                          placeholder="Re-enter password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          icon={<Lock className="w-4 h-4 text-slate-400" />}
+                          endIcon={
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
+                              tabIndex={-1}
+                              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                            >
+                              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          }
+                          autoCapitalize="none"
+                          autoComplete="new-password"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          required
+                          disabled={loading}
+                        />
+                        {confirmPassword.length > 0 && (
+                          password === confirmPassword ? (
+                            <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5 px-0.5" id="register-password-match-indicator">
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                              <span>Passwords match</span>
+                            </p>
+                          ) : (
+                            <p className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 mt-1.5 px-0.5" id="register-password-mismatch-indicator">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>Passwords do not match</span>
+                            </p>
+                          )
+                        )}
+                      </div>
                     </div>
 
                     {/* Primary Health Goal drop-down (Theme-specific reusable select component) */}
