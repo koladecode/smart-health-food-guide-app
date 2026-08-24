@@ -3686,6 +3686,7 @@ export default function DashboardPage() {
             placeholder="e.g. Cardiovascular Jogging, Yoga, Weight Lifting"
             value={workoutName}
             onChange={(e) => setWorkoutName(e.target.value)}
+            maxLength={250}
             required
           />
 
@@ -3749,6 +3750,7 @@ export default function DashboardPage() {
             placeholder="Record hydration level, target heart rate, or pain warnings."
             value={workoutNotes}
             onChange={(e) => setWorkoutNotes(e.target.value)}
+            maxLength={250}
           />
         </form>
       </Modal>

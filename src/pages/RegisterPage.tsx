@@ -19,7 +19,13 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [goal, setGoal] = useState('general');
-  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+  const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -54,33 +60,38 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    setError('');
+    setServerError('');
+
+    const errors: { name?: string; email?: string; password?: string; confirmPassword?: string } = {};
 
     const nameVal = validateName(name);
     if (!nameVal.valid) {
-      setError(nameVal.message || 'Please provide a valid name.');
-      return;
+      errors.name = nameVal.message || 'Please provide a valid name.';
     }
 
     const emailVal = validateEmail(email);
     if (!emailVal.valid) {
-      setError(emailVal.message || 'Please enter a valid email address.');
-      return;
+      errors.email = emailVal.message || 'Please enter a valid email address.';
     }
 
     if (!password) {
-      setError('Please define a secure password.');
-      return;
+      errors.password = 'Please define a secure password.';
+    } else if (password.length < 6) {
+      errors.password = 'Password must contain at least 6 characters.';
     }
-    if (password.length < 6) {
-      setError('Password must contain at least 6 characters.');
-      return;
+
+    if (!confirmPassword) {
+      errors.confirmPassword = 'Please re-enter your password.';
+    } else if (password && confirmPassword && password !== confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match.';
     }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -88,7 +99,7 @@ export default function RegisterPage() {
       setSuccessMessage(res?.message || 'Registration successful!');
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please check your credentials and try again.');
+      setServerError(err.message || 'Registration failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);
     }
@@ -136,10 +147,10 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Error alerts */}
-              {error && (
+              {/* Global Error alert for unexpected server errors or registration failures */}
+              {serverError && (
                 <Alert variant="error" title="Registration Issue" id="register-alert-error" className="rounded-2xl border-rose-100/80 dark:border-rose-950/50 text-sm">
-                  {error}
+                  {serverError}
                 </Alert>
               )}
 
@@ -178,8 +189,13 @@ export default function RegisterPage() {
                         id="register-name-input"
                         placeholder="e.g. Alex Smith"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: undefined }));
+                        }}
+                        error={fieldErrors.name}
                         icon={<User className="w-4 h-4 text-slate-400" />}
+                        maxLength={100}
                         required
                         disabled={loading}
                       />
@@ -189,8 +205,13 @@ export default function RegisterPage() {
                         id="register-email-input"
                         placeholder="your.email@example.com"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: undefined }));
+                        }}
+                        error={fieldErrors.email}
                         icon={<Mail className="w-4 h-4 text-slate-400" />}
+                        maxLength={254}
                         required
                         disabled={loading}
                       />
@@ -203,7 +224,11 @@ export default function RegisterPage() {
                         id="register-password-input"
                         placeholder="Min 6 characters"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: undefined }));
+                        }}
+                        error={fieldErrors.password}
                         icon={<Lock className="w-4 h-4 text-slate-400" />}
                         endIcon={
                           <button
@@ -220,6 +245,7 @@ export default function RegisterPage() {
                         autoComplete="new-password"
                         autoCorrect="off"
                         spellCheck={false}
+                        maxLength={128}
                         required
                         disabled={loading}
                       />
@@ -230,7 +256,11 @@ export default function RegisterPage() {
                           id="register-confirm-input"
                           placeholder="Re-enter password"
                           value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          onChange={(e) => {
+                            setConfirmPassword(e.target.value);
+                            if (fieldErrors.confirmPassword) setFieldErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                          }}
+                          error={fieldErrors.confirmPassword}
                           icon={<Lock className="w-4 h-4 text-slate-400" />}
                           endIcon={
                             <button
@@ -247,10 +277,11 @@ export default function RegisterPage() {
                           autoComplete="new-password"
                           autoCorrect="off"
                           spellCheck={false}
+                          maxLength={128}
                           required
                           disabled={loading}
                         />
-                        {confirmPassword.length > 0 && (
+                        {confirmPassword.length > 0 && !fieldErrors.confirmPassword && (
                           password === confirmPassword ? (
                             <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5 px-0.5" id="register-password-match-indicator">
                               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />

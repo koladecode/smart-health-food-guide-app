@@ -83,6 +83,7 @@ export function SearchableSelect({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={handleFocus}
+          maxLength={250}
           className={`w-full rounded-xl bg-white dark:bg-gray-900 border ${
             error
               ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500'

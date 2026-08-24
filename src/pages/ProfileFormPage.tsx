@@ -553,6 +553,7 @@ export default function ProfileFormPage() {
                     onChange={(e) => setFullName(e.target.value)}
                     error={errors.fullName}
                     icon={<User className="w-4 h-4 text-slate-400" />}
+                    maxLength={100}
                     required
                   />
 
@@ -885,6 +886,7 @@ export default function ProfileFormPage() {
                       placeholder="e.g. Metformin 500mg (Daily), Lisinopril 10mg..."
                       value={currentMedications}
                       onChange={(e) => setCurrentMedications(e.target.value)}
+                      maxLength={250}
                       helperText="Required to flag potential drug-nutrient interactions in the recommendations suite."
                     />
                   </div>

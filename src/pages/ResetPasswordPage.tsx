@@ -296,6 +296,11 @@ export default function ResetPasswordPage() {
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       }
+                      autoCapitalize="none"
+                      autoComplete="new-password"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      maxLength={128}
                       required
                       disabled={loading}
                     />
@@ -322,6 +327,11 @@ export default function ResetPasswordPage() {
                           {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       }
+                      autoCapitalize="none"
+                      autoComplete="new-password"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      maxLength={128}
                       required
                       disabled={loading}
                     />

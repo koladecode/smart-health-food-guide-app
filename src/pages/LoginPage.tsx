@@ -128,6 +128,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   icon={<Mail className="w-4 h-4 text-slate-400" />}
+                  maxLength={254}
                   required
                   disabled={loading || success}
                 />
@@ -163,6 +164,7 @@ export default function LoginPage() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     }
+                    maxLength={128}
                     required
                     disabled={loading || success}
                   />

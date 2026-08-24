@@ -168,6 +168,7 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     icon={<Mail className="w-4 h-4 text-slate-400" />}
+                    maxLength={254}
                     required
                     disabled={loading}
                   />

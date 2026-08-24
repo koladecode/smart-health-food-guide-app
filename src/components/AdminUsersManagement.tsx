@@ -650,6 +650,7 @@ export default function AdminUsersManagement() {
                 placeholder="Search by name, email, user ID, or health goal..."
                 icon={<Search className="w-4 h-4 text-slate-400" />}
                 className="h-11 text-xs sm:text-sm rounded-xl"
+                maxLength={250}
                 id="admin-search-users-input"
               />
               {searchQuery && (
@@ -1144,6 +1145,7 @@ export default function AdminUsersManagement() {
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               className="h-11 rounded-xl text-xs sm:text-sm font-medium"
+              maxLength={100}
               required
             />
           </div>
@@ -1157,6 +1159,7 @@ export default function AdminUsersManagement() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="h-11 rounded-xl text-xs sm:text-sm font-medium"
+              maxLength={254}
               required
             />
           </div>
@@ -1250,6 +1253,7 @@ export default function AdminUsersManagement() {
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               placeholder="e.g. Sarah Connor"
               className="h-11 rounded-xl text-xs sm:text-sm font-medium"
+              maxLength={100}
               required
             />
           </div>
@@ -1264,6 +1268,7 @@ export default function AdminUsersManagement() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="e.g. sarah@example.com"
               className="h-11 rounded-xl text-xs sm:text-sm font-medium"
+              maxLength={254}
               required
             />
           </div>
