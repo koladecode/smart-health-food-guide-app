@@ -60,9 +60,20 @@ export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [fieldErrors, setFieldErrors] = useState<{ password?: string; confirmPassword?: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const redirectTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Clean up redirect timer on unmount
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
 
   // Parse recovery tokens on mount
   useEffect(() => {
@@ -94,18 +105,22 @@ export default function ResetPasswordPage() {
     if (loading) return;
     setError('');
 
+    const errs: { password?: string; confirmPassword?: string } = {};
+
     if (!password) {
-      setError('Please enter a new password.');
-      return;
+      errs.password = 'Please enter a new password.';
+    } else if (password.length < 6) {
+      errs.password = 'Password must be at least 6 characters long.';
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return;
+    if (!confirmPassword) {
+      errs.confirmPassword = 'Please repeat your new password.';
+    } else if (password && confirmPassword && password !== confirmPassword) {
+      errs.confirmPassword = 'Passwords do not match.';
     }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match. Please ensure both fields match exactly.');
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
       return;
     }
 
@@ -114,6 +129,7 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -131,7 +147,7 @@ export default function ResetPasswordPage() {
       setConfirmPassword('');
 
       // Automatically navigate to login after brief delay
-      setTimeout(() => {
+      redirectTimerRef.current = setTimeout(() => {
         navigateTo('login');
       }, 2500);
     } catch (err: any) {
@@ -200,14 +216,28 @@ export default function ResetPasswordPage() {
 
               {/* Status Alerts */}
               {error && (
-                <Alert
-                  variant="error"
-                  title="Password Reset Error"
-                  id="reset-password-alert-error"
-                  className="rounded-2xl border-rose-100/80 dark:border-rose-950/50 text-sm"
-                >
-                  {error}
-                </Alert>
+                <div className="flex flex-col gap-2" id="reset-password-error-container">
+                  <Alert
+                    variant="error"
+                    title="Password Reset Error"
+                    id="reset-password-alert-error"
+                    className="rounded-2xl border-rose-100/80 dark:border-rose-950/50 text-sm"
+                  >
+                    {error}
+                  </Alert>
+                  {(error.toLowerCase().includes('expired') || error.toLowerCase().includes('invalid') || error.toLowerCase().includes('link')) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="self-start text-xs rounded-xl"
+                      onClick={() => navigateTo('forgot-password')}
+                      id="reset-password-error-request-new-btn"
+                      icon={<RefreshCw className="w-3.5 h-3.5 mr-1" />}
+                    >
+                      Request a new reset link
+                    </Button>
+                  )}
+                </div>
               )}
 
               {/* Success View */}
@@ -228,8 +258,11 @@ export default function ResetPasswordPage() {
                   <Button
                     variant="primary"
                     size="lg"
-                    className="w-full font-bold py-3.5 shadow-md rounded-xl"
-                    onClick={() => navigateTo('login')}
+                    className="w-full font-bold py-3.5 shadow-md rounded-xl cursor-pointer"
+                    onClick={() => {
+                      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+                      navigateTo('login');
+                    }}
                     id="reset-password-go-login-btn"
                   >
                     Proceed to Sign In
@@ -284,7 +317,11 @@ export default function ResetPasswordPage() {
                       id="reset-new-password-input"
                       placeholder="At least 6 characters"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: undefined }));
+                      }}
+                      error={fieldErrors.password}
                       icon={<Lock className="w-4 h-4 text-slate-400" />}
                       endIcon={
                         <button
@@ -315,7 +352,11 @@ export default function ResetPasswordPage() {
                       id="reset-confirm-password-input"
                       placeholder="Repeat new password"
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (fieldErrors.confirmPassword) setFieldErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                      }}
+                      error={fieldErrors.confirmPassword}
                       icon={<Lock className="w-4 h-4 text-slate-400" />}
                       endIcon={
                         <button

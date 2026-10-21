@@ -14,10 +14,26 @@ function getPageFromLocation(): Page {
   const path = window.location.pathname || '';
   const search = window.location.search || '';
 
-  if (hash.startsWith('#/forgot-password') || path === '/forgot-password') return 'forgot-password';
+  // 1. Explicit hash navigation takes top priority when present
+  if (hash.startsWith('#/login')) return 'login';
+  if (hash.startsWith('#/register')) return 'register';
+  if (hash.startsWith('#/forgot-password')) return 'forgot-password';
+  if (hash.startsWith('#/reset-password')) return 'reset-password';
+  if (hash.startsWith('#/dashboard')) return 'dashboard';
+  if (hash.startsWith('#/profile-form')) return 'profile-form';
+  if (hash.startsWith('#/profile-summary')) return 'profile-summary';
+  if (hash.startsWith('#/recommendations')) return 'recommendations';
+  if (hash.startsWith('#/admin-users') || hash === '#/admin') return 'admin';
+  if (hash.startsWith('#/admin-food')) return 'admin-food';
+  if (hash.startsWith('#/admin-exercise') || hash.startsWith('#/admin-exercises')) return 'admin-exercise';
+  if (hash.startsWith('#/admin-recommendations')) return 'admin-recommendations';
+  if (hash.startsWith('#/admin-diseases') || hash.startsWith('#/admin-conditions')) return 'admin-diseases';
+  if (hash === '#/' || hash === '#') return 'landing';
+
+  // 2. Password recovery path or tokens in query/hash
   if (
-    hash.startsWith('#/reset-password') ||
     path === '/reset-password' ||
+    path.startsWith('/reset-password') ||
     hash.includes('type=recovery') ||
     search.includes('type=recovery') ||
     hash.includes('access_token=') ||
@@ -25,17 +41,20 @@ function getPageFromLocation(): Page {
   ) {
     return 'reset-password';
   }
-  if (hash === '#/login' || path === '/login') return 'login';
-  if (hash === '#/register' || path === '/register') return 'register';
-  if (hash === '#/dashboard' || path === '/dashboard') return 'dashboard';
-  if (hash === '#/profile-form' || path === '/profile-form') return 'profile-form';
-  if (hash === '#/profile-summary' || path === '/profile-summary') return 'profile-summary';
-  if (hash === '#/recommendations' || path === '/recommendations') return 'recommendations';
-  if (hash === '#/admin' || hash === '#/admin-users' || path === '/admin') return 'admin';
-  if (hash === '#/admin-food' || path === '/admin-food') return 'admin-food';
-  if (hash === '#/admin-exercise' || hash === '#/admin-exercises' || path === '/admin-exercise') return 'admin-exercise';
-  if (hash === '#/admin-recommendations' || path === '/admin-recommendations') return 'admin-recommendations';
-  if (hash === '#/admin-diseases' || hash === '#/admin-conditions' || path === '/admin-diseases') return 'admin-diseases';
+
+  // 3. Pathname based navigation
+  if (path === '/forgot-password' || path.startsWith('/forgot-password')) return 'forgot-password';
+  if (path === '/login' || path.startsWith('/login')) return 'login';
+  if (path === '/register' || path.startsWith('/register')) return 'register';
+  if (path === '/dashboard' || path.startsWith('/dashboard')) return 'dashboard';
+  if (path === '/profile-form' || path.startsWith('/profile-form')) return 'profile-form';
+  if (path === '/profile-summary' || path.startsWith('/profile-summary')) return 'profile-summary';
+  if (path === '/recommendations' || path.startsWith('/recommendations')) return 'recommendations';
+  if (path === '/admin') return 'admin';
+  if (path === '/admin-food') return 'admin-food';
+  if (path === '/admin-exercise') return 'admin-exercise';
+  if (path === '/admin-recommendations') return 'admin-recommendations';
+  if (path === '/admin-diseases') return 'admin-diseases';
   return 'landing';
 }
 
@@ -56,10 +75,12 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const navigateTo = useCallback((page: Page) => {
-    if (page === 'landing') {
-      window.location.hash = '#/';
+    const targetHash = page === 'landing' ? '#/' : `#/${page}`;
+    // Reset pathname to root if currently on a sub-path like /reset-password
+    if (window.location.pathname !== '/' && window.location.pathname !== '') {
+      window.history.pushState(null, '', `/${targetHash}`);
     } else {
-      window.location.hash = `#/${page}`;
+      window.location.hash = targetHash;
     }
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });

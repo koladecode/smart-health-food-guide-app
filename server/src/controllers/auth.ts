@@ -111,7 +111,10 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       if (origin) {
         try {
           const urlObj = new URL(origin);
-          emailRedirectTo = `${urlObj.origin}/`;
+          // Strict guard: Render is disconnected and must never be used
+          if (!urlObj.hostname.toLowerCase().includes('render.com') && !urlObj.hostname.toLowerCase().includes('onrender.com')) {
+            emailRedirectTo = `${urlObj.origin}/`;
+          }
         } catch (e) {
           console.warn('[AUTH_REGISTER] Could not parse origin for signup redirect URL:', origin);
         }
@@ -422,21 +425,34 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     const normalizedEmail = email.trim().toLowerCase();
 
     // Determine the redirect URL for password reset recovery link
-    const origin = req.get('origin') || req.get('referer');
-    let redirectTo = 'https://smart-health-food-guide-app.vercel.app/#/reset-password';
+    // Canonical Vercel production recovery URL: https://smart-health-food-guide-app.vercel.app/reset-password
+    // Note: URL MUST NOT contain '#' (fragment) as RFC 6749 and Supabase GoTrue disallow fragments in redirect_to,
+    // which caused Supabase to fall back to the outdated Render Site URL.
+    const VERCEL_PRODUCTION_RESET_URL = 'https://smart-health-food-guide-app.vercel.app/reset-password';
+    let redirectTo = VERCEL_PRODUCTION_RESET_URL;
 
-    if (origin) {
+    // Optional override for local development or preview environments, while strictly blocking Render
+    const candidate = req.body?.redirectTo || req.get('origin') || req.get('referer');
+    if (candidate && typeof candidate === 'string') {
       try {
-        const urlObj = new URL(origin);
-        redirectTo = `${urlObj.origin}/#/reset-password`;
+        const urlObj = new URL(candidate);
+        const host = urlObj.hostname.toLowerCase();
+        // Strict guard: Render is disconnected and must never be used
+        if (!host.includes('render.com') && !host.includes('onrender.com')) {
+          if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.run.app')) {
+            redirectTo = `${urlObj.origin}/reset-password`;
+          } else if (host.includes('smart-health-food-guide-app.vercel.app')) {
+            redirectTo = VERCEL_PRODUCTION_RESET_URL;
+          }
+        }
       } catch (e) {
-        console.warn('[AUTH_RESET] Could not parse origin for password reset redirect URL:', origin);
+        console.warn('[AUTH_RESET] Could not parse candidate redirect URL:', candidate);
       }
     }
 
     const supabase = getSupabaseClient();
 
-    // Request Supabase Auth to send reset email
+    // Request Supabase Auth to send reset email with canonical recovery redirect
     const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo,
     });
@@ -492,25 +508,48 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
 
     // 1. Try resolving user with access token if present
     if (accessToken) {
-      const { data: { user }, error: userErr } = await supabase.auth.getUser(accessToken);
-      if (!userErr && user) {
-        userId = user.id;
+      try {
+        const { data: { user }, error: adminUserErr } = await adminSupabase.auth.getUser(accessToken);
+        if (!adminUserErr && user) {
+          userId = user.id;
+        } else {
+          const { data: { user: clientUser }, error: clientUserErr } = await supabase.auth.getUser(accessToken);
+          if (!clientUserErr && clientUser) {
+            userId = clientUser.id;
+          }
+        }
+      } catch (err) {
+        console.warn('[AUTH_RESET] getUser exception with accessToken:', err);
       }
     }
 
     // 2. Try PKCE code exchange if user not yet identified
     if (!userId && code) {
-      const { data: sessionData, error: codeErr } = await supabase.auth.exchangeCodeForSession(code);
-      if (!codeErr && sessionData?.user) {
-        userId = sessionData.user.id;
+      try {
+        const { data: sessionData, error: codeErr } = await supabase.auth.exchangeCodeForSession(code);
+        if (!codeErr && sessionData) {
+          userId = sessionData.user?.id || (sessionData as any).session?.user?.id || null;
+        }
+        if (!userId) {
+          const { data: adminSessionData, error: adminCodeErr } = await adminSupabase.auth.exchangeCodeForSession(code);
+          if (!adminCodeErr && adminSessionData) {
+            userId = adminSessionData.user?.id || (adminSessionData as any).session?.user?.id || null;
+          }
+        }
+      } catch (err) {
+        console.warn('[AUTH_RESET] exchangeCodeForSession exception with code:', err);
       }
     }
 
     // 3. Try refresh token session if present
     if (!userId && refreshToken) {
-      const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
-      if (!refreshErr && refreshData?.user) {
-        userId = refreshData.user.id;
+      try {
+        const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
+        if (!refreshErr && refreshData) {
+          userId = refreshData.user?.id || (refreshData as any).session?.user?.id || null;
+        }
+      } catch (err) {
+        console.warn('[AUTH_RESET] refreshSession exception with refreshToken:', err);
       }
     }
 

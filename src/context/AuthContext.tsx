@@ -366,10 +366,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
+      const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://smart-health-food-guide-app.vercel.app';
+      const redirectTo = isProduction || (!origin.includes('localhost') && !origin.includes('.run.app'))
+        ? 'https://smart-health-food-guide-app.vercel.app/reset-password'
+        : `${origin}/reset-password`;
+
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, redirectTo }),
       });
 
       let result: any;
