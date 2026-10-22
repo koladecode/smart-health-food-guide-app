@@ -1,3 +1,4 @@
+// @ts-ignore
 import rawApp from '../dist/app.cjs';
 
 // Gracefully resolve default export across CJS / ESM module interop

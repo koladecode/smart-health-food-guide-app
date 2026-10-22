@@ -2721,8 +2721,9 @@ function getRegionalRecommendations(
       const catFoods = rawFoods.filter(f => f.category === cat);
       // Sort by computed suitability score descending
       catFoods.sort((a, b) => (b.score || 0) - (a.score || 0));
-      // Squeeze results down to the top 3 items per category (ensures we do not flood the screen, but recommend best matches)
-      const topFoods = catFoods.slice(0, 3).map(({ score, ...rest }) => rest);
+      // Squeeze results down to the top suitable items: 2 for Snacks and Drinks, 3 for meals
+      const limit = (cat === 'Healthy Snacks' || cat === 'Drinks') ? 2 : 3;
+      const topFoods = catFoods.slice(0, limit).map(({ score, ...rest }) => rest);
       selectedFoods.push(...topFoods);
     });
   } else {

@@ -23,7 +23,8 @@ import {
   Pencil,
   Plus,
   Coffee,
-  CupSoda
+  CupSoda,
+  ChevronDown
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
@@ -41,6 +42,12 @@ export default function RecommendationsPage() {
   const { navigateTo } = useNavigation();
   const { profile, loadingProfile } = useHealthProfile();
   const { fetchWithAuth, isAuthenticated } = useAuth();
+
+  // State to manage collapsible progressive disclosure ("Learn more") per card
+  const [expandedCards, setExpandedCards] = React.useState<Record<string, boolean>>({});
+  const toggleCard = (id: string) => {
+    setExpandedCards((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Sync recommendations to the database on mount/load
   React.useEffect(() => {
@@ -364,10 +371,482 @@ export default function RecommendationsPage() {
     );
   };
 
+  // Helper to extract clean, grounded data for Foods to Avoid cards
+  const getAvoidCardData = (food: { id: string; title: string; description: string; badge?: string }) => {
+    const text = `${food.title} ${food.description}`.toLowerCase();
+    let category = 'Dietary Caution';
+    let statusLabel = food.badge || 'Limit Intake';
+    let statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+    let shortReason = '';
+    let examples: string[] = [];
+    let tip = '';
+
+    if (text.includes('trans-fat') || text.includes('trans-fats') || text.includes('hydrogenated') || text.includes('margarine') || text.includes('shortening')) {
+      category = 'Fats & Oils';
+      statusLabel = 'Avoid Trans-Fats';
+      statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      shortReason = 'Partially hydrogenated oils may adversely shift LDL and HDL cholesterol ratios, impacting arterial elasticity.';
+      examples = ['Commercial pastries and pies', 'Products with partially hydrogenated oils', 'Hard stick margarine', 'Packaged fried snacks'];
+      tip = 'Swap for cold-pressed extra virgin olive oil, avocado oil, or unroasted seed oils.';
+    } else if (text.includes('cured') || text.includes('salami') || text.includes('sausage') || text.includes('bacon') || text.includes('high-sodium') || text.includes('sodium') || text.includes('salt')) {
+      category = 'Sodium & Cured Meats';
+      statusLabel = food.badge || 'Portion Control';
+      statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      shortReason = 'High sodium concentration can increase fluid retention and elevate vascular tension, especially in salt-sensitive individuals.';
+      examples = ['Sausages, salami, and bacon', 'Certain canned soups and packaged foods', 'Commercial bouillon cubes', 'Processed deli meats'];
+      tip = 'Flavor dishes with fresh garlic, onion, cracked pepper, oregano, or lemon zest rather than added table salt.';
+    } else if (text.includes('refined sugar') || text.includes('high-fructose') || text.includes('corn syrup') || text.includes('sweets') || text.includes('candy')) {
+      category = 'Added Sugars';
+      statusLabel = 'Limit Intake';
+      statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      shortReason = 'Simple sugars digest rapidly, causing blood glucose peaks and placing extra metabolic workload on liver tissue.';
+      examples = ['Sweetened sodas & bottled iced teas', 'Commercial pastries & confectionery', 'Dessert syrups', 'Sugary breakfast cereals'];
+      tip = 'Satisfy sweet cravings with fresh berries, whole fruit, or cinnamon-spiced tea.';
+    } else if (text.includes('liquid calorie') || text.includes('soda') || text.includes('energy drink') || text.includes('fruit juice')) {
+      category = 'Beverages';
+      statusLabel = 'Limit Simple Sugars';
+      statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      shortReason = 'Liquid sugars absorb quickly without activating normal physical satiety cues, easily creating caloric excess.';
+      examples = ['Regular sodas and colas', 'Commercial energy drinks', 'Packaged fruit juices from concentrate'];
+      tip = 'Opt for cold filtered water with cucumber slices, mint leaves, or chilled herbal infusions.';
+    } else if (text.includes('white bread') || text.includes('refined grain') || text.includes('white rice') || text.includes('processed pasta') || text.includes('cereal')) {
+      category = 'Refined Grains';
+      statusLabel = 'Substitute Grains';
+      statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      shortReason = 'Grains stripped of germ and bran fiber convert quickly into glucose, prompting insulin spikes and subsequent fatigue.';
+      examples = ['White sandwich bread', 'Refined flour pasta', 'Low-fiber breakfast cereals', 'Instant white rice'];
+      tip = 'Choose sprouted grain breads, rolled or steel-cut oats, quinoa, or lentil-based pastas.';
+    } else if (text.includes('fast food') || text.includes('ultra-processed') || text.includes('junk')) {
+      category = 'Ultra-Processed';
+      statusLabel = 'Moderate Intake';
+      statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      shortReason = 'Commercial fried convenience meals are typically dense in oxidized industrial oils and refined starches with minimal micronutrient density.';
+      examples = ['Deep-fried fast-food items', 'Commercial burger patties & nuggets', 'Pre-packaged frozen snacks'];
+      tip = 'Prepare homemade oven-baked or air-crisped whole ingredients for balanced flavor and nutrients.';
+    } else if (text.includes('alcohol')) {
+      category = 'Lifestyle';
+      statusLabel = 'Moderate Intake';
+      statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      shortReason = 'Can fragment restorative sleep architecture, slow muscle protein synthesis, and tax hepatic metabolic capacity.';
+      examples = ['High-proof distilled spirits', 'Sugary mixed cocktails', 'Frequent daily beers'];
+      tip = 'Alternate each drink with water and complete alcohol intake at least 4 hours prior to sleep.';
+    } else if (text.includes('spinach') || text.includes('oxalate') || text.includes('beet greens')) {
+      category = 'Renal Filtration';
+      statusLabel = 'Kidney Precaution';
+      statusStyle = 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20';
+      shortReason = 'High oxalate density places additional filtration demands on compromised kidneys, potentially contributing to stones.';
+      examples = ['Raw spinach smoothies', 'Uncooked beet greens', 'Heavy swiss chard salads'];
+      tip = 'Lightly boil greens to reduce oxalate concentration, or choose low-oxalate alternatives like arugula and kale.';
+    } else if (text.includes('potassium') || text.includes('lite salt')) {
+      category = 'Electrolytes';
+      statusLabel = 'Clinical Caution';
+      statusStyle = 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20';
+      shortReason = 'Weakened kidneys struggle to clear synthetic potassium chloride, elevating hyperkalemia risks.';
+      examples = ['Potassium chloride salt substitutes', 'Lite salt blends', 'Sodium-free seasoning salts'];
+      tip = 'Season meals with aromatic herbs, garlic, black pepper, and fresh lemon instead of potassium salts.';
+    } else if (text.includes('spicy') || text.includes('garlic') || text.includes('coffee') || text.includes('reflux')) {
+      category = 'Digestive Comfort';
+      statusLabel = 'Reflux Trigger';
+      statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      shortReason = 'May relax the lower esophageal sphincter or irritate gastric mucosa in sensitive or reflux-prone individuals.';
+      examples = ['Hot chili pepper sauces', 'Raw minced garlic', 'Excess dark-roast coffee on an empty stomach'];
+      tip = 'Sip soothing ginger or chamomile tea, and maintain a 3-hour window between eating and lying down.';
+    } else if (text.includes('carbonated') || text.includes('sorbitol') || text.includes('sweetener')) {
+      category = 'Digestive Comfort';
+      statusLabel = 'Digestive Care';
+      statusStyle = 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20';
+      shortReason = 'Artificial polyols and carbonation can draw water into the bowel and ferment, prompting intestinal distension and gas.';
+      examples = ['Sugar-free gums with polyols', 'Diet beverages with sorbitol or maltitol', 'Heavily carbonated drinks'];
+      tip = 'Drink filtered room-temperature water with fresh citrus or cucumber slices for gentle hydration.';
+    } else if (text.includes('allergy') || text.includes('allergen') || text.includes('anaphylaxis') || text.includes('intolerance')) {
+      category = 'Allergen';
+      statusLabel = 'Strict Exclusion';
+      statusStyle = 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20';
+      shortReason = 'Flagged as an allergen or intolerance in your health profile. Requires consistent exclusion to avoid adverse physiological reactions.';
+      if (text.includes('peanut')) examples = ['Peanut butter', 'Roasted peanuts', 'Peanut oil & satay sauces'];
+      else if (text.includes('gluten')) examples = ['Wheat bread & rolls', 'Barley soups', 'Standard wheat pasta', 'Rye crackers'];
+      else if (text.includes('dairy')) examples = ['Cow milk & heavy cream', 'Aged cheeses', 'Whey protein', 'Butter & dairy yogurt'];
+      else if (text.includes('soy')) examples = ['Soy sauce & edamame', 'Tofu & tempeh', 'Processed foods containing soy lecithin'];
+      else if (text.includes('shellfish')) examples = ['Shrimp & prawns', 'Crab & lobster', 'Oysters, clams, and mussels'];
+      else if (text.includes('tree nut') || text.includes('walnut') || text.includes('almond')) examples = ['Walnuts, almonds, cashews', 'Hazelnut spreads', 'Mixed tree nut butters'];
+      else if (text.includes('egg')) examples = ['Whole eggs & egg whites', 'Mayonnaise', 'Baked goods brushed with egg wash'];
+      else examples = ['Processed goods containing allergen derivatives', 'Cross-contact restaurant items'];
+      tip = 'Always review packaged food allergen statements for cross-contact advisories.';
+    } else {
+      category = 'Nutrition Strategy';
+      shortReason = food.description.split(/(?<=[.!?])\s+/)[0] || 'Recommended to limit based on your physiological baseline and health goals.';
+      examples = ['Processed packaged variations', 'High-heat commercial preparations'];
+      tip = 'Focus on whole, minimally processed ingredients tailored to your nutritional targets.';
+    }
+
+    let clinicalNote = food.description;
+    if (food.description.includes('• Clinical Reason: ')) {
+      clinicalNote = food.description.split('• Clinical Reason: ')[1] || food.description;
+    }
+
+    return {
+      title: food.title,
+      category,
+      statusLabel,
+      statusStyle,
+      shortReason,
+      examples,
+      tip,
+      clinicalNote
+    };
+  };
+
+  // Helper to extract clean, grounded data for Foods to Eat cards
+  const getEatCardData = (food: { id: string; title: string; description: string; badge?: string; category?: string }) => {
+    let cleanDesc = food.description;
+    let clinicalReason = '';
+    if (food.description.includes('• Clinical Reason: ')) {
+      [cleanDesc, clinicalReason] = food.description.split('• Clinical Reason: ');
+    }
+    
+    const sentences = cleanDesc.replace(/^[•\s\-\*]+/g, '').split(/(?<=[.!?])\s+/).filter(Boolean);
+    const shortReason = sentences[0] || cleanDesc;
+
+    const text = `${food.title} ${food.description}`.toLowerCase();
+    let examples: string[] = [];
+    let tip = '';
+
+    if (text.includes('salmon') || text.includes('mackerel') || text.includes('sardine')) {
+      examples = ['Wild salmon fillets', 'Fresh mackerel', 'Sardines in olive oil'];
+      tip = 'Bake or grill lightly with herbs and lemon to preserve delicate Omega-3 fatty acids.';
+    } else if (text.includes('chicken') || text.includes('poultry')) {
+      examples = ['Skinless chicken breast', 'Ground turkey breast', 'Tenderloin cuts'];
+      tip = 'Season with antioxidant-rich turmeric, paprika, and garlic for lean, clean protein.';
+    } else if (text.includes('moin moin') || text.includes('koko')) {
+      examples = ['Steamed honey-bean pudding', 'Red bell pepper sauce', 'Fermented millet porridge'];
+      tip = 'Pair with fresh ginger and cloves to enhance gastrointestinal motility and flavor.';
+    } else if (text.includes('ofada') || text.includes('efo riro')) {
+      examples = ['Unpolished Ofada brown rice', 'Steamed local spinach (Efo)', 'Fluted pumpkin leaves (Ugu)'];
+      tip = 'Prepare spinach stew with moderate unrefined oil to maximize fat-soluble vitamin uptake.';
+    } else if (text.includes('tom brown') || text.includes('porridge')) {
+      examples = ['Roasted guinea corn', 'Yellow millet flakes', 'Soybean porridge', 'Crushed almonds'];
+      tip = 'Top with ground seeds or nuts to add essential minerals and slow down gastric transit.';
+    } else if (text.includes('akara') || text.includes('pap')) {
+      examples = ['Oven-baked honey-bean cakes', 'Naturally sweetened corn custard', 'Date fruit powder'];
+      tip = 'Bake instead of deep-frying to preserve heart health while retaining satisfying crispness.';
+    } else if (text.includes('garden egg') || text.includes('egg white')) {
+      examples = ['Steamed green garden eggs', 'Herb-scrambled egg whites', 'Sautéed pumpkin leaves'];
+      tip = 'A nutrient-dense, low-glycemic breakfast that supports steady morning energy.';
+    } else if (text.includes('oat swallow') || text.includes('ewedu')) {
+      examples = ['Whole-grain oat swallow', 'Slippery jute leaf (Ewedu) soup', 'Stewed freshwater tilapia'];
+      tip = 'The soluble fiber in oat swallow and Ewedu helps buffer post-meal glucose absorption.';
+    } else if (text.includes('cruciferous') || text.includes('broccoli') || text.includes('cauliflower')) {
+      examples = ['Broccoli florets', 'Steamed cauliflower', 'Brussels sprouts', 'Cabbage'];
+      tip = 'Steam lightly for 3-5 minutes to keep glucosinolates and active enzymes intact.';
+    } else if (text.includes('chia') || text.includes('flax')) {
+      examples = ['Whole chia seeds', 'Freshly ground flaxseed', 'Hemp hearts'];
+      tip = 'Add ground flaxseed to warm porridge or smoothies for optimal lignan absorption.';
+    } else if (text.includes('oat') || text.includes('steel-cut')) {
+      examples = ['Steel-cut oats', 'Rolled oats', 'Oat bran flakes'];
+      tip = 'Soak overnight with a pinch of cinnamon for gentle digestion and rich soluble beta-glucans.';
+    } else if (text.includes('avocado') || text.includes('olive oil')) {
+      examples = ['Hass avocados', 'Cold-pressed extra virgin olive oil', 'Green olives'];
+      tip = 'Drizzle cold-pressed olive oil over finished warm dishes to protect its delicate polyphenols.';
+    } else if (text.includes('tempeh') || text.includes('tofu')) {
+      examples = ['Steamed organic tempeh', 'Firm sprouted tofu', 'Edamame pods'];
+      tip = 'Marinate with low-sodium tamari and grated ginger before pan-searing lightly.';
+    } else if (text.includes('egg') || text.includes('pasture-raised')) {
+      examples = ['Pasture-raised whole eggs', 'Poached eggs', 'Vegetable egg frittata'];
+      tip = 'Keep yolks runny (soft-boiled or poached) to protect heat-sensitive choline and lutein.';
+    } else if (text.includes('yogurt') || text.includes('kefir')) {
+      examples = ['Unsweetened Greek yogurt', 'Plain goat kefir', 'Probiotic cultured yogurt'];
+      tip = 'Enjoy plain and add fresh blueberries or cinnamon for flavor without added syrups.';
+    } else if (text.includes('blueberr') || text.includes('blackberr') || text.includes('berr')) {
+      examples = ['Wild blueberries', 'Fresh blackberries', 'Organic raspberries'];
+      tip = 'Combine with a source of healthy fat or protein to slow sugar absorption and boost uptake.';
+    } else if (text.includes('greens') || text.includes('kale') || text.includes('arugula')) {
+      examples = ['Fresh Tuscan kale', 'Wild arugula', 'Baby spinach', 'Swiss chard'];
+      tip = 'Dress with lemon juice and olive oil to increase non-heme iron bioavailability by up to 300%.';
+    } else if (text.includes('cinnamon') || text.includes('vinegar')) {
+      examples = ['Ceylon cinnamon powder', 'Raw unfiltered apple cider vinegar', 'Cinnamon herbal infusion'];
+      tip = 'Add a teaspoon of vinegar or cinnamon to meals containing starches to blunt glucose spikes.';
+    } else if (text.includes('garlic') || text.includes('leek')) {
+      examples = ['Freshly crushed garlic cloves', 'Sautéed leeks', 'Spring scallions'];
+      tip = 'Let crushed garlic sit for 5 minutes before cooking to allow active allicin synthesis to peak.';
+    } else if (text.includes('beetroot')) {
+      examples = ['Steamed beetroot wedges', 'Grated fresh beets', 'Golden beet salads'];
+      tip = 'Consume 2-3 hours before aerobic activity to support natural nitric oxide and vascular dilation.';
+    } else if (text.includes('ginger')) {
+      examples = ['Fresh grated ginger tea', 'Ginger-steamed carrots', 'Ginger root infusions'];
+      tip = 'Sip warm ginger tea 15 minutes before meals to stimulate digestive motility and ease reflux.';
+    } else if (text.includes('lentil') || text.includes('beans')) {
+      examples = ['Sprouted red lentils', 'French green lentils', 'Black beans'];
+      tip = 'Soak dried legumes with a pinch of cumin or kombu seaweed to make them gentle on digestion.';
+    } else {
+      examples = food.title.split(/&|,|\band\b/).map(s => s.trim()).filter(Boolean);
+      tip = 'Incorporate into your regular weekly rotation for balanced micronutrient diversity.';
+    }
+
+    const mealCategory = food.category || (
+      text.includes('breakfast') || text.includes('koko') || text.includes('pap') || text.includes('porridge') ? 'Breakfast' :
+      text.includes('lunch') || text.includes('rice') || text.includes('stew') ? 'Lunch' :
+      text.includes('dinner') || text.includes('evening') ? 'Dinner' :
+      text.includes('snack') || text.includes('seeds') || text.includes('nuts') ? 'Healthy Snacks' :
+      text.includes('tea') || text.includes('drink') || text.includes('broth') ? 'Drinks' :
+      'Core Nutrition'
+    );
+
+    return {
+      title: food.title,
+      mealCategory,
+      shortReason,
+      examples: examples.slice(0, 4),
+      tip,
+      clinicalNote: clinicalReason ? summarizeClinicalRationale(clinicalReason) : (sentences.length > 1 ? sentences.slice(1).join(' ') : cleanDesc),
+      badge: food.badge
+    };
+  };
+
+  // Helper to extract clean, grounded data for Nutrition & Meals blueprints
+  const getMealBlueprintData = (comb: { id: string; title: string; description: string; badge?: string }) => {
+    const cleanTitle = comb.title.replace(/^[🌅🥗🍽️🍏❤️🌱🔋💪📉\s]+/g, '').trim();
+    const benefits = getCombinationBenefits(comb);
+    
+    let mealType = 'Synergy Pairing';
+    let ingredients: string[] = [];
+    let tip = '';
+
+    if (comb.id.includes('breakfast')) {
+      mealType = 'Breakfast Blueprint';
+      ingredients = ['Protein (Eggs or Plant Source)', 'Complex Grain (Oats or Sweet Potato)', 'Probiotic Base (Yogurt or Ferment)', 'Mineral Seeds / Nuts'];
+      tip = 'Eat within 90 minutes of waking to anchor cortisol cycles and sustain morning focus.';
+    } else if (comb.id.includes('lunch')) {
+      mealType = 'Lunch Blueprint';
+      ingredients = ['Lean Protein (Salmon, Poultry or Tofu)', 'Slow-Release Grain (Brown Rice or Quinoa)', 'Fibrous Greens', 'Cold-Pressed Dressing'];
+      tip = 'Include leafy greens first to coat the intestinal wall and prevent afternoon brain fog.';
+    } else if (comb.id.includes('dinner')) {
+      mealType = 'Dinner Blueprint';
+      ingredients = ['Gentle Protein (Fish, Lentils, or Tempeh)', 'Light Carb (Squash or Steamed Roots)', 'Tender Steamed Vegetables', 'Healthy Lipid Drizzle'];
+      tip = 'Finish dinner 3 hours prior to sleep to protect esophageal tone and improve nocturnal recovery.';
+    } else if (comb.id.includes('snack')) {
+      mealType = 'Smart Snack Blueprint';
+      ingredients = ['Crunchy Seed or Nut Base', 'Hydrating Vegetable or Fresh Berry', 'Prebiotic Fiber'];
+      tip = 'Pair raw fiber with healthy lipids to maintain steady glucose without mid-day slumps.';
+    } else if (comb.id.includes('iron-vitc')) {
+      mealType = 'Nutrient Synergy';
+      ingredients = ['Plant-Based Iron (Lentils or Pumpkin Seeds)', 'Fresh Vitamin C (Citrus, Bell Pepper, or Berries)'];
+      tip = 'Squeeze fresh lemon juice over cooked legumes immediately prior to serving.';
+    } else if (comb.id.includes('fat-vitamins')) {
+      mealType = 'Nutrient Synergy';
+      ingredients = ['Vitamins A, D, E, K (Leafy Greens or Broccoli)', 'Healthy Lipids (Extra Virgin Olive Oil or Avocado)'];
+      tip = 'Never consume fat-soluble vitamins raw and fat-free; lipids are required for intestinal uptake.';
+    } else if (comb.id.includes('carb-fiber-protein')) {
+      mealType = 'Glycemic Shield';
+      ingredients = ['Complex Carbohydrate', 'Soluble Dietary Fiber', 'Clean Protein Cushion'];
+      tip = 'Never eat naked fast carbs on an empty stomach; wrap them in fiber or protein.';
+    } else if (comb.id.includes('potassium-magnesium')) {
+      mealType = 'Cardioprotective Duo';
+      ingredients = ['Potassium Source (Avocado, Banana)', 'Magnesium Source (Pumpkin Seeds, Cacao Nibs)'];
+      tip = 'This mineral duo helps balance cellular osmotic pumps to support natural blood pressure.';
+    } else if (comb.id.includes('fiber-sterols')) {
+      mealType = 'Lipid Optimization';
+      ingredients = ['Soluble Beta-Glucans (Oat Bran or Chia)', 'Monounsaturated Fats (Olive Oil or Avocado)'];
+      tip = 'Viscous beta-glucans physically bind excess circulating biliary cholesterol in the bowel.';
+    } else if (comb.id.includes('ginger-steamed')) {
+      mealType = 'Digestive Comfort';
+      ingredients = ['Soft Steamed Low-FODMAP Vegetables', 'Grated Fresh Ginger Root'];
+      tip = 'Active gingerols promote gastric emptying and soothe stomach spasms.';
+    } else {
+      ingredients = ['Tailored Macronutrient Core', 'Synergistic Micronutrients'];
+      tip = 'Combines complementary whole foods for elevated bioavailability.';
+    }
+
+    const sentences = comb.description.split(/(?<=[.!?])\s+/).filter(Boolean);
+    const shortReason = sentences[0] || comb.description;
+
+    return {
+      cleanTitle,
+      mealType,
+      shortReason,
+      ingredients,
+      tip,
+      benefits,
+      badge: comb.badge
+    };
+  };
+
+  // Helper to extract clean, grounded data for Hydration cards
+  const getHydrationTipData = (tip: string, idx: number) => {
+    const text = tip.toLowerCase();
+    let title = `Hydration Guideline ${idx + 1}`;
+    let timing = 'Daily Protocol';
+    let shortReason = '';
+    let practicalAction = '';
+
+    if (text.includes('waking') || text.includes('wake') || text.includes('250ml')) {
+      title = 'Morning Wake-Up Glass';
+      timing = 'Upon Waking';
+      shortReason = 'Rehydrates vascular organs and jumpstarts liver toxin clearance after overnight fluid loss.';
+      practicalAction = 'Drink 250–350 ml of room-temperature or warm water before morning coffee or food.';
+    } else if (text.includes('gradually') || text.includes('pacing') || text.includes('throughout')) {
+      title = 'Steady Daytime Pacing';
+      timing = 'Throughout the Day';
+      shortReason = 'Prevents urinary filter overload and electrolyte dilution by distributing fluid absorption evenly.';
+      practicalAction = 'Keep a water bottle nearby and take moderate sips every 30–45 minutes instead of chugging.';
+    } else if (text.includes('urine') || text.includes('color') || text.includes('straw')) {
+      title = 'Hydration Color Check';
+      timing = 'Daily Bio-Feedback';
+      shortReason = 'Urine color is your most direct visual bio-indicator of hydration and cellular electrolyte balance.';
+      practicalAction = 'Aim for a pale straw color. Clear urine indicates mineral flushing; dark amber signals dehydration.';
+    } else if (text.includes('kidney') || text.includes('urine output') || text.includes('match') || text.includes('swelling')) {
+      title = 'Renal Fluid Tracking';
+      timing = 'Kidney Protocol';
+      shortReason = 'Protects compromised nephrons and avoids fluid accumulation in lungs and lower extremities.';
+      practicalAction = 'Track fluid intake against urine volume to ensure fluid balance stays within safe clinical limits.';
+    } else if (text.includes('salt') || text.includes('lemon') || text.includes('exercise') || text.includes('sodium')) {
+      title = 'Electrolyte Workout Shield';
+      timing = 'During Active Training';
+      shortReason = 'Maintains cellular sodium and potassium pump gradients during heavy perspiration and movement.';
+      practicalAction = 'Add a pinch of unrefined mineral salt and a squeeze of fresh lemon to your workout water bottle.';
+    } else {
+      title = `Hydration Habit ${idx + 1}`;
+      timing = 'Daily Habit';
+      const sentences = tip.split(/(?<=[.!?])\s+/).filter(Boolean);
+      shortReason = sentences[0] || tip;
+      practicalAction = sentences.length > 1 ? sentences.slice(1).join(' ') : 'Sip fluids regularly across your waking day.';
+    }
+
+    return {
+      title,
+      timing,
+      shortReason,
+      practicalAction,
+      clinicalNote: tip
+    };
+  };
+
+  // Helper to extract clean, grounded data for Exercise routine cards
+  const getExerciseCardData = (item: string, idx: number) => {
+    try {
+      const parsed = JSON.parse(item);
+      const name = parsed.name || `Exercise Routine ${idx + 1}`;
+      const duration = parsed.duration || '20-30 mins';
+      const frequency = parsed.frequency || '3-4 days/week';
+      const intensity = parsed.intensity || 'Moderate';
+      const caloriesBurned = parsed.caloriesBurned || 120;
+      const safetyNotes = parsed.safetyNotes || 'Maintain steady breathing and pause if you experience discomfort.';
+      
+      const text = name.toLowerCase();
+      let shortReason = 'Promotes cardiovascular endurance and boosts resting metabolic rate safely.';
+      let formTip = safetyNotes;
+
+      if (text.includes('brisk walk') || text.includes('walking')) {
+        shortReason = 'Low-impact cardiovascular conditioning that enhances capillary density and glucose uptake without joint stress.';
+        formTip = 'Keep eyes forward, shoulders relaxed, and swing arms naturally with an upright posture.';
+      } else if (text.includes('squat') || text.includes('push-up') || text.includes('bodyweight')) {
+        shortReason = 'Preserves lean muscle mass and reinforces joint bone density through controlled functional resistance.';
+        formTip = 'Keep your core braced, breathe out through the exertion phase, and avoid locking knees or elbows.';
+      } else if (text.includes('swim') || text.includes('water')) {
+        shortReason = 'Buoyancy eliminates joint impact while providing 360-degree resistance for full-body cardiac and muscle tone.';
+        formTip = 'Focus on long, smooth gliding strokes with synchronized rhythmic exhalation into the water.';
+      } else if (text.includes('cycling') || text.includes('bike')) {
+        shortReason = 'Builds quadricep and hamstring power while supporting smooth knee joint synovial fluid circulation.';
+        formTip = 'Adjust saddle height so your knee retains a slight 15-degree bend at the bottom of each stroke.';
+      } else if (text.includes('yoga') || text.includes('mobility') || text.includes('stretch')) {
+        shortReason = 'Downregulates sympathetic nervous system overdrive and preserves spinal flexion and ligament elasticity.';
+        formTip = 'Never force a stretch past mild tension; synchronize steady nasal inhalations with each opening movement.';
+      } else if (text.includes('interval') || text.includes('hiit') || text.includes('cardio')) {
+        shortReason = 'Stimulates mitochondrial biogenesis and elevates post-exercise oxygen consumption (EPOC).';
+        formTip = 'Warm up thoroughly for 5 minutes and strictly monitor heart rate within target training zones.';
+      }
+
+      return {
+        name,
+        duration,
+        frequency,
+        intensity,
+        caloriesBurned,
+        shortReason,
+        formTip,
+        safetyNotes
+      };
+    } catch {
+      return {
+        name: `Movement Routine ${idx + 1}`,
+        duration: '20 mins',
+        frequency: '3 days/week',
+        intensity: 'Moderate',
+        caloriesBurned: 100,
+        shortReason: item,
+        formTip: 'Perform at a comfortable, sustainable pace and maintain normal breathing.',
+        safetyNotes: item
+      };
+    }
+  };
+
+  // Helper to extract clean, grounded data for Lifestyle cards
+  const getLifestyleCardData = (tip: { id: string; title: string; description: string; badge?: string }) => {
+    let cleanDesc = tip.description;
+    let clinicalReason = '';
+
+    if (tip.description.includes('\n\n• Clinical Reason: ')) {
+      [cleanDesc, clinicalReason] = tip.description.split('\n\n• Clinical Reason: ');
+    } else if (tip.description.includes('• Clinical Reason: ')) {
+      [cleanDesc, clinicalReason] = tip.description.split('• Clinical Reason: ');
+    }
+
+    const sentences = cleanDesc
+      .replace(/^[•\s\-\*]+/g, '')
+      .split(/(?<=[.!?])\s+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    let shortReason = sentences[0] || cleanDesc;
+    let practicalAction = sentences.length > 1 ? sentences.slice(1).join(' ') : 'Incorporate into your daily wellness routine.';
+
+    const text = `${tip.title} ${tip.description}`.toLowerCase();
+    let categoryTag = tip.badge || 'Daily Habit';
+
+    if (text.includes('sleep') || text.includes('circadian') || text.includes('melatonin') || text.includes('light')) {
+      categoryTag = tip.badge || 'Sleep & Rest';
+      if (!shortReason || shortReason.length < 15) {
+        shortReason = 'Supports restful sleep cycles, cellular repair, and daytime focus.';
+      }
+    } else if (text.includes('stress') || text.includes('cortisol') || text.includes('breathing') || text.includes('nervous')) {
+      categoryTag = tip.badge || 'Stress Balance';
+      if (!shortReason || shortReason.length < 15) {
+        shortReason = 'Calms the nervous system and lowers everyday tension.';
+      }
+    } else if (text.includes('chew') || text.includes('bed') || text.includes('gerd') || text.includes('reflux') || text.includes('gastro')) {
+      categoryTag = tip.badge || 'Digestive Health';
+      if (!shortReason || shortReason.length < 15) {
+        shortReason = 'Promotes smooth digestion and prevents nighttime discomfort.';
+      }
+    } else if (text.includes('protein') || text.includes('muscle') || text.includes('meal')) {
+      categoryTag = tip.badge || 'Meal Timing';
+      if (!shortReason || shortReason.length < 15) {
+        shortReason = 'Maintains steady energy levels throughout the day.';
+      }
+    } else if (text.includes('nitric oxide') || text.includes('vascular') || text.includes('endothelial')) {
+      categoryTag = tip.badge || 'Circulation';
+      if (!shortReason || shortReason.length < 15) {
+        shortReason = 'Supports blood vessel elasticity and healthy blood flow.';
+      }
+    }
+
+    const clinicalNote = clinicalReason 
+      ? summarizeClinicalRationale(clinicalReason)
+      : (sentences.length > 2 ? sentences.slice(2).join(' ') : cleanDesc);
+
+    return {
+      title: tip.title,
+      categoryTag,
+      shortReason,
+      practicalAction,
+      clinicalNote,
+      badge: tip.badge
+    };
+  };
+
   const navigationSections = [
     { id: 'card-foods-to-eat', label: 'Foods to Eat', icon: Apple, color: 'text-emerald-500' },
     { id: 'card-foods-to-avoid', label: 'Foods to Avoid', icon: ShieldAlert, color: 'text-amber-500' },
-    { id: 'card-food-combinations', label: 'Combinations', icon: Sparkles, color: 'text-purple-500' },
+    { id: 'card-food-combinations', label: 'Nutrition & Meals', icon: Sparkles, color: 'text-purple-500' },
     { id: 'card-hydration', label: 'Hydration', icon: Droplet, color: 'text-blue-500' },
     { id: 'card-exercise', label: 'Exercise', icon: Dumbbell, color: 'text-orange-500' },
     { id: 'card-lifestyle', label: 'Lifestyle Tips', icon: Lightbulb, color: 'text-teal-500' },
@@ -577,19 +1056,21 @@ export default function RecommendationsPage() {
           <div className="lg:col-span-8 flex flex-col gap-8" id="recs-right-content">
             
             {/* SECTION 1: FOODS TO EAT */}
-            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-foods-to-eat">
-              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-emerald-50/15 dark:bg-emerald-950/10 p-6">
+            <Card className="border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl overflow-hidden bg-white dark:bg-slate-900" id="card-foods-to-eat">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-emerald-50/20 dark:bg-emerald-950/15 p-5 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl">
+                  <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl flex-shrink-0">
                     <Apple className="w-5 h-5" />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Foods to Eat</CardTitle>
-                    <CardDescription className="text-xs mt-0.5">Target ingredients optimized for your metabolic rate and wellness goals.</CardDescription>
+                  <div className="min-w-0">
+                    <CardTitle className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Foods to Eat</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                      Target ingredients and balanced options optimized for your clinical profile and wellness goals.
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-5 sm:p-6">
                 {recs.foodsToEat.length === 0 ? (
                   <EmptyState
                     title="No Food Recommendations Calculated"
@@ -597,9 +1078,10 @@ export default function RecommendationsPage() {
                     id="recs-eat-empty-state"
                   />
                 ) : recs.foodsToEat.some(f => f.category) ? (
-                  <div className="flex flex-col gap-8" id="eat-items-list-grouped">
+                  <div className="flex flex-col gap-7" id="eat-items-list-grouped">
                     {(['Breakfast', 'Lunch', 'Dinner', 'Healthy Snacks', 'Drinks'] as const).map((category) => {
-                      const categoryFoods = recs.foodsToEat.filter((f) => f.category === category);
+                      const maxOptions = (category === 'Healthy Snacks' || category === 'Drinks') ? 2 : 3;
+                      const categoryFoods = recs.foodsToEat.filter((f) => f.category === category).slice(0, maxOptions);
                       if (categoryFoods.length === 0) return null;
                       
                       const getCategoryIcon = (cat: string) => {
@@ -619,183 +1101,310 @@ export default function RecommendationsPage() {
                         }
                       };
 
-                      const primaryFood = categoryFoods[0];
-                      const alternativeFood = categoryFoods[1];
-
                       return (
-                        <div key={category} className="flex flex-col gap-4" id={`category-block-${category.toLowerCase().replace(' ', '-')}`}>
-                          <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                            <div className="p-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-100/60 dark:border-slate-800/40">
-                              {getCategoryIcon(category)}
+                        <div key={category} className="flex flex-col gap-3.5" id={`category-block-${category.toLowerCase().replace(' ', '-')}`}>
+                          {/* Category Header */}
+                          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1 bg-slate-100 dark:bg-slate-800 rounded-md text-slate-700 dark:text-slate-300">
+                                {getCategoryIcon(category)}
+                              </div>
+                              <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                {category === 'Healthy Snacks' ? 'Snack Options' : `${category} Options`}
+                              </h3>
                             </div>
-                            <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-                              {category === 'Healthy Snacks' ? 'Snacks' : category}
-                            </h3>
-                            {categoryFoods.length > 2 && (
-                              <span className="text-4xs px-2 py-0.5 font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-mono ml-auto">
-                                2 of {categoryFoods.length} shown
-                              </span>
-                            )}
+                            <span className="text-3xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
+                              {categoryFoods.length} {categoryFoods.length === 1 ? 'option' : 'options'}
+                            </span>
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Primary Choice */}
-                            {primaryFood && (
-                              <div 
-                                className="p-5 bg-white dark:bg-slate-900/60 border border-slate-150 dark:border-slate-800 rounded-2xl flex flex-col gap-3 shadow-xs hover:border-emerald-500/30 transition-all duration-300 group relative overflow-hidden"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-2xs uppercase tracking-wider">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                    <span>Primary Choice</span>
-                                  </div>
-                                  {primaryFood.badge && (
-                                    <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono">
-                                      {primaryFood.badge}
-                                    </span>
-                                  )}
-                                </div>
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                                  {primaryFood.title}
-                                </h4>
-                                <div className="text-xs leading-relaxed font-medium">
-                                  {renderDescriptionText(primaryFood.description)}
-                                </div>
-                              </div>
-                            )}
+                          {/* Responsive 2-column grid */}
+                          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                            {categoryFoods.map((food, fidx) => {
+                              const eatData = getEatCardData(food);
+                              const cardKey = `eat-${food.id}`;
+                              const isExpanded = Boolean(expandedCards[cardKey]);
 
-                            {/* Optional Alternative */}
-                            {alternativeFood && (
-                              <div 
-                                className="p-5 bg-slate-50/20 dark:bg-slate-950/20 border border-dashed border-slate-200 dark:border-slate-800/80 rounded-2xl flex flex-col gap-3 hover:border-emerald-500/20 hover:bg-white dark:hover:bg-slate-900/40 transition-all duration-300 group"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-bold text-2xs uppercase tracking-wider font-mono">
-                                    <CornerDownRight className="w-4 h-4 text-slate-400" />
-                                    <span>Optional Alternative</span>
+                              return (
+                                <div 
+                                  key={food.id}
+                                  className={`p-3.5 sm:p-5 rounded-2xl flex flex-col gap-2.5 sm:gap-3 transition-all duration-200 border ${
+                                    fidx === 0
+                                      ? 'bg-white dark:bg-slate-900/80 border-slate-200/90 dark:border-slate-800 hover:border-emerald-500/30 shadow-xs'
+                                      : 'bg-slate-50/40 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-800/70 hover:border-emerald-500/20'
+                                  }`}
+                                >
+                                  {/* Meta header */}
+                                  <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                        {fidx === 0 ? 'Primary' : 'Alternative'}
+                                      </span>
+                                      {eatData.badge && (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60 truncate">
+                                          {eatData.badge}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
                                   </div>
-                                  {alternativeFood.badge && (
-                                    <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono">
-                                      {alternativeFood.badge}
-                                    </span>
+
+                                  {/* Title */}
+                                  <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-slate-100 leading-snug break-words">
+                                    {eatData.title}
+                                  </h4>
+
+                                  {/* Short Reason */}
+                                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                                    {eatData.shortReason}
+                                  </p>
+
+                                  {/* Progressive Disclosure */}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleCard(cardKey)}
+                                    className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 min-h-[44px] cursor-pointer group transition-colors select-none"
+                                    aria-expanded={isExpanded}
+                                  >
+                                    <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
+                                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
+                                  </button>
+
+                                  {isExpanded && (
+                                    <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
+                                      {eatData.examples.length > 0 && (
+                                        <div className="flex flex-col gap-1.5">
+                                          <span className="text-4xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                            Examples & Ingredients
+                                          </span>
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {eatData.examples.map((ex, i) => (
+                                              <span key={i} className="inline-flex items-center text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50 font-medium">
+                                                {ex}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {eatData.tip && (
+                                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                          <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                          <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Tip:</strong> {eatData.tip}</span>
+                                        </div>
+                                      )}
+
+                                      <div className="p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/15 dark:border-emerald-500/20 text-slate-600 dark:text-slate-400">
+                                        <span className="font-bold text-emerald-700 dark:text-emerald-300 block mb-1">Clinical Context</span>
+                                        <p>{eatData.clinicalNote}</p>
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
-                                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                                  {alternativeFood.title}
-                                </h4>
-                                <div className="text-xs leading-relaxed font-medium">
-                                  {renderDescriptionText(alternativeFood.description)}
-                                </div>
-                              </div>
-                            )}
+                              );
+                            })}
                           </div>
                         </div>
                       );
                     })}
 
-                    {/* Uncategorized Fallback */}
-                    {recs.foodsToEat.filter((f) => !f.category).length > 0 && (
-                      <div className="flex flex-col gap-4" id="category-block-uncategorized">
-                        <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                          <CheckCircle2 className="w-4 h-4 text-slate-400" />
-                          <h3 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">Other Suggestions</h3>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {recs.foodsToEat.filter((f) => !f.category).slice(0, 2).map((food, fidx) => (
-                            <div 
-                              key={food.id} 
-                              className={`p-5 rounded-2xl flex flex-col gap-3 transition-all duration-300 group ${
-                                fidx === 0 
-                                  ? 'bg-white dark:bg-slate-900/60 border border-slate-150 dark:border-slate-800 hover:border-emerald-500/30' 
-                                  : 'bg-slate-50/20 dark:bg-slate-950/20 border border-dashed border-slate-200 dark:border-slate-800/80 hover:border-emerald-500/20 hover:bg-white dark:hover:bg-slate-900/40'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-bold text-2xs uppercase tracking-wider">
-                                  {fidx === 0 ? (
-                                    <>
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                      <span>Primary Suggestion</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CornerDownRight className="w-4 h-4 text-slate-400" />
-                                      <span>Alternative Suggestion</span>
-                                    </>
-                                  )}
+                    {/* Uncategorized fallback */}
+                    {recs.foodsToEat.filter((f) => !f.category).length > 0 && (() => {
+                      const additionalStaples = recs.foodsToEat.filter((f) => !f.category).slice(0, 5);
+                      return (
+                        <div className="flex flex-col gap-3.5" id="category-block-uncategorized">
+                          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                            <div className="flex items-center gap-2">
+                              <Apple className="w-4 h-4 text-emerald-500" />
+                              <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Additional Nutrition Staples</h3>
+                            </div>
+                            <span className="text-3xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
+                              {additionalStaples.length} {additionalStaples.length === 1 ? 'option' : 'options'}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                            {additionalStaples.map((food, fidx) => {
+                            const eatData = getEatCardData(food);
+                            const cardKey = `eat-${food.id}`;
+                            const isExpanded = Boolean(expandedCards[cardKey]);
+
+                            return (
+                              <div 
+                                key={food.id}
+                                className={`p-3.5 sm:p-5 rounded-2xl flex flex-col gap-2.5 sm:gap-3 transition-all duration-200 border ${
+                                  fidx === 0
+                                    ? 'bg-white dark:bg-slate-900/80 border-slate-200/90 dark:border-slate-800 hover:border-emerald-500/30 shadow-xs'
+                                    : 'bg-slate-50/40 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-800/70 hover:border-emerald-500/20'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                      {eatData.mealCategory}
+                                    </span>
+                                    {eatData.badge && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60 truncate">
+                                        {eatData.badge}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
                                 </div>
-                                {food.badge && (
-                                  <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-450 font-mono">
-                                    {food.badge}
-                                  </span>
+                                <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-slate-100 leading-snug break-words">
+                                  {eatData.title}
+                                </h4>
+                                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                                  {eatData.shortReason}
+                                </p>
+                                
+                                <button
+                                  type="button"
+                                  onClick={() => toggleCard(cardKey)}
+                                  className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 min-h-[44px] cursor-pointer group transition-colors select-none"
+                                  aria-expanded={isExpanded}
+                                >
+                                  <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
+                                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isExpanded && (
+                                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
+                                    {eatData.examples.length > 0 && (
+                                      <div className="flex flex-col gap-1.5">
+                                        <span className="text-4xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                          Examples & Ingredients
+                                        </span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {eatData.examples.map((ex, i) => (
+                                            <span key={i} className="inline-flex items-center text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50 font-medium">
+                                              {ex}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {eatData.tip && (
+                                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                        <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                        <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Tip:</strong> {eatData.tip}</span>
+                                      </div>
+                                    )}
+
+                                    <div className="p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/15 dark:border-emerald-500/20 text-slate-600 dark:text-slate-400">
+                                      <span className="font-bold text-emerald-700 dark:text-emerald-300 block mb-1">Clinical Context</span>
+                                      <p>{eatData.clinicalNote}</p>
+                                    </div>
+                                  </div>
                                 )}
                               </div>
-                              <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{food.title}</h4>
-                              <div className="text-xs leading-relaxed font-medium">
-                                {renderDescriptionText(food.description)}
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="eat-items-list">
-                    {recs.foodsToEat.slice(0, 2).map((food, fidx) => (
-                      <div 
-                        key={food.id} 
-                        className={`p-5 rounded-2xl flex flex-col gap-3 transition-all duration-300 group ${
-                          fidx === 0 
-                            ? 'bg-white dark:bg-slate-900/60 border border-slate-150 dark:border-slate-800 hover:border-emerald-500/30 shadow-xs' 
-                            : 'bg-slate-50/20 dark:bg-slate-950/20 border border-dashed border-slate-200 dark:border-slate-800/80 hover:border-emerald-500/20 hover:bg-white dark:hover:bg-slate-900/40'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-bold text-2xs uppercase tracking-wider">
-                            {fidx === 0 ? (
-                              <>
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                <span>Primary Suggestion</span>
-                              </>
-                            ) : (
-                              <>
-                                <CornerDownRight className="w-4 h-4 text-slate-400" />
-                                <span>Alternative Suggestion</span>
-                              </>
-                            )}
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4" id="eat-items-list">
+                    {recs.foodsToEat.map((food, fidx) => {
+                      const eatData = getEatCardData(food);
+                      const cardKey = `eat-${food.id}`;
+                      const isExpanded = Boolean(expandedCards[cardKey]);
+
+                      return (
+                        <div 
+                          key={food.id}
+                          className={`p-3.5 sm:p-5 rounded-2xl flex flex-col gap-2.5 sm:gap-3 transition-all duration-200 border ${
+                            fidx === 0 
+                              ? 'bg-white dark:bg-slate-900/80 border-slate-200/90 dark:border-slate-800 hover:border-emerald-500/30 shadow-xs' 
+                              : 'bg-slate-50/40 dark:bg-slate-900/40 border-slate-200/70 dark:border-slate-800/70 hover:border-emerald-500/20'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                {eatData.mealCategory}
+                              </span>
+                              {eatData.badge && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60 truncate">
+                                  {eatData.badge}
+                                </span>
+                              )}
+                            </div>
+                            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
                           </div>
-                          {food.badge && (
-                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-slate-100 dark:bg-slate-800 text-slate-550 dark:text-slate-450 font-mono">
-                              {food.badge}
-                            </span>
+                          <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-slate-100 leading-snug break-words">
+                            {eatData.title}
+                          </h4>
+                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                            {eatData.shortReason}
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleCard(cardKey)}
+                            className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 min-h-[44px] cursor-pointer group transition-colors select-none"
+                            aria-expanded={isExpanded}
+                          >
+                            <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {isExpanded && (
+                            <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
+                              {eatData.examples.length > 0 && (
+                                <div className="flex flex-col gap-1.5">
+                                  <span className="text-4xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Examples & Ingredients
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {eatData.examples.map((ex, i) => (
+                                      <span key={i} className="inline-flex items-center text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50 font-medium">
+                                        {ex}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {eatData.tip && (
+                                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                  <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                  <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Tip:</strong> {eatData.tip}</span>
+                                </div>
+                              )}
+
+                              <div className="p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/15 dark:border-emerald-500/20 text-slate-600 dark:text-slate-400">
+                                <span className="font-bold text-emerald-700 dark:text-emerald-300 block mb-1">Clinical Context</span>
+                                <p>{eatData.clinicalNote}</p>
+                              </div>
+                            </div>
                           )}
                         </div>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{food.title}</h4>
-                        <div className="text-xs leading-relaxed font-medium">
-                          {renderDescriptionText(food.description)}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* SECTION 2: FOODS TO AVOID */}
-            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-foods-to-avoid">
-              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-amber-50/15 dark:bg-amber-950/10 p-6">
+            <Card className="border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl overflow-hidden bg-white dark:bg-slate-900" id="card-foods-to-avoid">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-amber-50/20 dark:bg-amber-950/15 p-5 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-2xl">
+                  <div className="p-2.5 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-2xl flex-shrink-0">
                     <ShieldAlert className="w-5 h-5" />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Foods to Avoid</CardTitle>
-                    <CardDescription className="text-xs mt-0.5">Potentially inflammatory, high-glycemic, or reactive items to exclude.</CardDescription>
+                  <div className="min-w-0">
+                    <CardTitle className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Foods to Avoid</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                      Items to limit, moderate, or exclude based on portion size, preparation, or your medical profile.
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-5 sm:p-6">
                 {recs.foodsToAvoid.length === 0 ? (
                   <EmptyState
                     title="No Avoidance Filters Triggered"
@@ -803,45 +1412,107 @@ export default function RecommendationsPage() {
                     id="recs-avoid-empty-state"
                   />
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="avoid-items-list">
-                    {recs.foodsToAvoid.map((food) => (
-                      <div 
-                        key={food.id} 
-                        className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-amber-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
-                      >
-                        <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                        <div className="flex flex-col gap-1.5 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{food.title}</h4>
-                            {food.badge && (
-                              <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono">
-                                {food.badge}
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4" id="avoid-items-list">
+                    {recs.foodsToAvoid.map((food) => {
+                      const avoidData = getAvoidCardData(food);
+                      const cardKey = `avoid-${food.id}`;
+                      const isExpanded = Boolean(expandedCards[cardKey]);
+
+                      return (
+                        <div 
+                          key={food.id} 
+                          className="p-3.5 sm:p-5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col gap-2.5 sm:gap-3 shadow-xs hover:border-amber-500/30 transition-all duration-200"
+                        >
+                          {/* Top meta row */}
+                          <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
+                                {avoidData.category}
                               </span>
-                            )}
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-bold uppercase tracking-wider border ${avoidData.statusStyle}`}>
+                                {avoidData.statusLabel}
+                              </span>
+                            </div>
+                            <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 flex-shrink-0" />
                           </div>
-                          {renderDescriptionText(food.description)}
+
+                          {/* Food Title */}
+                          <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
+                            {avoidData.title}
+                          </h4>
+
+                          {/* Short Reason */}
+                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                            {avoidData.shortReason}
+                          </p>
+
+                          {/* Progressive Disclosure */}
+                          <button
+                            type="button"
+                            onClick={() => toggleCard(cardKey)}
+                            className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 min-h-[44px] cursor-pointer group transition-colors select-none"
+                            aria-expanded={isExpanded}
+                          >
+                            <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {isExpanded && (
+                            <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
+                              {/* Grounded Examples */}
+                              {avoidData.examples.length > 0 && (
+                                <div className="flex flex-col gap-1.5">
+                                  <span className="text-4xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Examples to Limit or Avoid
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {avoidData.examples.map((ex, i) => (
+                                      <span key={i} className="inline-flex items-center text-xs px-2 py-0.5 rounded-md bg-amber-500/5 dark:bg-amber-950/30 text-slate-700 dark:text-slate-300 border border-amber-200/50 dark:border-amber-800/40 font-medium">
+                                        {ex}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Practical Tip / Healthier Alternative */}
+                              {avoidData.tip && (
+                                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                  <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                  <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Alternative:</strong> {avoidData.tip}</span>
+                                </div>
+                              )}
+
+                              <div className="p-3 rounded-xl bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/15 dark:border-amber-900/30 text-slate-600 dark:text-slate-400">
+                                <span className="font-bold text-amber-800 dark:text-amber-300 block mb-1">Clinical Context</span>
+                                <p>{avoidData.clinicalNote}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* SECTION 3: HEALTHY FOOD COMBINATIONS */}
-            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-food-combinations">
-              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-purple-50/15 dark:bg-purple-950/10 p-6">
+            {/* SECTION 3: NUTRITION & MEALS (HEALTHY FOOD COMBINATIONS) */}
+            <Card className="border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl overflow-hidden bg-white dark:bg-slate-900" id="card-food-combinations">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-purple-50/20 dark:bg-purple-950/15 p-5 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 rounded-2xl">
+                  <div className="p-2.5 bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 rounded-2xl flex-shrink-0">
                     <Sparkles className="w-5 h-5" />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Healthy Food Combinations</CardTitle>
-                    <CardDescription className="text-xs mt-0.5">Synergistic nutrition pairings designed to elevate bioavailability and suppress glycemic curves.</CardDescription>
+                  <div className="min-w-0">
+                    <CardTitle className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Nutrition & Meals</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                      Synergistic food combinations, meal blueprints, and nutrient pairings designed for your health profile.
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-5 sm:p-6">
                 {recs.healthyCombinations.length === 0 ? (
                   <EmptyState
                     title="No Combinations Generated"
@@ -849,121 +1520,222 @@ export default function RecommendationsPage() {
                     id="recs-combinations-empty-state"
                   />
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="combinations-items-list">
-                    {recs.healthyCombinations.map((comb) => (
-                      <div 
-                        key={comb.id} 
-                        className="p-5 bg-white dark:bg-slate-900/40 border border-slate-150 dark:border-slate-800/80 rounded-2xl flex flex-col gap-3.5 hover:border-purple-500/25 dark:hover:border-purple-500/30 transition-all duration-300 group"
-                      >
-                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/60 pb-2.5">
-                          <div className="flex items-center gap-2">
-                            <Heart className="w-4 h-4 text-purple-500 dark:text-purple-400 flex-shrink-0 group-hover:scale-115 transition-transform duration-300" />
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{comb.title}</h4>
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4" id="combinations-items-list">
+                    {recs.healthyCombinations.map((comb) => {
+                      const mealData = getMealBlueprintData(comb);
+                      const cardKey = `meal-${comb.id}`;
+                      const isExpanded = Boolean(expandedCards[cardKey]);
+
+                      return (
+                        <div 
+                          key={comb.id} 
+                          className="p-3.5 sm:p-5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col gap-2.5 sm:gap-3 shadow-xs hover:border-purple-500/30 transition-all duration-200"
+                        >
+                          {/* Top meta row */}
+                          <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+                                {mealData.mealType}
+                              </span>
+                              {mealData.badge && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60 truncate">
+                                  {mealData.badge}
+                                </span>
+                              )}
+                            </div>
+                            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
                           </div>
-                          {comb.badge && (
-                            <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-mono flex-shrink-0">
-                              {comb.badge}
-                            </span>
+
+                          {/* Meal Title */}
+                          <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
+                            {mealData.cleanTitle}
+                          </h4>
+
+                          {/* Short Reason */}
+                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                            {mealData.shortReason}
+                          </p>
+
+                          {/* Progressive Disclosure */}
+                          <button
+                            type="button"
+                            onClick={() => toggleCard(cardKey)}
+                            className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 min-h-[44px] cursor-pointer group transition-colors select-none"
+                            aria-expanded={isExpanded}
+                          >
+                            <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {isExpanded && (
+                            <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
+                              {/* Meal Components */}
+                              {mealData.ingredients.length > 0 && (
+                                <div className="flex flex-col gap-1.5">
+                                  <span className="text-4xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    Components & Pairings
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {mealData.ingredients.map((ing, i) => (
+                                      <span key={i} className="inline-flex items-center text-xs px-2 py-0.5 rounded-md bg-purple-500/5 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 border border-purple-200/50 dark:border-purple-800/40 font-medium">
+                                        {ing}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Practical Tip */}
+                              {mealData.tip && (
+                                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                  <Lightbulb className="w-3.5 h-3.5 text-purple-500 flex-shrink-0 mt-0.5" />
+                                  <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Meal tip:</strong> {mealData.tip}</span>
+                                </div>
+                              )}
+
+                              {mealData.benefits.map((benefit, bidx) => (
+                                <div key={bidx} className="p-2.5 rounded-xl bg-purple-500/5 dark:bg-purple-950/20 border border-purple-500/10 dark:border-purple-900/20 flex flex-col gap-0.5">
+                                  <span className="font-bold text-xs text-purple-900 dark:text-purple-200">{benefit.label}</span>
+                                  <p className="text-slate-600 dark:text-slate-400">{benefit.text}</p>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
-
-                        <div className="flex flex-col gap-3">
-                          {getCombinationBenefits(comb).map((benefit, bidx) => (
-                            <div key={bidx} className="flex items-start gap-2.5 text-2xs leading-relaxed text-slate-550 dark:text-slate-400 font-medium">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 dark:bg-purple-400 mt-1.5 flex-shrink-0" />
-                              <div>
-                                <strong className="font-extrabold text-slate-850 dark:text-slate-200">{benefit.label}</strong>
-                                <span className="text-slate-400 dark:text-slate-500 mx-1">•</span>
-                                <span>{benefit.text}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* SECTION 4: DAILY WATER INTAKE & HYDRATION */}
-            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-hydration">
-              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-blue-50/15 dark:bg-blue-950/10 p-6">
+            <Card className="border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl overflow-hidden bg-white dark:bg-slate-900" id="card-hydration">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-blue-50/20 dark:bg-blue-950/15 p-5 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-2xl">
+                  <div className="p-2.5 bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-2xl flex-shrink-0">
                     <Droplet className="w-5 h-5" />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Daily Water Intake</CardTitle>
-                    <CardDescription className="text-xs mt-0.5">Calculated hydration thresholds adjusted for body mass and routine fluid excretion.</CardDescription>
+                  <div className="min-w-0">
+                    <CardTitle className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Daily Water Intake & Hydration</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                      Fluid balance targets, pacing protocols, and hydration indicators calculated for your body mass and physical activity.
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 flex flex-col gap-6">
+              <CardContent className="p-5 sm:p-6 flex flex-col gap-6">
                 
-                {/* Premium Stat banner */}
-                <div className="flex flex-col md:flex-row items-stretch justify-between gap-6 p-5 bg-gradient-to-br from-blue-500/5 to-indigo-500/10 dark:from-blue-950/15 dark:to-indigo-950/10 border border-blue-100/40 dark:border-blue-900/25 rounded-2xl" id="water-stat-banner">
+                {/* Hydration Stat banner */}
+                <div className="flex flex-col md:flex-row items-stretch justify-between gap-5 p-5 bg-gradient-to-br from-blue-500/5 to-indigo-500/10 dark:from-blue-950/20 dark:to-indigo-950/15 border border-blue-100/60 dark:border-blue-900/30 rounded-2xl" id="water-stat-banner">
                   <div className="flex flex-col gap-1 max-w-lg justify-center">
                     <h4 className="text-sm font-bold text-blue-900 dark:text-blue-300">Hydration Baseline Overview</h4>
-                    <p className="text-xs text-blue-700/85 dark:text-blue-400/85 leading-relaxed font-medium">
+                    <p className="text-xs sm:text-sm text-blue-800/80 dark:text-blue-300/80 leading-relaxed font-normal">
                       {recs.waterIntake.description}
                     </p>
                   </div>
-                  <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-blue-200/50 dark:border-blue-900/40 shadow-xs justify-center md:self-center">
+                  <div className="flex items-center gap-4 bg-white dark:bg-slate-900/90 px-5 py-3 rounded-2xl border border-blue-200/50 dark:border-blue-900/40 shadow-xs justify-center self-start md:self-center">
                     <div className="text-center">
-                      <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 font-mono">{recs.waterIntake.liters}</span>
+                      <span className="text-2xl sm:text-3xl font-extrabold text-blue-600 dark:text-blue-400 font-mono">{recs.waterIntake.liters}</span>
                       <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-widest mt-0.5">Liters / Day</span>
                     </div>
                     <div className="h-8 w-px bg-slate-200 dark:bg-slate-800" />
                     <div className="text-center">
-                      <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 font-mono">{recs.waterIntake.cups}</span>
+                      <span className="text-2xl sm:text-3xl font-extrabold text-blue-600 dark:text-blue-400 font-mono">{recs.waterIntake.cups}</span>
                       <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 block uppercase tracking-widest mt-0.5">Cups / Day</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Therapeutic Hydration Tips</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" id="water-tips-list">
-                    {recs.waterIntake.tips.map((tip, idx) => (
-                      <div key={idx} className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-2.5">
-                        <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-mono font-bold text-2xs flex-shrink-0 mt-0.5">
-                          {idx + 1}
-                        </span>
-                        <p className="text-xs text-slate-500 dark:text-slate-450 leading-relaxed font-medium">{tip}</p>
-                      </div>
-                    ))}
+                {/* Hydration Habit Cards Grid */}
+                <div className="flex flex-col gap-3.5">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Therapeutic Hydration Guidelines</h4>
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" id="water-tips-list">
+                    {recs.waterIntake.tips.map((tip, idx) => {
+                      const hydData = getHydrationTipData(tip, idx);
+                      const cardKey = `water-${idx}`;
+                      const isExpanded = Boolean(expandedCards[cardKey]);
+
+                      return (
+                        <div 
+                          key={idx} 
+                          className="p-3.5 sm:p-5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col gap-2.5 sm:gap-3 shadow-xs hover:border-blue-500/30 transition-all duration-200"
+                        >
+                          <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20">
+                              {hydData.timing}
+                            </span>
+                            <Droplet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" />
+                          </div>
+
+                          <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
+                            {hydData.title}
+                          </h4>
+
+                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                            <strong className="font-semibold text-slate-800 dark:text-slate-200">Why it helps:</strong> {hydData.shortReason}
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleCard(cardKey)}
+                            className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 min-h-[44px] cursor-pointer group transition-colors select-none"
+                            aria-expanded={isExpanded}
+                          >
+                            <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+
+                          {isExpanded && (
+                            <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
+                              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                <Lightbulb className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+                                <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Tip:</strong> {hydData.practicalAction}</span>
+                              </div>
+
+                              <div className="p-3 rounded-xl bg-blue-500/5 dark:bg-blue-950/20 border border-blue-500/15 dark:border-blue-900/30 text-slate-600 dark:text-slate-400">
+                                <span className="font-bold text-blue-800 dark:text-blue-300 block mb-1">Clinical Context</span>
+                                <p>{hydData.clinicalNote}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* SECTION 5: EXERCISE RECOMMENDATIONS */}
-            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-exercise">
-              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-orange-50/15 dark:bg-orange-950/10 p-6">
+            <Card className="border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl overflow-hidden bg-white dark:bg-slate-900" id="card-exercise">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-orange-50/20 dark:bg-orange-950/15 p-5 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 rounded-2xl">
+                  <div className="p-2.5 bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 rounded-2xl flex-shrink-0">
                     <Dumbbell className="w-5 h-5" />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Exercise Plan</CardTitle>
-                    <CardDescription className="text-xs mt-0.5">Skeletal motion and cardiac base training custom-tailored to your clinical fitness level.</CardDescription>
+                  <div className="min-w-0">
+                    <CardTitle className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Exercise & Movement Plan</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                      Cardiovascular conditioning and active routines tailored to your clinical fitness level and movement tolerance.
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 flex flex-col gap-6">
+              <CardContent className="p-5 sm:p-6 flex flex-col gap-6">
                 
+                {/* Strategic stats overview */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100/80 dark:border-slate-850">
                     <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Strategy Type</span>
                     <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{recs.exercise.type}</span>
                   </div>
                   <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100/80 dark:border-slate-850">
-                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Weekly Freq</span>
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Weekly Frequency</span>
                     <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{recs.exercise.frequency}</span>
                   </div>
                   <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100/80 dark:border-slate-850">
-                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Session Limit</span>
+                    <span className="text-4xs text-slate-400 dark:text-slate-500 block font-bold uppercase tracking-widest mb-1">Session Target</span>
                     <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{recs.exercise.duration}</span>
                   </div>
                   <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 rounded-2xl border border-slate-100/80 dark:border-slate-850">
@@ -972,101 +1744,130 @@ export default function RecommendationsPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Suggested Micro-Routine</h4>
-                  <div className="flex flex-col gap-4.5" id="exercise-routines-list">
-                    {recs.exercise.routine.length === 0 ? (
-                      <EmptyState
-                        title="No Micro-Routines Recommended"
-                        description="Based on your cardiovascular baseline and region requirements, no dedicated active routines are currently active."
-                        id="recs-exercise-empty-state"
-                      />
-                    ) : (
-                      recs.exercise.routine.map((item, idx) => {
-                        try {
-                          const parsed = JSON.parse(item);
-                          return (
-                            <div key={idx} className="p-5 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex flex-col gap-4 hover:border-orange-500/20 hover:bg-white dark:hover:bg-slate-900/50 transition-all duration-300">
-                              <div className="flex justify-between items-start gap-4">
-                                <div className="flex items-start gap-3">
-                                  <div className="p-1.5 bg-orange-500/10 dark:bg-orange-950/55 rounded-xl border border-orange-500/20 flex-shrink-0 mt-0.5">
-                                    <CornerDownRight className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                                  </div>
-                                  <div>
-                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{parsed.name}</h4>
-                                    <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/10 text-2xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mt-2">
-                                      <span className="font-extrabold text-orange-600 dark:text-orange-400 uppercase tracking-widest text-4xs block mb-0.5">Safety Precaution</span>
-                                      {parsed.safetyNotes}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-end flex-shrink-0 text-right">
-                                  <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                                    ~{parsed.caloriesBurned} kcal
-                                  </span>
-                                  <span className="text-4xs font-bold text-slate-400 uppercase tracking-widest mt-1">Est. Burn</span>
-                                </div>
+                {/* Micro-Routines Responsive Grid */}
+                <div className="flex flex-col gap-3.5">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">Suggested Micro-Routines</h4>
+                  {recs.exercise.routine.length === 0 ? (
+                    <EmptyState
+                      title="No Micro-Routines Recommended"
+                      description="Based on your cardiovascular baseline and health profile, no dedicated active routines are currently active."
+                      id="recs-exercise-empty-state"
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4" id="exercise-routines-list">
+                      {recs.exercise.routine.map((item, idx) => {
+                        const exData = getExerciseCardData(item, idx);
+                        const cardKey = `ex-${idx}`;
+                        const isExpanded = Boolean(expandedCards[cardKey]);
+
+                        return (
+                          <div 
+                            key={idx} 
+                            className="p-3.5 sm:p-5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col gap-2.5 sm:gap-3 shadow-xs hover:border-orange-500/30 transition-all duration-200"
+                          >
+                            {/* Meta row */}
+                            <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20">
+                                {exData.intensity}
+                              </span>
+                              <span className="text-[11px] sm:text-xs font-extrabold text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
+                                ~{exData.caloriesBurned} kcal
+                              </span>
+                            </div>
+
+                            {/* Activity Title */}
+                            <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
+                              {exData.name}
+                            </h4>
+
+                            {/* Metrics Strip */}
+                            <div className="grid grid-cols-3 gap-1.5 py-2 border-y border-slate-100 dark:border-slate-800/60 text-xs">
+                              <div>
+                                <span className="text-4xs font-bold text-slate-400 uppercase tracking-widest block">Duration</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 text-3xs sm:text-xs truncate block">{exData.duration}</span>
                               </div>
-                              
-                              <div className="grid grid-cols-3 gap-3 pt-3.5 border-t border-slate-100 dark:border-slate-800/60 text-2xs font-semibold">
-                                <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                                  <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Duration</span>
-                                  <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.duration}</span>
-                                </div>
-                                <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                                  <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Frequency</span>
-                                  <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.frequency}</span>
-                                </div>
-                                <div className="bg-white dark:bg-slate-950/65 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                                  <span className="text-slate-400 block mb-0.5 text-3xs uppercase font-mono tracking-wider">Intensity</span>
-                                  <span className="text-slate-800 dark:text-slate-200 block truncate font-bold">{parsed.intensity}</span>
-                                </div>
+                              <div>
+                                <span className="text-4xs font-bold text-slate-400 uppercase tracking-widest block">Frequency</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 text-3xs sm:text-xs truncate block">{exData.frequency}</span>
+                              </div>
+                              <div>
+                                <span className="text-4xs font-bold text-slate-400 uppercase tracking-widest block">Intensity</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 text-3xs sm:text-xs truncate block">{exData.intensity}</span>
                               </div>
                             </div>
-                          );
-                        } catch (e) {
-                          return (
-                            <div key={idx} className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex gap-3 items-start text-left">
-                              <CornerDownRight className="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-                              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-bold">{item}</p>
-                            </div>
-                          );
-                        }
-                      })
-                    )}
-                  </div>
+
+                            {/* Short Reason */}
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                              <strong className="font-semibold text-slate-800 dark:text-slate-200">Why it helps:</strong> {exData.shortReason}
+                            </p>
+
+                            {/* Progressive Disclosure */}
+                            <button
+                              type="button"
+                              onClick={() => toggleCard(cardKey)}
+                              className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 min-h-[44px] cursor-pointer group transition-colors select-none"
+                              aria-expanded={isExpanded}
+                            >
+                              <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
+                              <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isExpanded && (
+                              <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
+                                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                  <CornerDownRight className="w-3.5 h-3.5 text-orange-500 flex-shrink-0 mt-0.5" />
+                                  <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Form tip:</strong> {exData.formTip}</span>
+                                </div>
+
+                                <div className="p-3 rounded-xl bg-orange-500/5 dark:bg-orange-950/20 border border-orange-500/15 dark:border-orange-900/30 text-slate-600 dark:text-slate-400">
+                                  <span className="font-bold text-orange-800 dark:text-orange-300 block mb-1">Safety & Form Notes</span>
+                                  <p>{exData.safetyNotes}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
+                {/* Precautions Alert Grid */}
                 {recs.exercise.precautions.length > 0 && (
-                  <div className="p-4.5 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex flex-col gap-2.5">
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 uppercase tracking-wider">
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                      <span>Clinical Movement Precautions</span>
-                    </span>
-                    <ul className="list-disc pl-5 text-xs text-slate-550 dark:text-slate-400 flex flex-col gap-2 leading-relaxed font-medium">
-                      {recs.exercise.precautions.map((pre, idx) => (
-                        <li key={idx}>{pre}</li>
+                  <div className="p-4 sm:p-5 bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/20 dark:border-amber-900/30 rounded-2xl flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Clinical Movement Precautions</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      {recs.exercise.precautions.map((pre, pidx) => (
+                        <div key={pidx} className="p-3 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-amber-200/50 dark:border-amber-800/30 text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-1.5" />
+                          <span className="leading-relaxed">{pre}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* SECTION 6: LIFESTYLE TIPS */}
-            <Card className="border border-slate-100 dark:border-slate-800/80 shadow-xs rounded-3xl overflow-hidden" id="card-lifestyle">
-              <CardHeader className="border-b border-slate-50 dark:border-slate-850/50 bg-teal-50/15 dark:bg-teal-950/10 p-6">
+            <Card className="border border-slate-200/80 dark:border-slate-800 shadow-xs rounded-3xl overflow-hidden bg-white dark:bg-slate-900" id="card-lifestyle">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-teal-50/20 dark:bg-teal-950/15 p-5 sm:p-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 rounded-2xl">
+                  <div className="p-2.5 bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 rounded-2xl flex-shrink-0">
                     <Lightbulb className="w-5 h-5" />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Lifestyle Adaptations</CardTitle>
-                    <CardDescription className="text-xs mt-0.5">Circadian and habit adaptations to assist biological markers and hormone regulation.</CardDescription>
+                  <div className="min-w-0">
+                    <CardTitle className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Lifestyle & Daily Habits</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                      Practical daily habits for quality sleep, stress balance, and natural recovery.
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-5 sm:p-6">
                 {recs.lifestyleTips.length === 0 ? (
                   <EmptyState
                     title="No Lifestyle Adaptations Triggered"
@@ -1074,26 +1875,72 @@ export default function RecommendationsPage() {
                     id="recs-lifestyle-empty-state"
                   />
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" id="lifestyle-items-list">
-                    {recs.lifestyleTips.map((tip) => (
-                      <div 
-                        key={tip.id} 
-                        className="p-4 bg-slate-50/40 dark:bg-slate-900/40 border border-slate-100/80 dark:border-slate-850 rounded-2xl flex items-start gap-3 hover:border-teal-500/25 hover:bg-white dark:hover:bg-slate-900/60 transition-all duration-300 group"
-                      >
-                        <ShieldCheck className="w-5 h-5 text-teal-500 dark:text-teal-400 flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
-                        <div className="flex flex-col gap-1.5 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{tip.title}</h4>
-                            {tip.badge && (
-                              <span className="text-4xs px-2 py-0.5 font-bold uppercase tracking-widest rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 font-mono">
-                                {tip.badge}
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4" id="lifestyle-items-list">
+                    {(() => {
+                      const seen = new Set<string>();
+                      const uniqueTips = recs.lifestyleTips.filter((tip) => {
+                        const key = tip.title.trim().toLowerCase();
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                      });
+
+                      return uniqueTips.map((tip) => {
+                        const lifeData = getLifestyleCardData(tip);
+                        const cardKey = `life-${tip.id}`;
+                        const isExpanded = Boolean(expandedCards[cardKey]);
+
+                        return (
+                          <div 
+                            key={tip.id} 
+                            className="p-3.5 sm:p-5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col gap-2.5 sm:gap-3 shadow-xs hover:border-teal-500/30 transition-all duration-200"
+                          >
+                            {/* Top meta */}
+                            <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">
+                                {lifeData.categoryTag}
                               </span>
+                              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-teal-500 flex-shrink-0" />
+                            </div>
+
+                            {/* Habit Title */}
+                            <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
+                              {lifeData.title}
+                            </h4>
+
+                            {/* Short Reason */}
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                              <strong className="font-semibold text-slate-800 dark:text-slate-200">Why it helps:</strong> {lifeData.shortReason}
+                            </p>
+
+                            {/* Progressive Disclosure */}
+                            <button
+                              type="button"
+                              onClick={() => toggleCard(cardKey)}
+                              className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 min-h-[44px] cursor-pointer group transition-colors select-none"
+                              aria-expanded={isExpanded}
+                            >
+                              <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
+                              <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isExpanded && (
+                              <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
+                                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                  <Lightbulb className="w-3.5 h-3.5 text-teal-500 flex-shrink-0 mt-0.5" />
+                                  <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Recommended action:</strong> {lifeData.practicalAction}</span>
+                                </div>
+
+                                <div className="p-3 rounded-xl bg-teal-500/5 dark:bg-teal-950/20 border border-teal-500/15 dark:border-teal-900/30 text-slate-600 dark:text-slate-400">
+                                  <span className="font-bold text-teal-800 dark:text-teal-300 block mb-1">Context & Details</span>
+                                  <p>{lifeData.clinicalNote}</p>
+                                </div>
+                              </div>
                             )}
                           </div>
-                          {renderDescriptionText(tip.description)}
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </CardContent>

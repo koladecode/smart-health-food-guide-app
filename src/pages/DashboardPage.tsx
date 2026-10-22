@@ -47,12 +47,15 @@ import {
   Trophy,
   Trash2,
   Play,
-  BarChart3
+  BarChart3,
+  ChevronDown,
+  RotateCcw
 } from 'lucide-react';
 import { useNavigation } from '../context/NavigationContext';
 import { useHealthProfile } from '../context/HealthProfileContext';
 import { useAuth } from '../context/AuthContext';
 import { generateRecommendations } from '../utils/recommendationEngine';
+import { buildDailyHealthPlan, DailyScheduleItem } from '../utils/dailyPlanEngine';
 import Button from '../components/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/Card';
 import Alert from '../components/Alert';
@@ -557,6 +560,29 @@ export default function DashboardPage() {
     localStorage.setItem(`health_plan_completed_night${uSuffix}`, planCompletedNight.toString());
   }, [planCompletedNight, uSuffix]);
 
+  // Daily Plan Date and Schedule States
+  const [planRotationOffset, setPlanRotationOffset] = useState<number>(() => {
+    const today = getTodayDateString();
+    const saved = localStorage.getItem(`smart_health_guide_plan_offset_${today}${uSuffix}`);
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  const [expandedScheduleId, setExpandedScheduleId] = useState<string | null>(null);
+
+  const [scheduleCompletions, setScheduleCompletions] = useState<Record<string, boolean>>(() => {
+    const today = getTodayDateString();
+    try {
+      const saved = localStorage.getItem(`smart_health_guide_schedule_completions_${today}${uSuffix}`);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {};
+  });
+
+  React.useEffect(() => {
+    const today = getTodayDateString();
+    localStorage.setItem(`smart_health_guide_schedule_completions_${today}${uSuffix}`, JSON.stringify(scheduleCompletions));
+  }, [scheduleCompletions, uSuffix]);
+
   // Daily Tracking States
   const WATER_KEY = `health_tracker_water${uSuffix}`;
   const WATER_TARGET_KEY = `health_tracker_water_target${uSuffix}`;
@@ -632,6 +658,16 @@ export default function DashboardPage() {
     setPlanCompletedAfternoon(localStorage.getItem(`health_plan_completed_afternoon_${user.id}`) === 'true');
     setPlanCompletedEvening(localStorage.getItem(`health_plan_completed_evening_${user.id}`) === 'true');
     setPlanCompletedNight(localStorage.getItem(`health_plan_completed_night_${user.id}`) === 'true');
+
+    const todayDate = getTodayDateString();
+    const savedPlanOffset = localStorage.getItem(`smart_health_guide_plan_offset_${todayDate}_${user.id}`);
+    setPlanRotationOffset(savedPlanOffset ? parseInt(savedPlanOffset, 10) : 0);
+
+    try {
+      const savedSchedCompletions = localStorage.getItem(`smart_health_guide_schedule_completions_${todayDate}_${user.id}`);
+      if (savedSchedCompletions) setScheduleCompletions(JSON.parse(savedSchedCompletions));
+      else setScheduleCompletions({});
+    } catch (e) {}
 
     const savedWater = localStorage.getItem(`health_tracker_water_${user.id}`);
     setWaterIntake(savedWater ? parseInt(savedWater, 10) : 1000);
@@ -1534,21 +1570,18 @@ export default function DashboardPage() {
               </>
               )}
 
-              {/* PRESERVED PERSONAL HEALTH OVERVIEW WORKSPACE */}
+              {/* YOUR DAILY HEALTH OVERVIEW WORKSPACE */}
               <div className="border-t border-slate-200/80 dark:border-slate-800/80 pt-8 mt-2 flex flex-col gap-8" id="personal-health-overview-section">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
                   <div>
-                    <h3 className="text-xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+                    <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
                       <Heart className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       Personal Health Overview & Daily Tracker
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-                      Individual biological parameters, active trackers, hydration goals, and custom health schedules.
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
+                      Track today's hydration, activity, nutrition, and wellness progress.
                     </p>
                   </div>
-                  <span className="text-3xs font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 tracking-wider w-fit">
-                    Preserved & Active
-                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -1601,17 +1634,13 @@ export default function DashboardPage() {
               )}
 
               {/* Top Banner Widget */}
-              <div className="p-6 sm:p-8 md:p-10 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xl shadow-emerald-600/10 border border-emerald-500/20 transition-all duration-300" id="overview-welcome-banner">
-                <div className="flex flex-col gap-2.5 max-w-xl text-left">
-                  <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3.5 py-1 rounded-full text-2xs font-extrabold uppercase tracking-wider text-emerald-50 border border-white/20 w-fit">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
-                    <span>Active Health Hub</span>
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight leading-tight text-white">
+              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xl shadow-emerald-600/10 border border-emerald-500/20 transition-all duration-300" id="overview-welcome-banner">
+                <div className="flex flex-col gap-2 max-w-xl text-left">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight text-white">
                     Hello, {userBio.name}!
                   </h2>
                   <p className="text-sm sm:text-base text-emerald-50/90 leading-relaxed font-normal">
-                    Track and optimize your daily health performance. View dynamic parameters, log exercise, and monitor nutrition targets.
+                    Log exercise, stay hydrated, and monitor your nutrition and daily wellness targets.
                   </p>
                 </div>
                 <Button variant="secondary" className="bg-white text-emerald-800 hover:bg-emerald-50 whitespace-nowrap font-extrabold px-5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-98 cursor-pointer border border-emerald-100" onClick={() => setIsModalOpen(true)} id="overview-add-workout-btn">
@@ -1632,351 +1661,474 @@ export default function DashboardPage() {
                   <div className="flex flex-col gap-6 text-left animate-fade-in" id="daily-health-tracking-center">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3.5">
                       <div>
-                        <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+                        <h3 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
                           <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                          Daily Health Tracking Center
+                          Daily Health Tracker
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-                          Monitor daily wellness milestones in real-time.
+                          Track hydration, exercise, meals, and overall wellness score.
                         </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xs font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 tracking-wider">
-                          Local Sync Active
-                        </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="trackers-cards-container">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-4 gap-4 lg:gap-5" id="trackers-cards-container">
                       
                       {/* Card 1: Water Intake */}
-                      <Card id="tracker-card-water" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
-                        <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-1 min-w-0">
-                              <span className="text-2xs text-blue-600 dark:text-blue-400 uppercase tracking-widest font-black">Hydration</span>
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Daily Water Intake</span>
-                              <div className="flex items-baseline gap-1 mt-1">
-                                <span className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">{waterIntake}</span>
-                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">/ {waterTarget} ml</span>
+                      <Card id="tracker-card-water" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
+                        <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full gap-4 text-left">
+                          <div>
+                            {/* Card Header: Category + Title & Icon */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                                  Hydration
+                                </span>
+                                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">
+                                  Water Intake
+                                </h4>
+                              </div>
+                              <div className="p-2 sm:p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-100 dark:border-blue-900/40 shrink-0">
+                                <Droplet className="w-4 h-4 sm:w-5 sm:h-5" />
                               </div>
                             </div>
-                            <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl border border-blue-100 dark:border-blue-900/30 flex-shrink-0">
-                              <Droplet className="w-5 h-5" />
-                            </div>
-                          </div>
 
-                          {/* Circular Progress Gauge */}
-                          <div className="flex items-center gap-4 py-2 border-t border-slate-100 dark:border-slate-800/60">
-                            <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
-                              <svg className="w-full h-full transform -rotate-90">
-                                <circle
-                                  cx="24"
-                                  cy="24"
-                                  r="19"
-                                  className="stroke-slate-100 dark:stroke-slate-800"
-                                  strokeWidth="3.5"
-                                  fill="transparent"
-                                />
-                                <circle
-                                  cx="24"
-                                  cy="24"
-                                  r="19"
-                                  className="stroke-blue-500 transition-all duration-500 ease-out"
-                                  strokeWidth="3.5"
-                                  fill="transparent"
-                                  strokeDasharray={2 * Math.PI * 19}
-                                  strokeDashoffset={2 * Math.PI * 19 - (waterPercent / 100) * 2 * Math.PI * 19}
-                                  strokeLinecap="round"
-                                />
-                              </svg>
-                              <span className="absolute text-3xs font-extrabold text-blue-600 dark:text-blue-400">{waterPercent}%</span>
-                            </div>
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate">
-                                {waterPercent >= 100 ? 'Target Reached! 💧' : 'Stay Hydrated'}
+                            {/* Main Metric & Unit (Displayed First) */}
+                            <div className="mt-3 flex items-baseline gap-1.5 flex-wrap">
+                              <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 dark:text-white tabular-nums">
+                                {waterIntake.toLocaleString()}
                               </span>
-                              <button
-                                type="button"
-                                className="text-3xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors text-left font-extrabold"
-                                onClick={() => {
-                                  const targets = [2000, 2500, 3000, 3500, 4000];
-                                  const nextIdx = (targets.indexOf(waterTarget) + 1) % targets.length;
-                                  setWaterTarget(targets[nextIdx]);
-                                }}
-                              >
-                                Adjust Target ({waterTarget}ml)
-                              </button>
+                              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                / {waterTarget.toLocaleString()} ml
+                              </span>
+                            </div>
+
+                            {/* Progress Gauge & Status / Empty State */}
+                            <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/70 flex items-center gap-3">
+                              <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
+                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 44 44">
+                                  <circle
+                                    cx="22"
+                                    cy="22"
+                                    r="18"
+                                    className="stroke-slate-100 dark:stroke-slate-800"
+                                    strokeWidth="3.5"
+                                    fill="transparent"
+                                  />
+                                  <circle
+                                    cx="22"
+                                    cy="22"
+                                    r="18"
+                                    className="stroke-blue-500 transition-all duration-500 ease-out"
+                                    strokeWidth="3.5"
+                                    fill="transparent"
+                                    strokeDasharray={2 * Math.PI * 18}
+                                    strokeDashoffset={2 * Math.PI * 18 - (waterPercent / 100) * 2 * Math.PI * 18}
+                                    strokeLinecap="round"
+                                  />
+                                </svg>
+                                <span className="absolute text-[10px] font-extrabold text-blue-600 dark:text-blue-400">
+                                  {waterPercent}%
+                                </span>
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                  {waterIntake === 0
+                                    ? 'No water logged yet'
+                                    : waterPercent >= 100
+                                    ? 'Target Reached! 💧'
+                                    : `${waterPercent}% of daily goal`}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors text-left flex items-center gap-1 cursor-pointer w-fit mt-0.5"
+                                  onClick={() => {
+                                    const targets = [2000, 2500, 3000, 3500, 4000];
+                                    const nextIdx = (targets.indexOf(waterTarget) + 1) % targets.length;
+                                    setWaterTarget(targets[nextIdx]);
+                                  }}
+                                  title="Change daily hydration goal"
+                                >
+                                  <span>Goal: {waterTarget.toLocaleString()}ml</span>
+                                  <span className="text-[10px]">▾</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
 
                           {/* Interactive Controls */}
-                          <div className="flex items-center gap-2 mt-auto pt-1">
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/70 flex items-center gap-2 mt-auto">
                             <button
+                              type="button"
                               onClick={() => setWaterIntake(prev => Math.max(0, prev - 250))}
-                              className="flex-1 flex items-center justify-center h-8 px-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 transition-all font-extrabold text-3xs cursor-pointer active:scale-95"
+                              disabled={waterIntake === 0}
+                              className={`flex-1 flex items-center justify-center min-h-[38px] px-2 rounded-xl border font-bold text-xs transition-all ${
+                                waterIntake === 0
+                                  ? 'opacity-40 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40 text-slate-400 border-slate-200 dark:border-slate-800'
+                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 cursor-pointer active:scale-95'
+                              }`}
                               title="Subtract 250ml"
+                              aria-label="Subtract 250ml water"
                             >
-                              <Minus className="w-3 h-3 mr-1" /> 250
+                              <Minus className="w-3 h-3 mr-1 shrink-0" />
+                              <span>250</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => setWaterIntake(prev => prev + 250)}
-                              className="flex-1 flex items-center justify-center h-8 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 border border-blue-200/60 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 transition-all font-extrabold text-3xs cursor-pointer active:scale-95"
+                              className="flex-1 flex items-center justify-center min-h-[38px] px-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-950/60 border border-blue-200/60 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 transition-all font-bold text-xs cursor-pointer active:scale-95"
                               title="Add 250ml"
+                              aria-label="Add 250ml water"
                             >
-                              <Plus className="w-3 h-3 mr-1" /> 250
+                              <Plus className="w-3 h-3 mr-1 shrink-0" />
+                              <span>250</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => setWaterIntake(prev => prev + 500)}
-                              className="flex-1 flex items-center justify-center h-8 px-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-all font-extrabold text-3xs cursor-pointer active:scale-95"
+                              className="flex-1 flex items-center justify-center min-h-[38px] px-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-all font-bold text-xs cursor-pointer active:scale-95"
                               title="Add 500ml"
+                              aria-label="Add 500ml water"
                             >
-                              <Plus className="w-3 h-3 mr-1" /> 500
+                              <Plus className="w-3 h-3 mr-1 shrink-0" />
+                              <span>500</span>
                             </button>
                           </div>
                         </CardContent>
                       </Card>
 
-                      {/* Card 2: Exercise Progress */}
-                      <Card id="tracker-card-exercise" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
-                        <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-1 min-w-0">
-                              <span className="text-2xs text-orange-600 dark:text-orange-400 uppercase tracking-widest font-black">Fitness</span>
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Exercise Progress</span>
-                              <div className="flex items-baseline gap-1 mt-1">
-                                <span className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">{exerciseProgress}</span>
-                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">/ {exerciseTarget} mins</span>
+                      {/* Card 2: Fitness / Exercise */}
+                      <Card id="tracker-card-exercise" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
+                        <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full gap-4 text-left">
+                          <div>
+                            {/* Card Header: Category + Title & Icon */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                                  Fitness
+                                </span>
+                                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">
+                                  Exercise
+                                </h4>
+                              </div>
+                              <div className="p-2 sm:p-2.5 bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-xl border border-orange-100 dark:border-orange-900/40 shrink-0">
+                                <Flame className="w-4 h-4 sm:w-5 sm:h-5" />
                               </div>
                             </div>
-                            <div className="p-2.5 bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-2xl border border-orange-100 dark:border-orange-900/30 flex-shrink-0">
-                              <Flame className="w-5 h-5" />
-                            </div>
-                          </div>
 
-                          {/* Circular Progress Gauge */}
-                          <div className="flex items-center gap-4 py-2 border-t border-slate-100 dark:border-slate-800/60">
-                            <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
-                              <svg className="w-full h-full transform -rotate-90">
-                                <circle
-                                  cx="24"
-                                  cy="24"
-                                  r="19"
-                                  className="stroke-slate-100 dark:stroke-slate-800"
-                                  strokeWidth="3.5"
-                                  fill="transparent"
-                                />
-                                <circle
-                                  cx="24"
-                                  cy="24"
-                                  r="19"
-                                  className="stroke-orange-500 transition-all duration-500 ease-out"
-                                  strokeWidth="3.5"
-                                  fill="transparent"
-                                  strokeDasharray={2 * Math.PI * 19}
-                                  strokeDashoffset={2 * Math.PI * 19 - (exercisePercent / 100) * 2 * Math.PI * 19}
-                                  strokeLinecap="round"
-                                />
-                              </svg>
-                              <span className="absolute text-3xs font-extrabold text-orange-600 dark:text-orange-400">{exercisePercent}%</span>
-                            </div>
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate">
-                                {exercisePercent >= 100 ? 'Goal Completed! 🔥' : 'Keep Moving'}
+                            {/* Main Metric & Unit (Displayed First) */}
+                            <div className="mt-3 flex items-baseline gap-1.5 flex-wrap">
+                              <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 dark:text-white tabular-nums">
+                                {exerciseProgress}
                               </span>
-                              <button
-                                type="button"
-                                className="text-3xs text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors text-left font-extrabold"
-                                onClick={() => {
-                                  const targets = [15, 30, 45, 60, 90];
-                                  const nextIdx = (targets.indexOf(exerciseTarget) + 1) % targets.length;
-                                  setExerciseTarget(targets[nextIdx]);
-                                }}
-                              >
-                                Adjust Target ({exerciseTarget}m)
-                              </button>
+                              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                / {exerciseTarget} min
+                              </span>
+                            </div>
+
+                            {/* Progress Gauge & Status / Empty State */}
+                            <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/70 flex items-center gap-3">
+                              <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
+                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 44 44">
+                                  <circle
+                                    cx="22"
+                                    cy="22"
+                                    r="18"
+                                    className="stroke-slate-100 dark:stroke-slate-800"
+                                    strokeWidth="3.5"
+                                    fill="transparent"
+                                  />
+                                  <circle
+                                    cx="22"
+                                    cy="22"
+                                    r="18"
+                                    className="stroke-orange-500 transition-all duration-500 ease-out"
+                                    strokeWidth="3.5"
+                                    fill="transparent"
+                                    strokeDasharray={2 * Math.PI * 18}
+                                    strokeDashoffset={2 * Math.PI * 18 - (exercisePercent / 100) * 2 * Math.PI * 18}
+                                    strokeLinecap="round"
+                                  />
+                                </svg>
+                                <span className="absolute text-[10px] font-extrabold text-orange-600 dark:text-orange-400">
+                                  {exercisePercent}%
+                                </span>
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                  {exerciseProgress === 0
+                                    ? 'No exercise logged yet'
+                                    : exercisePercent >= 100
+                                    ? 'Goal Completed! 🔥'
+                                    : `${exercisePercent}% of daily target`}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="text-[11px] font-extrabold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors text-left flex items-center gap-1 cursor-pointer w-fit mt-0.5"
+                                  onClick={() => {
+                                    const targets = [15, 30, 45, 60, 90];
+                                    const nextIdx = (targets.indexOf(exerciseTarget) + 1) % targets.length;
+                                    setExerciseTarget(targets[nextIdx]);
+                                  }}
+                                  title="Change daily exercise goal"
+                                >
+                                  <span>Goal: {exerciseTarget}m</span>
+                                  <span className="text-[10px]">▾</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
 
                           {/* Interactive Controls */}
-                          <div className="flex items-center gap-2 mt-auto pt-1">
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/70 flex items-center gap-2 mt-auto">
                             <button
+                              type="button"
                               onClick={() => setExerciseProgress(prev => Math.max(0, prev - 10))}
-                              className="flex-1 flex items-center justify-center h-8 px-2 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 transition-all font-extrabold text-3xs cursor-pointer active:scale-95"
+                              disabled={exerciseProgress === 0}
+                              className={`flex-1 flex items-center justify-center min-h-[38px] px-2 rounded-xl border font-bold text-xs transition-all ${
+                                exerciseProgress === 0
+                                  ? 'opacity-40 cursor-not-allowed bg-slate-50 dark:bg-slate-800/40 text-slate-400 border-slate-200 dark:border-slate-800'
+                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 cursor-pointer active:scale-95'
+                              }`}
                               title="Subtract 10 mins"
+                              aria-label="Subtract 10 minutes exercise"
                             >
-                              <Minus className="w-3 h-3 mr-1" /> 10m
+                              <Minus className="w-3 h-3 mr-1 shrink-0" />
+                              <span>10m</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => setExerciseProgress(prev => prev + 10)}
-                              className="flex-1 flex items-center justify-center h-8 px-2 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/40 dark:hover:bg-orange-950/60 border border-orange-200/60 dark:border-orange-900/40 text-orange-600 dark:text-orange-400 transition-all font-extrabold text-3xs cursor-pointer active:scale-95"
+                              className="flex-1 flex items-center justify-center min-h-[38px] px-2 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/40 dark:hover:bg-orange-950/60 border border-orange-200/60 dark:border-orange-900/40 text-orange-600 dark:text-orange-400 transition-all font-bold text-xs cursor-pointer active:scale-95"
                               title="Add 10 mins"
+                              aria-label="Add 10 minutes exercise"
                             >
-                              <Plus className="w-3 h-3 mr-1" /> 10m
+                              <Plus className="w-3 h-3 mr-1 shrink-0" />
+                              <span>10m</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => setIsModalOpen(true)}
-                              className="flex-1 flex items-center justify-center h-8 px-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-xs transition-all font-extrabold text-3xs cursor-pointer whitespace-nowrap active:scale-95"
-                              title="Record detailed session"
+                              className="flex-1 flex items-center justify-center min-h-[38px] px-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-xs transition-all font-bold text-xs cursor-pointer active:scale-95 whitespace-nowrap"
+                              title="Log structured exercise session"
                             >
-                              <Dumbbell className="w-3 h-3 mr-1" /> Log
+                              <Dumbbell className="w-3.5 h-3.5 mr-1 shrink-0" />
+                              <span>Log</span>
                             </button>
                           </div>
                         </CardContent>
                       </Card>
 
-                      {/* Card 3: Healthy Meals Completed */}
-                      <Card id="tracker-card-meals" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
-                        <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-1 min-w-0">
-                              <span className="text-2xs text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-black">Diet & Nutrition</span>
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Meals Completed</span>
-                              <div className="flex items-baseline gap-1 mt-1">
-                                <span className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">{mealsCompleted}</span>
-                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">/ {mealsTarget} Healthy Meals</span>
+                      {/* Card 3: Nutrition & Meals */}
+                      <Card id="tracker-card-meals" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
+                        <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full gap-4 text-left">
+                          <div>
+                            {/* Card Header: Category + Title & Icon */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                  Nutrition
+                                </span>
+                                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">
+                                  Meals Tracked
+                                </h4>
+                              </div>
+                              <div className="p-2 sm:p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/40 shrink-0">
+                                <Utensils className="w-4 h-4 sm:w-5 sm:h-5" />
                               </div>
                             </div>
-                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 flex-shrink-0">
-                              <Utensils className="w-5 h-5" />
-                            </div>
-                          </div>
 
-                          {/* Circular Progress Gauge */}
-                          <div className="flex items-center gap-4 py-2 border-t border-slate-100 dark:border-slate-800/60">
-                            <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
-                              <svg className="w-full h-full transform -rotate-90">
-                                <circle
-                                  cx="24"
-                                  cy="24"
-                                  r="19"
-                                  className="stroke-slate-100 dark:stroke-slate-800"
-                                  strokeWidth="3.5"
-                                  fill="transparent"
-                                />
-                                <circle
-                                  cx="24"
-                                  cy="24"
-                                  r="19"
-                                  className="stroke-emerald-500 transition-all duration-500 ease-out"
-                                  strokeWidth="3.5"
-                                  fill="transparent"
-                                  strokeDasharray={2 * Math.PI * 19}
-                                  strokeDashoffset={2 * Math.PI * 19 - (mealsPercent / 100) * 2 * Math.PI * 19}
-                                  strokeLinecap="round"
-                                />
-                              </svg>
-                              <span className="absolute text-3xs font-extrabold text-emerald-600 dark:text-emerald-400">{mealsCompleted}/3</span>
-                            </div>
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate">
-                                {mealsPercent >= 100 ? 'All Meals Healthy! 🍏' : 'Track Healthy Plates'}
+                            {/* Main Metric & Unit (Displayed First) */}
+                            <div className="mt-3 flex items-baseline gap-1.5 flex-wrap">
+                              <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950 dark:text-white tabular-nums">
+                                {mealsCompleted}
                               </span>
-                              <button
-                                type="button"
-                                className="text-3xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left font-extrabold"
-                                onClick={() => {
-                                  setActiveTab('nutrition');
-                                }}
-                              >
-                                Explore Safe Foods
-                              </button>
+                              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                / {mealsTarget} meals
+                              </span>
+                            </div>
+
+                            {/* Progress Gauge & Status / Empty State */}
+                            <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/70 flex items-center gap-3">
+                              <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
+                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 44 44">
+                                  <circle
+                                    cx="22"
+                                    cy="22"
+                                    r="18"
+                                    className="stroke-slate-100 dark:stroke-slate-800"
+                                    strokeWidth="3.5"
+                                    fill="transparent"
+                                  />
+                                  <circle
+                                    cx="22"
+                                    cy="22"
+                                    r="18"
+                                    className="stroke-emerald-500 transition-all duration-500 ease-out"
+                                    strokeWidth="3.5"
+                                    fill="transparent"
+                                    strokeDasharray={2 * Math.PI * 18}
+                                    strokeDashoffset={2 * Math.PI * 18 - (mealsPercent / 100) * 2 * Math.PI * 18}
+                                    strokeLinecap="round"
+                                  />
+                                </svg>
+                                <span className="absolute text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">
+                                  {mealsCompleted}/{mealsTarget}
+                                </span>
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                  {mealsCompleted === 0
+                                    ? 'No meals marked yet'
+                                    : mealsPercent >= 100
+                                    ? 'All 3 Meals Done! 🍏'
+                                    : `${mealsCompleted} of ${mealsTarget} completed`}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left flex items-center gap-1 cursor-pointer w-fit mt-0.5"
+                                  onClick={() => setActiveTab('nutrition')}
+                                  title="View nutrition guidelines"
+                                >
+                                  <span>Safe Foods</span>
+                                  <ChevronRight className="w-3 h-3" />
+                                </button>
+                              </div>
                             </div>
                           </div>
 
-                          {/* Interactive Controls - Toggles */}
-                          <div className="flex items-center gap-1.5 mt-auto pt-1">
+                          {/* Interactive Controls - 3 Meal Toggles */}
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/70 flex items-center gap-1.5 mt-auto">
                             <button
+                              type="button"
                               onClick={() => setMealBreakfast(!mealBreakfast)}
-                              className={`flex-1 h-8 px-1 rounded-xl text-3xs font-black border transition-all cursor-pointer text-center flex items-center justify-center ${
+                              className={`flex-1 min-h-[38px] px-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1 active:scale-95 ${
                                 mealBreakfast
-                                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-xs'
-                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/80'
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/80'
                               }`}
+                              title={mealBreakfast ? 'Mark breakfast incomplete' : 'Mark breakfast completed'}
                             >
-                              Breakfast
+                              {mealBreakfast && <CheckCircle2 className="w-3 h-3 shrink-0" />}
+                              <span>B'fast</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => setMealLunch(!mealLunch)}
-                              className={`flex-1 h-8 px-1 rounded-xl text-3xs font-black border transition-all cursor-pointer text-center flex items-center justify-center ${
+                              className={`flex-1 min-h-[38px] px-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1 active:scale-95 ${
                                 mealLunch
-                                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-xs'
-                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/80'
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/80'
                               }`}
+                              title={mealLunch ? 'Mark lunch incomplete' : 'Mark lunch completed'}
                             >
-                              Lunch
+                              {mealLunch && <CheckCircle2 className="w-3 h-3 shrink-0" />}
+                              <span>Lunch</span>
                             </button>
                             <button
+                              type="button"
                               onClick={() => setMealDinner(!mealDinner)}
-                              className={`flex-1 h-8 px-1 rounded-xl text-3xs font-black border transition-all cursor-pointer text-center flex items-center justify-center ${
+                              className={`flex-1 min-h-[38px] px-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1 active:scale-95 ${
                                 mealDinner
-                                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-xs'
-                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/80'
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-slate-700/80'
                               }`}
+                              title={mealDinner ? 'Mark dinner incomplete' : 'Mark dinner completed'}
                             >
-                              Dinner
+                              {mealDinner && <CheckCircle2 className="w-3 h-3 shrink-0" />}
+                              <span>Dinner</span>
                             </button>
                           </div>
                         </CardContent>
                       </Card>
 
-                      {/* Card 4: Daily Wellness Score */}
-                      <Card id="tracker-card-wellness" className="border border-slate-200/80 dark:border-slate-800/80 bg-gradient-to-br from-emerald-500/5 to-teal-500/10 dark:from-emerald-950/20 dark:to-teal-950/30 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
-                        <CardContent className="p-6 flex flex-col justify-between h-full gap-5 text-left">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-1 min-w-0">
-                              <span className="text-2xs text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-black">Scorecard</span>
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Wellness Score</span>
-                              <div className="flex items-baseline gap-1 mt-1">
-                                <span className="text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">{dailyWellnessScore}</span>
-                                <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">/ 100 pts</span>
+                      {/* Card 4: Wellness Score */}
+                      <Card id="tracker-card-wellness" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
+                        <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full gap-4 text-left">
+                          <div>
+                            {/* Card Header: Category + Title & Icon */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[11px] font-extrabold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                                  Wellness
+                                </span>
+                                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-tight">
+                                  Daily Score
+                                </h4>
+                              </div>
+                              <div className="p-2 sm:p-2.5 bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 rounded-xl border border-teal-100 dark:border-teal-900/40 shrink-0">
+                                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                               </div>
                             </div>
-                            <div className="p-2.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-500/20 flex-shrink-0">
-                              <Sparkles className="w-5 h-5" />
+
+                            {/* Main Metric & Unit (Displayed First) */}
+                            <div className="mt-3 flex items-baseline gap-1.5 flex-wrap">
+                              <span className="text-2xl sm:text-3xl font-black tracking-tight text-teal-600 dark:text-teal-400 tabular-nums">
+                                {dailyWellnessScore}
+                              </span>
+                              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                / 100 points
+                              </span>
+                            </div>
+
+                            {/* Progress Gauge & Status / Empty State */}
+                            <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/70 flex items-center gap-3">
+                              <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
+                                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 44 44">
+                                  <circle
+                                    cx="22"
+                                    cy="22"
+                                    r="18"
+                                    className="stroke-slate-100 dark:stroke-slate-800"
+                                    strokeWidth="3.5"
+                                    fill="transparent"
+                                  />
+                                  <circle
+                                    cx="22"
+                                    cy="22"
+                                    r="18"
+                                    className="stroke-teal-500 transition-all duration-500 ease-out"
+                                    strokeWidth="3.5"
+                                    fill="transparent"
+                                    strokeDasharray={2 * Math.PI * 18}
+                                    strokeDashoffset={2 * Math.PI * 18 - (dailyWellnessScore / 100) * 2 * Math.PI * 18}
+                                    strokeLinecap="round"
+                                  />
+                                </svg>
+                                <span className="absolute text-[10px] font-extrabold text-teal-700 dark:text-teal-300">
+                                  {dailyWellnessScore}%
+                                </span>
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                  {dailyWellnessScore === 0 && 'Ready to begin tracking'}
+                                  {dailyWellnessScore > 0 && dailyWellnessScore < 40 && 'Starting strong! 🚀'}
+                                  {dailyWellnessScore >= 40 && dailyWellnessScore < 70 && 'Steady progress! 👍'}
+                                  {dailyWellnessScore >= 70 && dailyWellnessScore < 100 && 'Almost completed! 💪'}
+                                  {dailyWellnessScore === 100 && 'Perfect score! 🎉'}
+                                </span>
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                  {dailyWellnessScore === 0
+                                    ? 'Log water, activity, & meals'
+                                    : '30% Water • 40% Fit • 30% Diet'}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
-                          {/* Large Circular Gauge Dial */}
-                          <div className="flex items-center gap-4 py-2 border-t border-slate-100 dark:border-slate-800/60">
-                            <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
-                              <svg className="w-full h-full transform -rotate-90">
-                                <circle
-                                  cx="24"
-                                  cy="24"
-                                  r="19"
-                                  className="stroke-slate-100 dark:stroke-slate-800"
-                                  strokeWidth="3.5"
-                                  fill="transparent"
-                                />
-                                <circle
-                                  cx="24"
-                                  cy="24"
-                                  r="19"
-                                  className="stroke-emerald-600 dark:stroke-emerald-400 transition-all duration-500 ease-out"
-                                  strokeWidth="3.5"
-                                  fill="transparent"
-                                  strokeDasharray={2 * Math.PI * 19}
-                                  strokeDashoffset={2 * Math.PI * 19 - (dailyWellnessScore / 100) * 2 * Math.PI * 19}
-                                  strokeLinecap="round"
-                                />
-                              </svg>
-                              <span className="absolute text-3xs font-extrabold text-emerald-700 dark:text-emerald-300">{dailyWellnessScore}%</span>
+                          {/* Metric breakdown summary pills */}
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/70 grid grid-cols-3 gap-1.5 mt-auto">
+                            <div className="p-1.5 rounded-lg bg-blue-50/60 dark:bg-blue-950/30 text-center">
+                              <span className="block text-[10px] font-bold text-blue-600 dark:text-blue-400">Water</span>
+                              <span className="text-2xs font-extrabold text-slate-700 dark:text-slate-300">{waterPercent}%</span>
                             </div>
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-3xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-black">Dynamic Status</span>
-                              <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200 leading-snug truncate">
-                                {dailyWellnessScore === 0 && "Ready to start?"}
-                                {dailyWellnessScore > 0 && dailyWellnessScore < 40 && "Starting strong! 🚀"}
-                                {dailyWellnessScore >= 40 && dailyWellnessScore < 70 && "Steady progress! 👍"}
-                                {dailyWellnessScore >= 70 && dailyWellnessScore < 100 && "Almost peak day! 💪"}
-                                {dailyWellnessScore === 100 && "Perfect wellness day! 🎉"}
-                              </p>
+                            <div className="p-1.5 rounded-lg bg-orange-50/60 dark:bg-orange-950/30 text-center">
+                              <span className="block text-[10px] font-bold text-orange-600 dark:text-orange-400">Fitness</span>
+                              <span className="text-2xs font-extrabold text-slate-700 dark:text-slate-300">{exercisePercent}%</span>
                             </div>
-                          </div>
-
-                          <div className="text-4xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider leading-normal mt-auto pt-1">
-                            Weights: Hydration (30%) • Fitness (40%) • Nutrition (30%)
+                            <div className="p-1.5 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/30 text-center">
+                              <span className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Meals</span>
+                              <span className="text-2xs font-extrabold text-slate-700 dark:text-slate-300">{mealsPercent}%</span>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -2009,358 +2161,279 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4" id="history-cards-container">
-                      {displayHistory.length === 0 ? (
-                        <div className="col-span-full py-4 w-full" id="history-empty">
-                          <EmptyState
-                            title="No Historical Progress Logs"
-                            description="Your daily tracker history is currently clear. Complete your first health and habit metrics today to begin compiling your weekly progress trends!"
-                            id="history-empty-state"
-                          />
+                    {displayHistory.length === 0 ? (
+                      <div className="py-4 w-full" id="history-empty">
+                        <EmptyState
+                          title="No Historical Progress Logs"
+                          description="Your daily tracker history is currently clear. Complete your first health and habit metrics today to begin compiling your weekly progress trends!"
+                          id="history-empty-state"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        {/* Mobile & Tablet Card Layout (Preserved strictly below lg) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:hidden gap-4" id="history-cards-container">
+                          {displayHistory.map((entry) => {
+                            const originalIdx = history.findIndex(h => h.date === entry.date);
+                            let trend: 'improving' | 'stable' | 'declining' = 'stable';
+                            if (originalIdx > 0) {
+                              const currentScore = history[originalIdx].wellnessScore;
+                              const previousScore = history[originalIdx - 1].wellnessScore;
+                              if (currentScore > previousScore) trend = 'improving';
+                              else if (currentScore < previousScore) trend = 'declining';
+                            }
+
+                            return (
+                              <Card key={`mob-${entry.date}`} id={`history-card-${entry.date}`} className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
+                                <div className="p-4 flex flex-col gap-3 h-full text-left">
+                                  <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800/60 pb-2.5">
+                                    <span className="text-2xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                      {formatHistoryDate(entry.date).split(',')[0]}
+                                    </span>
+                                    <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                                      {formatHistoryDate(entry.date).split(',')[1] || formatHistoryDate(entry.date)}
+                                    </span>
+                                    <div className="mt-1">
+                                      {trend === 'improving' && (
+                                        <span className="inline-flex items-center gap-1 text-3xs font-extrabold uppercase bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-900/40">
+                                          <TrendingUp className="w-2.5 h-2.5 flex-shrink-0" /> Improving
+                                        </span>
+                                      )}
+                                      {trend === 'stable' && (
+                                        <span className="inline-flex items-center gap-1 text-3xs font-extrabold uppercase bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400 px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-slate-700/60">
+                                          <Minus className="w-2.5 h-2.5 flex-shrink-0" /> Stable
+                                        </span>
+                                      )}
+                                      {trend === 'declining' && (
+                                        <span className="inline-flex items-center gap-1 text-3xs font-extrabold uppercase bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-900/40">
+                                          <TrendingDown className="w-2.5 h-2.5 flex-shrink-0" /> Declining
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2.5 py-1">
+                                    <div className="text-2xl font-extrabold text-slate-950 dark:text-white tracking-tight">
+                                      {entry.wellnessScore}
+                                    </div>
+                                    <div className="flex flex-col leading-none">
+                                      <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase font-black tracking-wider">Score</span>
+                                      <span className="text-2xs font-extrabold text-slate-700 dark:text-slate-300 mt-0.5">
+                                        {entry.wellnessScore >= 80 ? 'Excellent' : entry.wellnessScore >= 50 ? 'Good' : 'Incomplete'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex flex-col gap-2 text-2xs text-slate-600 dark:text-slate-400 font-medium mt-auto pt-2.5 border-t border-slate-100 dark:border-slate-800/60">
+                                    <div className="flex items-center justify-between">
+                                      <span className="flex items-center gap-1 min-w-0">
+                                        <Droplet className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                                        <span className="truncate">Hydration</span>
+                                      </span>
+                                      <span className="font-extrabold text-slate-900 dark:text-slate-100">
+                                        {Math.round(entry.waterIntake / 100) / 10}L
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="flex items-center gap-1 min-w-0">
+                                        <Flame className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                                        <span className="truncate">Fitness</span>
+                                      </span>
+                                      <span className="font-extrabold text-slate-900 dark:text-slate-100">
+                                        {entry.exerciseProgress}m
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="flex items-center gap-1 min-w-0">
+                                        <Utensils className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                                        <span className="truncate">Nutrition</span>
+                                      </span>
+                                      <span className="font-extrabold text-slate-900 dark:text-slate-100">
+                                        {entry.mealsCompleted}/{entry.mealsTarget}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </Card>
+                            );
+                          })}
                         </div>
-                      ) : (
-                        displayHistory.map((entry) => {
-                          const originalIdx = history.findIndex(h => h.date === entry.date);
-                          
-                          // Calculate trend relative to previous day
-                          let trend: 'improving' | 'stable' | 'declining' = 'stable';
-                          if (originalIdx > 0) {
-                            const currentScore = history[originalIdx].wellnessScore;
-                            const previousScore = history[originalIdx - 1].wellnessScore;
-                            if (currentScore > previousScore) trend = 'improving';
-                            else if (currentScore < previousScore) trend = 'declining';
-                          }
 
-                          return (
-                            <Card key={entry.date} id={`history-card-${entry.date}`} className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
-                              <div className="p-4 flex flex-col gap-3 h-full text-left">
-                                {/* Card Header: Date & Trend */}
-                                <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-800/60 pb-2.5">
-                                  <span className="text-2xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                    {formatHistoryDate(entry.date).split(',')[0]}
-                                  </span>
-                                  <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
-                                    {formatHistoryDate(entry.date).split(',')[1] || formatHistoryDate(entry.date)}
-                                  </span>
-                                  
-                                  {/* Trend Indicator Badge */}
-                                  <div className="mt-1">
-                                    {trend === 'improving' && (
-                                      <span className="inline-flex items-center gap-1 text-3xs font-extrabold uppercase bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-900/40">
-                                        <TrendingUp className="w-2.5 h-2.5 flex-shrink-0" /> Improving
-                                      </span>
-                                    )}
-                                    {trend === 'stable' && (
-                                      <span className="inline-flex items-center gap-1 text-3xs font-extrabold uppercase bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400 px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-slate-700/60">
-                                        <Minus className="w-2.5 h-2.5 flex-shrink-0" /> Stable
-                                      </span>
-                                    )}
-                                    {trend === 'declining' && (
-                                      <span className="inline-flex items-center gap-1 text-3xs font-extrabold uppercase bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-900/40">
-                                        <TrendingDown className="w-2.5 h-2.5 flex-shrink-0" /> Declining
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Wellness Score Badge / Circle */}
-                                <div className="flex items-center gap-2.5 py-1">
-                                  <div className="text-2xl font-extrabold text-slate-950 dark:text-white tracking-tight">
-                                    {entry.wellnessScore}
-                                  </div>
-                                  <div className="flex flex-col leading-none">
-                                    <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase font-black tracking-wider">Score</span>
-                                    <span className="text-2xs font-extrabold text-slate-700 dark:text-slate-300 mt-0.5">
-                                      {entry.wellnessScore >= 80 ? 'Excellent' : entry.wellnessScore >= 50 ? 'Good' : 'Incomplete'}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Daily Metrics breakdown */}
-                                <div className="flex flex-col gap-2 text-2xs text-slate-600 dark:text-slate-400 font-medium mt-auto pt-2.5 border-t border-slate-100 dark:border-slate-800/60">
-                                  {/* Water */}
-                                  <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-1 min-w-0">
-                                      <Droplet className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
-                                      <span className="truncate">Hydration</span>
-                                    </span>
-                                    <span className="font-extrabold text-slate-900 dark:text-slate-100">
-                                      {Math.round(entry.waterIntake / 100) / 10}L
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Exercise */}
-                                  <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-1 min-w-0">
-                                      <Flame className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                                      <span className="truncate">Fitness</span>
-                                    </span>
-                                    <span className="font-extrabold text-slate-900 dark:text-slate-100">
-                                      {entry.exerciseProgress}m
-                                    </span>
-                                  </div>
-
-                                  {/* Meals */}
-                                  <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-1 min-w-0">
-                                      <Utensils className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                                      <span className="truncate">Nutrition</span>
-                                    </span>
-                                    <span className="font-extrabold text-slate-900 dark:text-slate-100">
-                                      {entry.mealsCompleted}/{entry.mealsTarget}
-                                    </span>
-                                  </div>
-                                </div>
+                        {/* Desktop Layout: Compact Timeline & Trends Chart */}
+                        <div className="hidden lg:flex flex-col gap-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 shadow-xs" id="history-desktop-timeline">
+                          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/70 pb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/40">
+                                <BarChart3 className="w-4 h-4" />
                               </div>
-                            </Card>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Weekly Health Insights Section */}
-              {(() => {
-                const last7Days = history.slice(-7);
-                if (last7Days.length === 0) return null;
-
-                // Calculate averages and percentages
-                const totalWater = last7Days.reduce((acc, curr) => acc + curr.waterIntake, 0);
-                const totalWaterTarget = last7Days.reduce((acc, curr) => acc + curr.waterTarget, 0);
-                const avgWater = Math.round(totalWater / last7Days.length);
-                const waterMetDays = last7Days.filter(curr => curr.waterIntake >= curr.waterTarget).length;
-                const waterPercentage = totalWaterTarget > 0 ? Math.round((totalWater / totalWaterTarget) * 100) : 0;
-
-                const totalExercise = last7Days.reduce((acc, curr) => acc + curr.exerciseProgress, 0);
-                const totalExerciseTarget = last7Days.reduce((acc, curr) => acc + curr.exerciseTarget, 0);
-                const avgExercise = Math.round(totalExercise / last7Days.length);
-                const exerciseMetDays = last7Days.filter(curr => curr.exerciseProgress >= curr.exerciseTarget).length;
-                const activeDays = last7Days.filter(curr => curr.exerciseProgress > 0).length;
-                const exercisePercentage = totalExerciseTarget > 0 ? Math.round((totalExercise / totalExerciseTarget) * 100) : 0;
-
-                const totalMeals = last7Days.reduce((acc, curr) => acc + curr.mealsCompleted, 0);
-                const totalMealsTarget = last7Days.reduce((acc, curr) => acc + curr.mealsTarget, 0);
-                const avgMeals = Math.round((totalMeals / last7Days.length) * 10) / 10;
-                const mealsMetDays = last7Days.filter(curr => curr.mealsCompleted >= curr.mealsTarget).length;
-                const mealsPercentage = totalMealsTarget > 0 ? Math.round((totalMeals / totalMealsTarget) * 100) : 0;
-
-                const avgWellnessScore = Math.round(last7Days.reduce((acc, curr) => acc + curr.wellnessScore, 0) / last7Days.length);
-                const maxWellnessScore = Math.max(...last7Days.map(d => d.wellnessScore));
-
-                // Determine weakest area
-                const areas = [
-                  { name: 'Hydration', pct: waterPercentage },
-                  { name: 'Fitness', pct: exercisePercentage },
-                  { name: 'Nutrition', pct: mealsPercentage }
-                ];
-                areas.sort((a, b) => a.pct - b.pct);
-                const weakestArea = areas[0];
-
-                // Dynamic Achievements list
-                const achievements: string[] = [];
-                if (waterMetDays >= 4) {
-                  achievements.push(`Met your daily water intake target on ${waterMetDays} out of 7 days.`);
-                } else if (waterPercentage >= 80) {
-                  achievements.push(`Averaged ${waterPercentage}% of your target weekly water goals.`);
-                }
-
-                if (activeDays >= 5) {
-                  achievements.push(`Logged physical activity on ${activeDays} days this week, keeping energy high.`);
-                } else if (exerciseMetDays >= 3) {
-                  achievements.push(`Completed your target fitness time on ${exerciseMetDays} days this week.`);
-                }
-
-                if (mealsMetDays >= 4) {
-                  achievements.push(`Hit your meal nutrition target on ${mealsMetDays} days this week.`);
-                } else if (avgMeals >= 2) {
-                  achievements.push(`Averaged ${avgMeals} healthy, balanced meals per day over the week.`);
-                }
-
-                if (maxWellnessScore >= 85) {
-                  achievements.push(`Reached an exceptional peak wellness score of ${maxWellnessScore}%!`);
-                }
-
-                if (achievements.length < 2) {
-                  achievements.push("Regularly tracked your metrics to build a reliable health baseline.");
-                  achievements.push(`Achieved an average weekly wellness score of ${avgWellnessScore}%.`);
-                }
-
-                // Dynamic Consistency message
-                let consistencyMessage = "";
-                let consistencySubtitle = "";
-                if (avgWellnessScore >= 80) {
-                  consistencyMessage = "Excellent Habits";
-                  consistencySubtitle = "Your wellness scores reflect highly consistent discipline. Keeping this pace maximizes metabolic and cognitive vitality.";
-                } else if (avgWellnessScore >= 50) {
-                  consistencyMessage = "Consistent Effort";
-                  consistencySubtitle = "You have established a solid baseline of weekly habits. Focus on small step-ups to solidify daily health loops.";
-                } else {
-                  consistencyMessage = "Building Momentum";
-                  consistencySubtitle = "You are laying vital groundwork. Choose one tracker to focus on this week and watch your scores rise.";
-                }
-
-                // Dynamic Areas for Improvement
-                const improvements: string[] = [];
-                if (waterMetDays < 5) {
-                  improvements.push(`Hydration: Missed daily water targets on ${7 - waterMetDays} days.`);
-                }
-                if (exerciseMetDays < 4) {
-                  improvements.push(`Fitness: Exercise goals were incomplete on ${7 - exerciseMetDays} days.`);
-                }
-                if (mealsMetDays < 5) {
-                  improvements.push(`Nutrition: Less than 3 healthy meals logged on ${7 - mealsMetDays} days.`);
-                }
-
-                if (improvements.length === 0) {
-                  improvements.push("No major gaps! Outstanding discipline across all tracked metrics.");
-                }
-
-                // Dynamic health tip based on weakest area
-                let tipTitle = "General Wellness";
-                let tipBody = "Even minor gains in hydration, activity, and diet multiply your cumulative vitality. Small, steady increments lead to lasting lifestyle gains.";
-
-                if (weakestArea) {
-                  if (weakestArea.name === 'Hydration') {
-                    tipTitle = "Optimize Hydration";
-                    tipBody = "Place a clear flask of water at your desk or bedside. Hydrating immediately upon waking up kickstarts cellular metabolism and clarity.";
-                  } else if (weakestArea.name === 'Fitness') {
-                    tipTitle = "Boost Daily Activity";
-                    tipBody = "If dedicated sessions feel heavy, try micro-bursts of movement: standing stretches, a 10-minute walk after meals, or taking stairs.";
-                  } else if (weakestArea.name === 'Nutrition') {
-                    tipTitle = "Nourish Intentionally";
-                    tipBody = "Pre-stage easy, safe whole snacks (washed berries, raw almonds). Planning key meals prevents blood sugar dips and impulse eating.";
-                  }
-                }
-
-                return (
-                  <div className="flex flex-col gap-6 text-left mt-2" id="weekly-health-insights-section">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3.5">
-                      <div>
-                        <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
-                          <Award className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                          Weekly Health Insights & Recommendations
-                        </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-                          Data-driven feedback, habit consistency analysis, and targeted suggestions based on the last 7 days.
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xs font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 tracking-wider">
-                          Weekly Report
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="insights-cards-container">
-                      
-                      <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
-                        <CardContent className="p-6 flex flex-col gap-4 h-full text-left justify-between">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-2xs text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-black">Success Milestones</span>
-                              <span className="text-base font-extrabold text-slate-900 dark:text-white">Weekly Achievements</span>
+                              <div>
+                                <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                                  7-Day Progress Timeline
+                                </h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  Chronological wellness scores and tracked metric comparisons
+                                </p>
+                              </div>
                             </div>
-                            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 flex-shrink-0">
-                              <Award className="w-5 h-5" />
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-3 flex-1 justify-center my-1">
-                            {achievements.map((ach, idx) => (
-                              <div key={idx} className="flex gap-2.5 items-start">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
-                                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-                                  {ach}
+                            
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                                <span className="text-3xs uppercase font-black text-slate-400 dark:text-slate-500">7-Day Avg</span>
+                                <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                                  {Math.round(displayHistory.reduce((acc, curr) => acc + curr.wellnessScore, 0) / displayHistory.length)}%
                                 </span>
                               </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Card 2: Habit Consistency */}
-                      <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
-                        <CardContent className="p-6 flex flex-col gap-4 h-full text-left justify-between">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-2xs text-blue-600 dark:text-blue-400 uppercase tracking-widest font-black">Habit Quality</span>
-                              <span className="text-base font-extrabold text-slate-900 dark:text-white">Consistency Matrix</span>
-                            </div>
-                            <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl border border-blue-100 dark:border-blue-900/30 flex-shrink-0">
-                              <Activity className="w-5 h-5" />
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-3 flex-1 justify-center my-1">
-                            <div className="flex items-center gap-3 bg-blue-50/60 dark:bg-blue-950/20 p-3 rounded-xl border border-blue-200/60 dark:border-blue-900/40">
-                              <div className="px-3 py-1.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg font-extrabold text-base border border-blue-500/20">
-                                {avgWellnessScore}%
-                              </div>
-                              <div className="flex flex-col leading-tight min-w-0">
-                                <span className="text-xs font-extrabold text-slate-900 dark:text-white truncate">{consistencyMessage}</span>
-                                <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase font-black mt-0.5">Avg Wellness Score</span>
-                              </div>
-                            </div>
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
-                              {consistencySubtitle}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Card 3: Areas for Improvement */}
-                      <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
-                        <CardContent className="p-6 flex flex-col gap-4 h-full text-left justify-between">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-2xs text-orange-600 dark:text-orange-400 uppercase tracking-widest font-black">Optimization</span>
-                              <span className="text-base font-extrabold text-slate-900 dark:text-white">Opportunity Gaps</span>
-                            </div>
-                            <div className="p-2.5 bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-2xl border border-orange-100 dark:border-orange-900/30 flex-shrink-0">
-                              <AlertTriangle className="w-5 h-5" />
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-3 flex-1 justify-center my-1">
-                            {improvements.map((imp, idx) => (
-                              <div key={idx} className="flex gap-2.5 items-start">
-                                <span className="w-2 h-2 rounded-full bg-orange-500 mt-1.5 flex-shrink-0" />
-                                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-                                  {imp}
+                              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                                <span className="text-3xs uppercase font-black text-slate-400 dark:text-slate-500">Days Logged</span>
+                                <span className="text-xs font-black text-slate-900 dark:text-white">
+                                  {displayHistory.length} / 7
                                 </span>
                               </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Card 4: Actionable Tip */}
-                      <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-indigo-500/10 dark:from-indigo-950/20 dark:to-purple-950/20 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl flex flex-col justify-between h-full">
-                        <CardContent className="p-6 flex flex-col gap-4 h-full text-left justify-between">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-2xs text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-black">Habit Builder</span>
-                              <span className="text-base font-extrabold text-slate-900 dark:text-white">Daily Wellness Tip</span>
-                            </div>
-                            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 flex-shrink-0">
-                              <Sparkles className="w-5 h-5" />
                             </div>
                           </div>
 
-                          <div className="flex flex-col gap-2 flex-1 justify-center my-1">
-                            <span className="text-xs font-extrabold text-indigo-700 dark:text-indigo-300">
-                              {tipTitle}
-                            </span>
-                            <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-                              {tipBody}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
+                          {/* Visual Timeline Bar Chart */}
+                          <div className="grid grid-cols-7 gap-3 pt-2 pb-4 border-b border-slate-100 dark:border-slate-800/70">
+                            {[...displayHistory].reverse().map((entry) => {
+                              const originalIdx = history.findIndex(h => h.date === entry.date);
+                              let trend: 'improving' | 'stable' | 'declining' = 'stable';
+                              if (originalIdx > 0) {
+                                const currentScore = history[originalIdx].wellnessScore;
+                                const previousScore = history[originalIdx - 1].wellnessScore;
+                                if (currentScore > previousScore) trend = 'improving';
+                                else if (currentScore < previousScore) trend = 'declining';
+                              }
+                              const barHeight = Math.max(12, Math.round(entry.wellnessScore * 0.9));
 
-                    </div>
+                              return (
+                                <div key={`chart-${entry.date}`} className="flex flex-col items-center gap-2">
+                                  <span className="text-xs font-extrabold text-slate-900 dark:text-white tabular-nums">
+                                    {entry.wellnessScore}%
+                                  </span>
+                                  <div className="w-full h-24 bg-slate-50 dark:bg-slate-800/60 rounded-xl flex items-end p-1.5 border border-slate-100 dark:border-slate-800">
+                                    <div
+                                      className={`w-full rounded-lg transition-all duration-500 ${
+                                        entry.wellnessScore >= 80
+                                          ? 'bg-gradient-to-t from-emerald-600 to-teal-400'
+                                          : entry.wellnessScore >= 50
+                                          ? 'bg-gradient-to-t from-teal-600 to-cyan-400'
+                                          : 'bg-gradient-to-t from-amber-500 to-orange-400'
+                                      }`}
+                                      style={{ height: `${barHeight}%` }}
+                                    />
+                                  </div>
+                                  <div className="flex flex-col items-center leading-tight">
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                      {formatHistoryDate(entry.date).split(',')[0].slice(0, 3)}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                      {entry.date.slice(5)}
+                                    </span>
+                                  </div>
+                                  {trend === 'improving' && (
+                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                                      <TrendingUp className="w-3 h-3" /> Up
+                                    </span>
+                                  )}
+                                  {trend === 'stable' && (
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold flex items-center gap-0.5">
+                                      <Minus className="w-3 h-3" /> Steady
+                                    </span>
+                                  )}
+                                  {trend === 'declining' && (
+                                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-0.5">
+                                      <TrendingDown className="w-3 h-3" /> Down
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Desktop Table View of Records */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                              <thead>
+                                <tr className="border-b border-slate-100 dark:border-slate-800 text-3xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
+                                  <th className="pb-2.5 font-black">Date</th>
+                                  <th className="pb-2.5 font-black">Wellness Score</th>
+                                  <th className="pb-2.5 font-black">Hydration</th>
+                                  <th className="pb-2.5 font-black">Fitness</th>
+                                  <th className="pb-2.5 font-black">Nutrition</th>
+                                  <th className="pb-2.5 font-black text-right">Trend</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                                {displayHistory.map((entry) => {
+                                  const originalIdx = history.findIndex(h => h.date === entry.date);
+                                  let trend: 'improving' | 'stable' | 'declining' = 'stable';
+                                  if (originalIdx > 0) {
+                                    const currentScore = history[originalIdx].wellnessScore;
+                                    const previousScore = history[originalIdx - 1].wellnessScore;
+                                    if (currentScore > previousScore) trend = 'improving';
+                                    else if (currentScore < previousScore) trend = 'declining';
+                                  }
+
+                                  return (
+                                    <tr key={`row-${entry.date}`} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors">
+                                      <td className="py-2.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                                        {formatHistoryDate(entry.date)}
+                                      </td>
+                                      <td className="py-2.5 whitespace-nowrap">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black ${
+                                          entry.wellnessScore >= 80
+                                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                            : entry.wellnessScore >= 50
+                                            ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+                                        }`}>
+                                          {entry.wellnessScore} / 100
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                        <div className="flex items-center gap-1.5">
+                                          <Droplet className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                          <span>{Math.round(entry.waterIntake / 100) / 10}L / {Math.round(entry.waterTarget / 100) / 10}L</span>
+                                        </div>
+                                      </td>
+                                      <td className="py-2.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                        <div className="flex items-center gap-1.5">
+                                          <Flame className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                                          <span>{entry.exerciseProgress}m / {entry.exerciseTarget}m</span>
+                                        </div>
+                                      </td>
+                                      <td className="py-2.5 whitespace-nowrap text-slate-700 dark:text-slate-300">
+                                        <div className="flex items-center gap-1.5">
+                                          <Utensils className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                          <span>{entry.mealsCompleted} of {entry.mealsTarget} meals</span>
+                                        </div>
+                                      </td>
+                                      <td className="py-2.5 text-right whitespace-nowrap">
+                                        {trend === 'improving' && (
+                                          <span className="inline-flex items-center gap-1 text-3xs font-extrabold uppercase bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-200/60 dark:border-emerald-900/40">
+                                            <TrendingUp className="w-2.5 h-2.5" /> Improving
+                                          </span>
+                                        )}
+                                        {trend === 'stable' && (
+                                          <span className="inline-flex items-center gap-1 text-3xs font-extrabold uppercase bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400 px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-slate-700/60">
+                                            <Minus className="w-2.5 h-2.5" /> Stable
+                                          </span>
+                                        )}
+                                        {trend === 'declining' && (
+                                          <span className="inline-flex items-center gap-1 text-3xs font-extrabold uppercase bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-900/40">
+                                            <TrendingDown className="w-2.5 h-2.5" /> Declining
+                                          </span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })()}
@@ -2479,6 +2552,25 @@ export default function DashboardPage() {
                     ];
                   }
 
+                  const isGoalCompleted = progressPct >= 100;
+                  let remainingLabel = '';
+                  if (isWeightLoss) {
+                    const diff = goalCurrentWeight - goalTargetWeight;
+                    remainingLabel = diff <= 0 ? 'Goal achieved! (0.0 kg to go)' : `${diff.toFixed(1)} kg remaining`;
+                  } else if (isWeightGain) {
+                    const diff = goalTargetWeight - goalCurrentWeight;
+                    remainingLabel = diff <= 0 ? 'Goal achieved! (0.0 kg to go)' : `${diff.toFixed(1)} kg remaining`;
+                  } else if (isMuscleGain || isHeartHealth) {
+                    const diff = goalTargetExercise - currentWeeklyExercise;
+                    remainingLabel = diff <= 0 ? 'Target achieved!' : `${diff} mins remaining`;
+                  } else if (isBloodSugar) {
+                    const diff = goalTargetMeals - currentWeeklyMeals;
+                    remainingLabel = diff <= 0 ? 'Target achieved!' : `${diff} meals remaining`;
+                  } else {
+                    const diff = goalTargetWellness - avgWellnessScore;
+                    remainingLabel = diff <= 0 ? 'Benchmark achieved!' : `${diff}% to benchmark`;
+                  }
+
                   return (
                     <div className="flex flex-col gap-6 text-left border-t border-slate-200/80 dark:border-slate-800/80 pt-8 mt-6" id="health-goals-progress-section">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3.5">
@@ -2498,7 +2590,161 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Desktop / Laptop Layout: Compact unified card with clear metrics, progress, steppers, and milestones */}
+                    <div className="hidden lg:flex flex-col gap-5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 shadow-xs" id="health-goal-desktop-card">
+                      {/* Header: Goal Name, Current, Target, Remaining */}
+                      <div className="flex items-center justify-between gap-4 flex-wrap border-b border-slate-100 dark:border-slate-800/60 pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                            <Target className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-extrabold text-slate-900 dark:text-white">{goalTitle}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Personalized Goal & Activity Target</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950/40 px-3.5 py-2 rounded-xl border border-slate-200/70 dark:border-slate-800/70 text-xs">
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">{statusLabel}:</span>
+                            <span className="font-extrabold text-slate-900 dark:text-white">{statusValue}</span>
+                            <span className="text-slate-300 dark:text-slate-700">|</span>
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">Target:</span>
+                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{targetValue}</span>
+                          </div>
+                          <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border ${isGoalCompleted ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>
+                            {isGoalCompleted ? '✓ Target Achieved' : remainingLabel}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar & Details */}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-600 dark:text-slate-400">{progressDetails}</span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{progressPct}% Complete</span>
+                        </div>
+                        <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-700/50">
+                          <div
+                            className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-full transition-all duration-500 ease-out shadow-xs"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Middle Controls & Milestones Row */}
+                      <div className="grid grid-cols-12 gap-5 items-stretch pt-1">
+                        {/* Left: Stepper Controls (7 cols) */}
+                        <div className="col-span-7 bg-slate-50/60 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-200/70 dark:border-slate-800/70 flex flex-col justify-between gap-3">
+                          <div className="text-xs font-bold text-slate-700 dark:text-slate-300">Target Controls & Calibration</div>
+                          
+                          {(isWeightLoss || isWeightGain) && (
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-3xs text-slate-400 dark:text-slate-500 font-bold uppercase">Starting</span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <button onClick={() => setGoalStartWeight(prev => Math.max(30, prev - 0.5))} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">-</button>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 text-center flex-1">{goalStartWeight.toFixed(1)}kg</span>
+                                  <button onClick={() => setGoalStartWeight(prev => prev + 0.5)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">+</button>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-3xs text-slate-400 dark:text-slate-500 font-bold uppercase">Current</span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <button onClick={() => setGoalCurrentWeight(prev => Math.max(30, prev - 0.5))} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">-</button>
+                                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 text-center flex-1">{goalCurrentWeight.toFixed(1)}kg</span>
+                                  <button onClick={() => setGoalCurrentWeight(prev => prev + 0.5)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">+</button>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-3xs text-slate-400 dark:text-slate-500 font-bold uppercase">Target Goal</span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  <button onClick={() => setGoalTargetWeight(prev => Math.max(30, prev - 0.5))} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">-</button>
+                                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 text-center flex-1">{goalTargetWeight.toFixed(1)}kg</span>
+                                  <button onClick={() => setGoalTargetWeight(prev => prev + 0.5)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">+</button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {(isMuscleGain || isHeartHealth) && (
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="text-xs">
+                                <div className="text-3xs text-slate-400 dark:text-slate-500 font-bold uppercase">Weekly Logged Activity</div>
+                                <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">{currentWeeklyExercise} mins</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => setGoalTargetExercise(prev => Math.max(30, prev - 15))} className="px-2.5 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">-15m</button>
+                                <span className="text-xs font-extrabold text-orange-600 dark:text-orange-400 min-w-20 text-center">{goalTargetExercise} mins target</span>
+                                <button onClick={() => setGoalTargetExercise(prev => prev + 15)} className="px-2.5 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">+15m</button>
+                              </div>
+                            </div>
+                          )}
+
+                          {isImproveHealth && (
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="text-xs">
+                                <div className="text-3xs text-slate-400 dark:text-slate-500 font-bold uppercase">7-Day Average Score</div>
+                                <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">{avgWellnessScore}%</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => setGoalTargetWellness(prev => Math.max(50, prev - 5))} className="px-2.5 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">-5%</button>
+                                <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 min-w-16 text-center">{goalTargetWellness}% target</span>
+                                <button onClick={() => setGoalTargetWellness(prev => Math.min(100, prev + 5))} className="px-2.5 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">+5%</button>
+                              </div>
+                            </div>
+                          )}
+
+                          {isBloodSugar && (
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="text-xs">
+                                <div className="text-3xs text-slate-400 dark:text-slate-500 font-bold uppercase">Healthy Meals Completed</div>
+                                <div className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">{currentWeeklyMeals} meals</div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => setGoalTargetMeals(prev => Math.max(5, prev - 1))} className="px-2.5 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">-1</button>
+                                <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 min-w-20 text-center">{goalTargetMeals} meals target</span>
+                                <button onClick={() => setGoalTargetMeals(prev => Math.min(21, prev + 1))} className="px-2.5 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">+1</button>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-2 text-2xs text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/50 dark:border-slate-800/50">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                            <span className="truncate">{progressDescription}</span>
+                          </div>
+                        </div>
+
+                        {/* Right: Milestones (5 cols) */}
+                        <div className="col-span-5 bg-slate-50/60 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-200/70 dark:border-slate-800/70 flex flex-col justify-between">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Milestones</span>
+                            <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div className="flex flex-col gap-2.5">
+                            {milestones.map((milestone, idx) => {
+                              const threshold = idx === 0 ? 20 : idx === 1 ? 50 : 100;
+                              const isReached = progressPct >= threshold;
+                              return (
+                                <div key={idx} className="flex items-center gap-2.5">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-3xs font-extrabold flex-shrink-0 ${isReached ? 'bg-emerald-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
+                                    {isReached ? '✓' : idx + 1}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className={`text-2xs font-bold truncate ${isReached ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                                      {milestone.split(':')[0]}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mobile / Tablet Layout (< lg): Strict preservation of existing layout */}
+                    <div className="grid grid-cols-1 lg:hidden gap-6">
                       {/* Left: Interactive Goal Dashboard Card */}
                       <Card className="lg:col-span-8 border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl">
                         <CardContent className="p-6 flex flex-col gap-6">
@@ -2690,64 +2936,116 @@ export default function DashboardPage() {
 
               {/* Personalized Daily Health Plan Section */}
               {(() => {
-                const recs = profile ? generateRecommendations(profile) : null;
-                const healthGoal = profile?.healthGoal || 'Improve Overall Health';
+                if (!profile) {
+                  return (
+                    <div className="flex flex-col gap-6 text-left border-t border-slate-200/80 dark:border-slate-800/80 pt-8 mt-6" id="daily-health-timeline-section">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3.5">
+                        <div>
+                          <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
+                            <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                            Your Daily Health Plan
+                          </h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                            Your personalized guide for today's meals, hydration, movement, and healthy habits.
+                          </p>
+                        </div>
+                      </div>
 
-                const waterLitersGoal = recs?.waterIntake?.liters || 2.5;
-                const waterCupsGoal = recs?.waterIntake?.cups || 10;
-                const exerciseType = recs?.exercise?.type || 'Moderate Intensity Exercise';
-                const exerciseDuration = recs?.exercise?.duration || '30 mins';
+                      <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs rounded-2xl p-8 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3 max-w-md mx-auto">
+                          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+                            <User className="w-6 h-6" />
+                          </div>
+                          <h4 className="text-base font-extrabold text-slate-900 dark:text-white">Health Profile Required</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                            Complete your personal health profile so we can build your tailored daily meal schedule, hydration pacing, and workout plan.
+                          </p>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => navigateTo('profile-form')}
+                            className="mt-2 font-extrabold cursor-pointer"
+                          >
+                            Set Up Health Profile
+                          </Button>
+                        </div>
+                      </Card>
+                    </div>
+                  );
+                }
 
-                // Locate existing bio-calculated recommendations for morning, lunch, dinner snacks
-                const foodsList = recs?.foodsToEat || [];
-                const breakfastFood = foodsList.find(f => f.category === 'Breakfast') || {
-                  title: healthGoal === 'Weight Loss' ? 'Egg White & Vegetable Scramble' :
-                         healthGoal === 'Weight Gain' ? 'Almond Butter Banana Toast' :
-                         healthGoal === 'Muscle Gain' ? 'Greek Yogurt with Whey Protein & Berries' :
-                         healthGoal === 'Heart Health' ? 'Steel-Cut Oats with Chia Seeds & Walnuts' :
-                         healthGoal === 'Blood Sugar Control' ? 'Tofu Mushroom Scramble with Spinach' :
-                         'Nutritious Fiber Oatmeal Bowl',
-                  description: 'Rich in lean protein and essential macronutrients to support energy.'
+                const todayStr = getTodayDateString();
+                const dailyPlan = buildDailyHealthPlan(profile, todayStr, planRotationOffset);
+                const healthGoal = profile.healthGoal || 'Improve Overall Health';
+
+                const handleRotateMenu = () => {
+                  const nextOffset = planRotationOffset + 1;
+                  setPlanRotationOffset(nextOffset);
+                  localStorage.setItem(`smart_health_guide_plan_offset_${todayStr}${uSuffix}`, nextOffset.toString());
+                  setToastMessage("Rotated today's meal options with alternative eligible foods.");
                 };
 
-                const lunchFood = foodsList.find(f => f.category === 'Lunch') || {
-                  title: healthGoal === 'Weight Loss' ? 'Grilled Chicken Breast Salad' :
-                         healthGoal === 'Weight Gain' ? 'Quinoa Salmon Bowl with Avocado' :
-                         healthGoal === 'Muscle Gain' ? 'Brown Rice with Lean Beef & Broccoli' :
-                         healthGoal === 'Heart Health' ? 'Mediterranean Salad with Chickpeas' :
-                         healthGoal === 'Blood Sugar Control' ? 'Baked Tempeh Bowl with Pumpkin Seeds' :
-                         'Balanced Protein and Grain Medley',
-                  description: 'Enforces glycemic control and supplies consistent mental energy.'
+                // Section completion helper
+                const isItemCompleted = (sectionKey: string): boolean => {
+                  if (sectionKey === 'breakfast') return mealBreakfast || !!scheduleCompletions['breakfast'];
+                  if (sectionKey === 'lunch') return mealLunch || !!scheduleCompletions['lunch'];
+                  if (sectionKey === 'dinner') return mealDinner || !!scheduleCompletions['dinner'];
+                  if (sectionKey === 'hydration') return !!scheduleCompletions['hydration'] || waterIntake >= waterTarget;
+                  if (sectionKey === 'exercise') return !!scheduleCompletions['exercise'] || exerciseProgress >= exerciseTarget;
+                  if (sectionKey === 'habits') return !!scheduleCompletions['habits'] || planCompletedNight;
+                  return !!scheduleCompletions[sectionKey];
                 };
 
-                const dinnerFood = foodsList.find(f => f.category === 'Dinner') || {
-                  title: healthGoal === 'Weight Loss' ? 'Baked Cod with Asparagus' :
-                         healthGoal === 'Weight Gain' ? 'Stir-fried Beef with Rice & Bell Peppers' :
-                         healthGoal === 'Muscle Gain' ? 'Pan-Seared Salmon with Sweet Potato' :
-                         healthGoal === 'Heart Health' ? 'Pan-Seared Salmon with Steamed Spinach' :
-                         healthGoal === 'Blood Sugar Control' ? 'Grilled Salmon with Zucchini' :
-                         'Light Lean Protein and Greens',
-                  description: 'Promotes muscle tissue recovery and rest-state homeostasis.'
+                const toggleItemCompletion = (sectionKey: string) => {
+                  const nextVal = !isItemCompleted(sectionKey);
+                  setScheduleCompletions(prev => ({ ...prev, [sectionKey]: nextVal }));
+
+                  if (sectionKey === 'breakfast') {
+                    setMealBreakfast(nextVal);
+                    setPlanCompletedMorning(nextVal);
+                  } else if (sectionKey === 'lunch') {
+                    setMealLunch(nextVal);
+                    setPlanCompletedAfternoon(nextVal);
+                  } else if (sectionKey === 'dinner') {
+                    setMealDinner(nextVal);
+                    setPlanCompletedEvening(nextVal);
+                  } else if (sectionKey === 'hydration') {
+                    if (nextVal && waterIntake < 500) setWaterIntake(Math.min(waterTarget, 1000));
+                  } else if (sectionKey === 'exercise') {
+                    if (nextVal && exerciseProgress === 0) setExerciseProgress(Math.min(exerciseTarget, 30));
+                  } else if (sectionKey === 'habits') {
+                    setPlanCompletedNight(nextVal);
+                  }
+
+                  if (nextVal) {
+                    setToastMessage(`Completed item recorded in your daily schedule.`);
+                  }
                 };
 
-                const snackFood = foodsList.find(f => f.category === 'Healthy Snacks') || {
-                  title: 'Raw Almonds & Fresh Blueberries',
-                  description: 'Polished trace mineral support without blood sugar spike.'
-                };
+                const completedCount = dailyPlan.items.filter(item => isItemCompleted(item.sectionKey)).length;
+                const completionPct = Math.round((completedCount / dailyPlan.items.length) * 100);
 
-                // Formulate 4 beautiful plans
+                // Locate foods for mobile routines
+                const breakfastFood = dailyPlan.items.find(i => i.sectionKey === 'breakfast') || { name: 'Nutritious Breakfast', shortDescription: 'Balanced morning meal.' };
+                const lunchFood = dailyPlan.items.find(i => i.sectionKey === 'lunch') || { name: 'Balanced Lunch', shortDescription: 'Midday refueling.' };
+                const dinnerFood = dailyPlan.items.find(i => i.sectionKey === 'dinner') || { name: 'Light Dinner', shortDescription: 'Restorative evening meal.' };
+                const snackFood = dailyPlan.items.find(i => i.sectionKey === 'snacks') || { name: 'Healthy Snack', shortDescription: 'Mindful snack portion.' };
+                const hydrationItem = dailyPlan.items.find(i => i.sectionKey === 'hydration');
+                const exerciseItem = dailyPlan.items.find(i => i.sectionKey === 'exercise');
+
+                // 4 mobile routines for preserving exact phone container
                 const morningPlan = {
                   title: 'Morning Routine',
                   time: '06:00 AM - 12:00 PM',
                   gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
                   border: 'border-orange-500/20',
                   icon: <Sunrise className="w-5 h-5 text-amber-500" />,
-                  hydration: `Drink 2 cups of water (${Math.round(waterLitersGoal * 1000 / waterCupsGoal * 2)}ml) post-waking.`,
-                  meal: breakfastFood.title,
+                  hydration: hydrationItem ? hydrationItem.shortDescription : 'Drink 2 cups of water post-waking.',
+                  meal: breakfastFood.name,
                   activity: healthGoal === 'Blood Sugar Control' ? 'Fasting blood sugar test.' : healthGoal === 'Weight Loss' ? 'Morning weight check.' : '5-minute activation stretch.',
                   benefit: healthGoal === 'Blood Sugar Control' ? 'Establishes morning glycemic stability.' : healthGoal === 'Weight Loss' ? 'Fosters early fat oxidation.' : 'Triggers metabolism and maintains cellular hydration.',
-                  completed: planCompletedMorning,
-                  toggle: () => setPlanCompletedMorning(!planCompletedMorning)
+                  completed: isItemCompleted('breakfast'),
+                  toggle: () => toggleItemCompletion('breakfast')
                 };
 
                 const afternoonPlan = {
@@ -2756,12 +3054,12 @@ export default function DashboardPage() {
                   gradient: 'from-sky-500/10 via-blue-500/5 to-transparent',
                   border: 'border-sky-500/20',
                   icon: <Sun className="w-5 h-5 text-sky-500" />,
-                  hydration: `Sip on ${Math.round(waterCupsGoal / 3)} cups of water.`,
-                  meal: lunchFood.title,
+                  hydration: 'Sip water steadily between midday activities.',
+                  meal: lunchFood.name,
                   activity: '5-minute stand-and-stretch break.',
                   benefit: healthGoal === 'Blood Sugar Control' ? 'Keeps blood sugar stable and avoids energy dips.' : healthGoal === 'Heart Health' ? 'Lowers vascular pressure and improves circulation.' : 'Replenishes vital nutrients to maintain afternoon energy.',
-                  completed: planCompletedAfternoon,
-                  toggle: () => setPlanCompletedAfternoon(!planCompletedAfternoon)
+                  completed: isItemCompleted('lunch'),
+                  toggle: () => toggleItemCompletion('lunch')
                 };
 
                 const eveningPlan = {
@@ -2771,11 +3069,11 @@ export default function DashboardPage() {
                   border: 'border-rose-500/20',
                   icon: <Sunset className="w-5 h-5 text-rose-500" />,
                   hydration: 'Drink 1-2 cups of water post-exercise.',
-                  meal: dinnerFood.title,
-                  activity: `Complete ${exerciseDuration} of ${exerciseType}.`,
+                  meal: dinnerFood.name,
+                  activity: exerciseItem ? exerciseItem.name : 'Complete scheduled movement session.',
                   benefit: healthGoal === 'Weight Loss' ? 'Enhances post-exercise nighttime fat burn.' : healthGoal === 'Muscle Gain' ? 'Triggers overnight muscular hypertrophy and repair.' : 'Promotes nighttime muscle recovery and cardiorespiratory rest.',
-                  completed: planCompletedEvening,
-                  toggle: () => setPlanCompletedEvening(!planCompletedEvening)
+                  completed: isItemCompleted('dinner'),
+                  toggle: () => toggleItemCompletion('dinner')
                 };
 
                 const nightPlan = {
@@ -2785,55 +3083,163 @@ export default function DashboardPage() {
                   border: 'border-indigo-500/20',
                   icon: <Moon className="w-5 h-5 text-indigo-500" />,
                   hydration: 'Discontinue fluids 1 hour prior to sleep.',
-                  meal: snackFood ? snackFood.title : 'Maintain fasting window.',
+                  meal: snackFood ? snackFood.name : 'Maintain fasting window.',
                   activity: `Get ${profile?.sleepDuration || '6 to 8 hours'} of sleep.`,
                   benefit: healthGoal === 'Weight Loss' ? 'Improves leptin sensitivity and limits cravings.' : healthGoal === 'Blood Sugar Control' ? 'Assists liver glucose regulation overnight.' : 'Ensures deep restful sleep for hormone balance.',
-                  completed: planCompletedNight,
-                  toggle: () => setPlanCompletedNight(!planCompletedNight)
+                  completed: isItemCompleted('habits'),
+                  toggle: () => toggleItemCompletion('habits')
                 };
 
                 const routines = [morningPlan, afternoonPlan, eveningPlan, nightPlan];
-                const totalChecked = [planCompletedMorning, planCompletedAfternoon, planCompletedEvening, planCompletedNight].filter(Boolean).length;
-                const overallCompletionPct = Math.round((totalChecked / 4) * 100);
 
                 return (
                   <div className="flex flex-col gap-6 text-left border-t border-slate-200/80 dark:border-slate-800/80 pt-8 mt-6" id="daily-health-timeline-section">
+                    {/* Common Section Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800/80 pb-3.5">
                       <div>
                         <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2.5">
                           <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                          Personalized Daily Health Plan
+                          Your Daily Health Plan
                         </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
-                          Chronological wellness schedule optimized for your goal target ({healthGoal}).
-                        </p>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">{dailyPlan.formattedDate}</span>
+                          <span className="text-slate-300 dark:text-slate-700">·</span>
+                          <span>Your personalized guide for today's meals, hydration, movement, and healthy habits.</span>
+                        </div>
                       </div>
 
-                      {/* Overall Checklist Progress Tracker */}
-                      <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 w-fit">
-                        <div className="flex flex-col items-end">
-                          <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-extrabold">Today's Momentum</span>
-                          <span className="text-xs font-extrabold text-slate-900 dark:text-white">{overallCompletionPct}% Completed</span>
-                        </div>
-                        <div className="relative w-11 h-11 flex items-center justify-center">
-                          {/* Radial Progress Ring */}
-                          <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="22" cy="22" r="16" stroke="currentColor" strokeWidth="3.5" fill="transparent" className="text-slate-200 dark:text-slate-800" />
-                            <circle cx="22" cy="22" r="16" stroke="currentColor" strokeWidth="3.5" fill="transparent" strokeDasharray={2 * Math.PI * 16} strokeDashoffset={2 * Math.PI * 16 * (1 - overallCompletionPct / 100)} className="text-emerald-600 dark:text-emerald-400 transition-all duration-500" />
-                          </svg>
-                          <span className="absolute text-3xs font-black text-emerald-600 dark:text-emerald-400">{totalChecked}/4</span>
+                      {/* Header Actions: Rotation & Progress */}
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleRotateMenu}
+                          title="Rotate between eligible meals for today"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-bold transition-all shadow-2xs hover:scale-102 active:scale-98 cursor-pointer"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Rotate Daily Options</span>
+                        </button>
+
+                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800/80">
+                          <div className="flex flex-col items-end">
+                            <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-extrabold">Progress</span>
+                            <span className="text-xs font-extrabold text-slate-900 dark:text-white">{completedCount}/{dailyPlan.items.length} Done</span>
+                          </div>
+                          <div className="relative w-8 h-8 flex items-center justify-center">
+                            <svg className="w-full h-full transform -rotate-90">
+                              <circle cx="16" cy="16" r="12" stroke="currentColor" strokeWidth="2.5" fill="transparent" className="text-slate-200 dark:text-slate-800" />
+                              <circle cx="16" cy="16" r="12" stroke="currentColor" strokeWidth="2.5" fill="transparent" strokeDasharray={2 * Math.PI * 12} strokeDashoffset={2 * Math.PI * 12 * (1 - completionPct / 100)} className="text-emerald-600 dark:text-emerald-400 transition-all duration-500" />
+                            </svg>
+                            <span className="absolute text-3xs font-black text-emerald-600 dark:text-emerald-400">{completionPct}%</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    {/* Timeline Grid layout */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="timeline-routine-grid">
+
+                    {/* DESKTOP / LAPTOP LAYOUT: Clean, actionable, structured daily schedule timeline */}
+                    <div className="hidden lg:flex flex-col gap-3.5" id="daily-plan-desktop-timeline">
+                      {dailyPlan.items.map((item, idx) => {
+                        const completed = isItemCompleted(item.sectionKey);
+                        const isExpanded = expandedScheduleId === item.id;
+
+                        // Time band accent colors
+                        const sectionColor = 
+                          item.sectionKey === 'breakfast' ? 'border-l-amber-500' :
+                          item.sectionKey === 'hydration' ? 'border-l-sky-500' :
+                          item.sectionKey === 'lunch' ? 'border-l-teal-500' :
+                          item.sectionKey === 'snacks' ? 'border-l-indigo-500' :
+                          item.sectionKey === 'exercise' ? 'border-l-orange-500' :
+                          item.sectionKey === 'dinner' ? 'border-l-rose-500' :
+                          'border-l-purple-500';
+
+                        return (
+                          <div
+                            key={item.id}
+                            id={`desktop-schedule-${item.sectionKey}`}
+                            className={`border border-slate-200/80 dark:border-slate-800/80 border-l-4 ${sectionColor} rounded-xl bg-white dark:bg-slate-900 p-4 transition-all duration-200 shadow-2xs hover:shadow-xs ${completed ? 'bg-emerald-500/5 dark:bg-emerald-500/5' : ''}`}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                {/* Metadata line: Time · Section */}
+                                <div className="flex items-center gap-2 text-2xs text-slate-500 dark:text-slate-400 mb-1">
+                                  <span className="font-bold text-slate-700 dark:text-slate-300">{item.suggestedTime}</span>
+                                  <span aria-hidden="true">·</span>
+                                  <span className="uppercase tracking-wider font-extrabold">{item.sectionName}</span>
+                                </div>
+
+                                {/* Main Title */}
+                                <h4 className={`text-sm font-extrabold leading-snug ${completed ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-white'}`}>
+                                  {item.name}
+                                </h4>
+
+                                {/* Concise Description */}
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                  {item.shortDescription}
+                                </p>
+
+                                {/* Practical Action directive */}
+                                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1.5 font-medium">
+                                  <span className="font-bold text-slate-900 dark:text-white">Action: </span>
+                                  {item.practicalAction}
+                                </p>
+
+                                {/* Expandable Clinical Details Toggle */}
+                                <div className="mt-2.5">
+                                  <button
+                                    onClick={() => setExpandedScheduleId(isExpanded ? null : item.id)}
+                                    className="text-2xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
+                                  >
+                                    <span>{isExpanded ? 'Hide Clinical Details' : 'View Clinical Guidance & Safety'}</span>
+                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                  </button>
+
+                                  {isExpanded && (
+                                    <div className="mt-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-xs text-slate-600 dark:text-slate-300 flex flex-col gap-1.5">
+                                      {item.clinicalReason && (
+                                        <p className="leading-relaxed">
+                                          <span className="font-bold text-slate-800 dark:text-slate-200">Clinical Rationale: </span>
+                                          {item.clinicalReason}
+                                        </p>
+                                      )}
+                                      <p className="text-2xs text-emerald-700 dark:text-emerald-400 font-medium pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
+                                        ✓ Profile Safety Verified: Matches your {profile.countryOrRegion || 'regional'} dietary parameters, health goals, and 0 flagged allergens.
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Interactive Completion Button */}
+                              <button
+                                onClick={() => toggleItemCompletion(item.sectionKey)}
+                                aria-label={`Mark ${item.sectionName} as ${completed ? 'incomplete' : 'complete'}`}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 flex-shrink-0 cursor-pointer ${completed ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs hover:bg-emerald-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-500 hover:text-emerald-600'}`}
+                              >
+                                {completed ? (
+                                  <>
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>Completed</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-600" />
+                                    <span>Mark Done</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* MOBILE / TABLET LAYOUT (< lg): 100% preservation of existing layout and structure */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:hidden gap-6" id="timeline-routine-grid">
                       {routines.map((routine, idx) => (
                         <Card 
                           key={idx} 
                           id={`timeline-card-${idx}`}
                           className={`relative border overflow-hidden transition-all duration-300 rounded-2xl flex flex-col justify-between h-full ${routine.completed ? 'bg-emerald-500/5 dark:bg-emerald-500/10 border-emerald-500/30 shadow-xs' : 'border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:-translate-y-0.5'}`}
                         >
-                          {/* Subtle time-of-day gradient strip at top */}
                           <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${routine.completed ? 'from-emerald-500 to-teal-500' : routine.gradient.split(' ')[1] + ' ' + routine.gradient.split(' ')[2]}`} />
 
                           <CardContent className="p-5 pt-6 flex flex-col gap-4 h-full justify-between">
@@ -2848,7 +3254,6 @@ export default function DashboardPage() {
                                 </div>
                               </div>
 
-                              {/* Interactive checkmark toggle */}
                               <button 
                                 onClick={routine.toggle} 
                                 className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-300 shadow-2xs ${routine.completed ? 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-transparent hover:border-emerald-500 hover:text-emerald-500/50'}`}
@@ -2857,9 +3262,7 @@ export default function DashboardPage() {
                               </button>
                             </div>
 
-                            {/* Timeline steps */}
                             <div className="flex flex-col gap-3.5 my-1 flex-1 text-left justify-center">
-                              {/* Hydration */}
                               <div className="flex gap-2.5 items-start">
                                 <span className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${routine.completed ? 'bg-emerald-500' : 'bg-blue-500'}`} />
                                 <div className="flex flex-col">
@@ -2870,7 +3273,6 @@ export default function DashboardPage() {
                                 </div>
                               </div>
 
-                              {/* Meal */}
                               <div className="flex gap-2.5 items-start">
                                 <span className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${routine.completed ? 'bg-emerald-500' : 'bg-emerald-500'}`} />
                                 <div className="flex flex-col">
@@ -2881,7 +3283,6 @@ export default function DashboardPage() {
                                 </div>
                               </div>
 
-                              {/* Activity */}
                               <div className="flex gap-2.5 items-start">
                                 <span className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${routine.completed ? 'bg-emerald-500' : 'bg-orange-500'}`} />
                                 <div className="flex flex-col">
@@ -2893,7 +3294,6 @@ export default function DashboardPage() {
                               </div>
                             </div>
 
-                            {/* Clinical Benefit */}
                             <div className="pt-3 border-t border-dashed border-slate-200 dark:border-slate-800">
                               <p className={`text-2xs font-medium leading-relaxed ${routine.completed ? 'text-slate-400 dark:text-slate-500 italic' : 'text-emerald-700 dark:text-emerald-400'}`}>
                                 <span className="font-extrabold">Clinical Benefit: </span>{routine.benefit}
@@ -2912,57 +3312,36 @@ export default function DashboardPage() {
               {/* RIGHT COLUMN: Sidebar (4 cols) */}
               <div className="lg:col-span-4 flex flex-col gap-6 sticky top-24" id="overview-sidebar">
                 
-                {/* Biological Parameters Header */}
-                <div className="border-b border-slate-200/80 dark:border-slate-800/80 pb-3 text-left">
-                  <h3 className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                    <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    Biological Parameters
-                  </h3>
-                  <p className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-extrabold mt-0.5">
-                    Sync Status: Fully Synced
-                  </p>
-                </div>
-
-                {/* Bio Grid Cards */}
-                <div className="grid grid-cols-2 gap-4" id="overview-bio-grid">
-                
-                <Card id="bio-card-weight" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl">
-                  <CardContent className="p-5 flex flex-col gap-1 text-left">
-                    <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Body Mass</span>
-                    <span className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{userBio.weight}</span>
-                    <span className="text-2xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-1 font-extrabold">
-                      <TrendingUp className="w-3.5 h-3.5" /> Stable Trend
-                    </span>
+                {/* Profile Summary Access Card (Replaces duplicated biological parameters) */}
+                <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl text-left" id="profile-summary-access-card">
+                  <CardHeader className="p-5 pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">Profile Summary</CardTitle>
+                      </div>
+                      <span className="text-3xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                        Active
+                      </span>
+                    </div>
+                    <CardDescription className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 leading-relaxed">
+                      Your biological parameters, body measurements, clinical conditions, and dietary targets are maintained in your Profile Summary.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-5 pt-1">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => navigateTo('profile-summary')}
+                      id="view-profile-summary-sidebar-btn"
+                      className="w-full flex items-center justify-center gap-2 font-extrabold text-xs shadow-xs hover:shadow-sm cursor-pointer"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Review Profile Measurements</span>
+                      <ChevronRight className="w-3.5 h-3.5 ml-auto" />
+                    </Button>
                   </CardContent>
                 </Card>
-
-                <Card id="bio-card-height" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl">
-                  <CardContent className="p-5 flex flex-col gap-1 text-left">
-                    <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Physical Stature</span>
-                    <span className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">{userBio.height}</span>
-                    <span className="text-2xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Normal limits</span>
-                  </CardContent>
-                </Card>
-
-                <Card id="bio-card-activity" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl">
-                  <CardContent className="p-5 flex flex-col gap-1 text-left">
-                    <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Metabolic Activity</span>
-                    <span className="text-sm font-extrabold text-slate-900 dark:text-white mt-1.5 truncate">{userBio.activity}</span>
-                    <span className="text-2xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-1 font-extrabold">
-                      <CheckCircle className="w-3.5 h-3.5" /> Normal range
-                    </span>
-                  </CardContent>
-                </Card>
-
-                <Card id="bio-card-goal" className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl">
-                  <CardContent className="p-5 flex flex-col gap-1 text-left">
-                    <span className="text-3xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Onboarding Goal</span>
-                    <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 mt-1.5 truncate">{userBio.goal}</span>
-                    <span className="text-2xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Educational focus</span>
-                  </CardContent>
-                </Card>
-
-              </div>
 
               {/* Middle Section - Allergen Warning Simulator */}
               <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md transition-all duration-300 rounded-2xl flex flex-col justify-between text-left" id="allergen-simulator-card">
