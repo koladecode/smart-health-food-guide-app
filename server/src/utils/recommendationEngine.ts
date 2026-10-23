@@ -805,21 +805,21 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
     breakfastFat = 'sliced avocado & organic pumpkin seeds';
   }
 
-  const breakfastTitle = '🌅 Synergistic Breakfast Bowl';
-  let breakfastDesc = `Power your morning with a tailored combination of ${breakfastProtein} paired with ${breakfastCarb} and a base of ${breakfastBase}, finished with a sprinkle of ${breakfastFat}.`;
+  const breakfastTitle = '🌅 Balanced Morning Breakfast';
+  let breakfastDesc = `Power your morning with a nourishing combination of ${breakfastProtein} paired with ${breakfastCarb} and a base of ${breakfastBase}, sprinkled with ${breakfastFat} for steady energy.`;
   
   if (isKeto) {
-    breakfastDesc = `A perfect low-carb, high-fat morning start combining ${breakfastProtein} with ${breakfastCarb} cooked in cold-pressed olive oil, topped with ${breakfastFat}. This keeps your body in fat-burning ketosis and stabilizes morning energy.`;
+    breakfastDesc = `A satisfying, low-carb morning meal with ${breakfastProtein} and ${breakfastCarb} cooked in olive oil, topped with ${breakfastFat} to keep your energy steady.`;
   } else if (isWeightLoss) {
-    breakfastDesc = `A nutrient-dense, calorie-controlled breakfast featuring ${breakfastProtein} alongside fiber-rich ${breakfastCarb}, served with ${breakfastBase} and topped with a portion-controlled sprinkle of ${breakfastFat} to optimize morning fullness.`;
+    breakfastDesc = `A wholesome, filling breakfast pairing lean ${breakfastProtein} with fiber-rich ${breakfastCarb}, served with ${breakfastBase} and a light sprinkle of ${breakfastFat} to keep you full all morning.`;
   } else if (isMuscleGain || isWeightGain) {
-    breakfastDesc = `An anabolic fueling combination containing high-quality ${breakfastProtein} paired with slow-burning ${breakfastCarb} and rich ${breakfastBase}, topped with energy-dense ${breakfastFat} to drive muscle recovery and caloric efficiency.`;
+    breakfastDesc = `A nutrient-packed breakfast combining protein-rich ${breakfastProtein} with ${breakfastCarb} and ${breakfastBase}, topped with ${breakfastFat} to fuel recovery and muscle growth.`;
   } else if (isHeartHealth || hasHypertension) {
-    breakfastDesc = `A cardioprotective, low-sodium pairing of ${breakfastProtein} (rich in omega-3) and heart-healthy ${breakfastCarb}, nested over light ${breakfastBase} and topped with vascular-friendly ${breakfastFat}.`;
+    breakfastDesc = `A heart-smart, low-salt breakfast combining ${breakfastProtein} and whole-grain ${breakfastCarb} with light ${breakfastBase} and heart-healthy ${breakfastFat}.`;
   } else if (isBloodSugarControl || hasDiabetes) {
-    breakfastDesc = `A glycemic-stabilizing morning bowl pairing ${breakfastProtein} with slow-release, low-glycemic ${breakfastCarb} and a base of ${breakfastBase}, sprinkled with fiber-rich ${breakfastFat} to ensure a slow, steady hill of glucose.`;
+    breakfastDesc = `A balanced morning bowl pairing ${breakfastProtein} with slow-digesting ${breakfastCarb} and ${breakfastBase}, sprinkled with ${breakfastFat} to help keep blood sugar steady.`;
   } else if (hasGastro) {
-    breakfastDesc = `An easy-to-digest, warm morning bowl combining well-cooked, non-irritating ${breakfastProtein} with soothing ${breakfastCarb} and gut-friendly ${breakfastBase}, lightly dusted with ${breakfastFat} to prevent acid reflux.`;
+    breakfastDesc = `An easy-to-digest, warm morning bowl combining well-cooked ${breakfastProtein} with soothing ${breakfastCarb} and stomach-friendly ${breakfastBase}, lightly dusted with ${breakfastFat}.`;
   }
 
   healthyCombinations.push({
@@ -872,21 +872,21 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
     lunchDressing = 'cold-pressed extra virgin olive oil';
   }
 
-  const lunchTitle = '🥗 Macronutrient Balanced Lunch';
-  let lunchDesc = `A highly satisfying, nutrient-dense lunch bowl containing ${lunchProtein} served alongside ${lunchCarb}, paired with ${lunchVeg} and drizzled with ${lunchDressing}.`;
+  const lunchTitle = '🥗 Balanced Energy Lunch';
+  let lunchDesc = `A satisfying lunch bowl with ${lunchProtein}, wholesome ${lunchCarb}, fresh ${lunchVeg}, and a light drizzle of ${lunchDressing}.`;
 
   if (isKeto) {
-    lunchDesc = `A low-glycemic ketogenic lunch consisting of ${lunchProtein} over a bed of low-carb ${lunchCarb}, served with fiber-rich ${lunchVeg} and a generous drizzle of ${lunchDressing} for optimal ketone production.`;
+    lunchDesc = `A filling, low-carb lunch of ${lunchProtein} over low-carb ${lunchCarb}, served with fiber-rich ${lunchVeg} and a drizzle of ${lunchDressing} for steady energy.`;
   } else if (isWeightLoss) {
-    lunchDesc = `A portion-controlled, high-satiety lunch pairing lean ${lunchProtein} with a moderate serving of complex ${lunchCarb}, surrounded by volume-rich ${lunchVeg} and lightly dressed with ${lunchDressing}.`;
+    lunchDesc = `A light and filling lunch pairing lean ${lunchProtein} with a portion of ${lunchCarb}, plenty of fresh ${lunchVeg}, and a light splash of ${lunchDressing}.`;
   } else if (isMuscleGain || isWeightGain) {
-    lunchDesc = `A calorie-dense, anabolic lunch fueling recovery with ${lunchProtein}, a generous portion of carbohydrate-rich ${lunchCarb}, dynamic micronutrients from ${lunchVeg}, and energy-sustaining ${lunchDressing}.`;
+    lunchDesc = `A hearty, protein-rich lunch fueling your body with ${lunchProtein}, a generous serving of ${lunchCarb}, fresh ${lunchVeg}, and energizing ${lunchDressing}.`;
   } else if (isHeartHealth || hasHypertension) {
-    lunchDesc = `A vascular-friendly, low-sodium lunch utilizing cardioprotective ${lunchProtein} with soluble-fiber rich ${lunchCarb}, antioxidant-rich ${lunchVeg}, and healthy fats from ${lunchDressing}.`;
+    lunchDesc = `A low-salt, heart-healthy lunch combining lean ${lunchProtein} with fiber-rich ${lunchCarb}, colorful ${lunchVeg}, and a drizzle of olive oil ${lunchDressing}.`;
   } else if (isBloodSugarControl || hasDiabetes) {
-    lunchDesc = `A blood-sugar stabilizing lunch aligning lean ${lunchProtein} with slow-burning ${lunchCarb} to prevent post-prandial spikes, accompanied by fiber-rich ${lunchVeg} and ${lunchDressing}.`;
+    lunchDesc = `A balanced lunch that helps keep blood sugar steady by pairing ${lunchProtein} with slow-burning ${lunchCarb}, crisp ${lunchVeg}, and ${lunchDressing}.`;
   } else if (hasGastro) {
-    lunchDesc = `A stomach-soothing, warm lunch pairing easily digestible ${lunchProtein} with soft, well-cooked ${lunchCarb}, non-irritating steamed ${lunchVeg}, and light ${lunchDressing}.`;
+    lunchDesc = `A soothing, easy-to-digest lunch pairing soft ${lunchProtein} with well-cooked ${lunchCarb}, tender steamed ${lunchVeg}, and light ${lunchDressing}.`;
   }
 
   healthyCombinations.push({
@@ -964,43 +964,43 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   });
 
   // D. Snack Selection
-  let snackTitle = '🍏 Glycemic-Stabilizing Snack';
-  let snackDesc = 'A handful of organic pumpkin seeds and fresh cucumber slices to support mineral levels and steady blood glucose.';
+  let snackTitle = '🍏 Healthy Refreshing Snack';
+  let snackDesc = 'A handful of organic pumpkin seeds and fresh cucumber slices to keep your energy steady between meals.';
 
   if (isKeto) {
-    snackTitle = '🥑 Ketogenic Fuel Snack';
+    snackTitle = '🥑 Low-Carb Healthy Snack';
     snackDesc = allergyTreeNuts 
-      ? 'Sliced fresh cucumber and celery sticks dipped in organic fresh guacamole, providing essential potassium and healthy monounsaturated fats.'
-      : 'Crispy pumpkin seeds paired with sliced avocado and a touch of sea salt (omit salt if hypertension is present) for sustained clean fats.';
+      ? 'Sliced cucumber and celery sticks with homemade guacamole for potassium and healthy fats.'
+      : 'Crispy pumpkin seeds paired with fresh sliced avocado for clean, long-lasting energy.';
   } else if (isPaleo) {
-    snackTitle = '🍓 Paleo-Compliant Whole Food Snack';
+    snackTitle = '🍓 Fresh Whole Food Snack';
     snackDesc = allergyTreeNuts
-      ? 'A handful of fresh organic raspberries paired with toasted sunflower seed spread, offering clean micronutrients and healthy fats.'
-      : 'Organic walnuts paired with wild blackberries, delivering high-potency antioxidants and natural cellular energy.';
+      ? 'A handful of fresh raspberries with sunflower seed spread for a simple, natural energy boost.'
+      : 'A small handful of walnuts with fresh blackberries for natural vitamins and antioxidants.';
   } else if (isBloodSugarControl || hasDiabetes) {
-    snackTitle = '🔋 Blood Sugar Balancing Snack';
-    snackDesc = 'Organic pumpkin seeds paired with fresh cucumber slices. The pumpkin seeds are rich in magnesium which improves insulin receptor sensitivity, while the cucumbers provide hydration with zero glycemic impact.';
+    snackTitle = '🔋 Blood Sugar Friendly Snack';
+    snackDesc = 'A handful of pumpkin seeds paired with fresh cucumber slices. Pumpkin seeds provide magnesium to help manage blood sugar, while cucumbers offer refreshing hydration with zero sugar.';
   } else if (isHeartHealth || hasHypertension || hasCholesterol) {
-    snackTitle = '❤️ Cardioprotective Heart-Smart Snack';
+    snackTitle = '❤️ Heart-Smart Snack';
     snackDesc = allergyTreeNuts
-      ? 'Toasted organic pumpkin seeds and fresh blueberries, which deliver potent plant sterols and soluble fiber to support arterial elasticity.'
-      : 'A small handful of organic walnuts paired with fresh blackberries. Walnuts are rich in plant-based omega-3 alpha-linolenic acid (ALA), supporting healthy lipid profiles.';
+      ? 'Toasted pumpkin seeds and fresh blueberries, providing plant sterols and soluble fiber to support healthy blood vessels.'
+      : 'A small handful of walnuts paired with fresh blackberries, providing plant-based omega-3s to support healthy cholesterol.';
   } else if (hasGastro) {
-    snackTitle = '🌱 Gentle Digesting Snack';
-    snackDesc = 'Warm baked apple slices sprinkled with a pinch of organic cinnamon. Apples contain gentle pectin fiber which acts as a gut prebiotic, and cooking them pre-digests the cell walls, ensuring zero gastric distress.';
+    snackTitle = '🌱 Gentle Stomach-Friendly Snack';
+    snackDesc = 'Warm baked apple slices sprinkled with a light pinch of cinnamon. Soft-cooked apples are easy on the stomach and provide soothing natural fiber without irritation.';
   } else if (isWeightLoss) {
-    snackTitle = '📉 High-Satiety Weight Loss Snack';
+    snackTitle = '📉 Satisfying Low-Calorie Snack';
     snackDesc = 'Fresh sliced celery and bell pepper strips dipped in low-fat organic hummus (or sunflower seed spread if soy/sesame is an issue), delivering high-volume hydration and crunch with minimal calories.';
   } else if (isMuscleGain || isWeightGain) {
-    snackTitle = '💪 Muscle Recovery Snack';
+    snackTitle = '💪 Protein Recovery Snack';
     if (isVegan || allergyDairy) {
       snackDesc = allergyTreeNuts
-        ? 'High-protein organic pea protein shake mixed with oat beverage and a banana, providing immediate amino acid replenishment.'
-        : 'A bowl of coconut ferment topped with sliced banana, organic hemp hearts, and a drizzle of sunflower seed spread for clean calories.';
+        ? 'A high-protein pea protein shake mixed with oat milk and a banana to quickly replenish tired muscles.'
+        : 'A bowl of coconut yogurt topped with sliced banana, hemp seeds, and a drizzle of sunflower seed spread for clean calories.';
     } else {
       snackDesc = allergyTreeNuts
-        ? 'Organic plain Greek yogurt topped with pumpkin seeds, organic hemp hearts, and a sliced banana, delivering over 20g of high-biological value protein.'
-        : 'Organic plain Greek yogurt topped with walnuts, organic hemp hearts, and a sliced banana, delivering over 20g of high-biological value protein.';
+        ? 'Organic plain Greek yogurt topped with pumpkin seeds, hemp hearts, and a sliced banana, delivering over 20g of protein to rebuild muscles.'
+        : 'Organic plain Greek yogurt topped with walnuts, hemp hearts, and a sliced banana, delivering over 20g of protein to rebuild muscles.';
     }
   }
 
@@ -1012,21 +1012,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   });
 
   // --- GENERAL SCIENTIFIC SYNERGY PAIRINGS ---
-  healthyCombinations.push({
-    id: 'comb-iron-vitc',
-    title: 'Plant Iron + Vitamin C',
-    description: 'Pair non-heme iron sources (like steamed lentils or raw pumpkin seeds) with active Vitamin C (like freshly squeezed lemon or bell peppers). Vitamin C converts iron into a highly soluble ferrous state, boosting absorption by up to 300%.',
-    badge: 'Absorption Booster'
-  });
-
-  if (hasDiabetes || bmiValue >= 25 || isWeightLoss || isBloodSugarControl) {
-    healthyCombinations.push({
-      id: 'comb-carb-fiber-protein',
-      title: 'Carbohydrates + High Fiber + Lean Protein',
-      description: 'Never consume a "naked" carb alone. Always pair it with healthy fats or proteins. This dramatically slows gastric emptying, ensuring blood sugar rises as a gentle hill rather than a spike.',
-      badge: 'Glycemic Buffer'
-    });
-  } else if (isMuscleGain) {
+  if (isMuscleGain) {
     healthyCombinations.push({
       id: 'comb-carb-protein-mg',
       title: 'High-GI Fruit or Carb + High Biological Value Protein',
@@ -1047,21 +1033,12 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       description: 'Lycopene is a powerful heart-healthy antioxidant found in tomatoes, whose absorption is boosted by 400% when heated and paired with olive oil lipids, protecting blood vessels from oxidative stress.',
       badge: 'Vascular Longevity'
     });
-  } else {
+  } else if (!hasDiabetes && bmiValue < 25 && !isWeightLoss && !isBloodSugarControl) {
     healthyCombinations.push({
       id: 'comb-grains-legumes',
       title: 'Whole Grains + Legumes',
       description: 'Pairing brown rice with black beans or quinoa with lentils creates a complete amino acid profile, mimicking the protein utility of meat.',
       badge: 'Amino Complement'
-    });
-  }
-
-  if (hasHypertension || hasHeart) {
-    healthyCombinations.push({
-      id: 'comb-potassium-magnesium',
-      title: 'Potassium + Magnesium Duo',
-      description: 'Combine potassium-rich foods (like sliced banana or avocado) with high-magnesium foods (like pumpkin seeds or organic cacao). These minerals work together as a cellular pump, flushing sodium out and dropping peripheral blood vessel tension.',
-      badge: 'Vascular Synergy'
     });
   }
 
@@ -1228,59 +1205,59 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
 
   // Exercise 1: Cardiovascular / Aerobic
   if (hasHeart || hasHypertension) {
-    exerciseType = 'Cardioprotective Cardiovascular Base Conditioning';
-    exerciseDesc = 'Designed to foster cardiac stroke volume and vascular flexibility while strictly avoiding blood pressure peaks.';
+    exerciseType = 'Heart-Friendly Walking & Gentle Cardio';
+    exerciseDesc = 'Gentle aerobic activities that strengthen your heart and improve circulation safely without sudden spikes in blood pressure.';
     exercisesToRecommend.push({
       name: 'Steady-State Flat Cardio Walk',
       met: 3.3,
       duration: `${baseDurationMins} minutes`,
       frequency: '4 days/week',
       intensity: 'Low',
-      safetyNotes: 'Keep breathing rhythmic and deep. Wear highly supportive athletic shoes. Stay on flat ground.'
+      safetyNotes: 'Breathe naturally and comfortably. Wear supportive walking shoes, and stick to even, flat paths.'
     });
   } else if (hasArthritis) {
-    exerciseType = 'Joint-Sparing Functional Cardio';
-    exerciseDesc = 'Low-impact movements designed to preserve cardiovascular conditioning without stress on inflamed joints.';
+    exerciseType = 'Low-Impact, Joint-Friendly Exercise';
+    exerciseDesc = 'Smooth movements that keep your heart healthy and muscles active without putting stressful pressure on your joints.';
     exercisesToRecommend.push({
       name: 'Water Laps or Deep Water Walking',
       met: 4.0,
       duration: `${baseDurationMins} minutes`,
       frequency: '3 days/week',
       intensity: 'Low to Moderate',
-      safetyNotes: 'Water provides hydrostatic pressure to cushion joint spaces and reduce mechanical knee/hip strain.'
+      safetyNotes: 'The water gently supports your weight, easing pressure on your knees and hips while you move.'
     });
   } else if (hasAsthma) {
-    exerciseType = 'Airway-Safe Conditioning';
-    exerciseDesc = 'Steady cardio designed to elevate lung capacity while minimizing airway dehydration or cold-shock spasms.';
+    exerciseType = 'Gentle Indoor Cardio & Breathing-Safe Exercise';
+    exerciseDesc = 'Steady activities that gently build lung capacity while keeping your breathing calm and comfortable.';
     exercisesToRecommend.push({
       name: 'Humidified Indoor Cycling',
       met: 5.0,
       duration: `${baseDurationMins} minutes`,
       frequency: '3 days/week',
       intensity: 'Moderate',
-      safetyNotes: 'Keep indoor air humid. Maintain steady conversational pace. Keep rescue inhaler within arm\'s reach.'
+      safetyNotes: 'Cycle at a comfortable pace where you can easily speak. Exercise in a warm room, and keep your rescue inhaler close by.'
     });
   } else if (isWeightLoss) {
-    exerciseType = 'High-Frequency Metabolic Circuit & Cardio';
-    exerciseDesc = 'An active fat oxidation routine designed to maximize calorie expenditure and preserve lean body tissue.';
+    exerciseType = 'Active Cardio & Fat-Burning Circuit';
+    exerciseDesc = 'Fun, active routines designed to burn calories, boost daily energy, and keep your muscles toned.';
     exercisesToRecommend.push({
       name: 'Interval Cycling or Power Walking',
       met: 6.0,
       duration: `${baseDurationMins + 5} minutes`,
       frequency: '4 days/week',
       intensity: 'Moderate to High',
-      safetyNotes: 'Alternate 1 minute of faster pace with 2 minutes of moderate recovery. Stay fully hydrated.'
+      safetyNotes: 'Walk or pedal faster for 1 minute, then slow down for 2 minutes to catch your breath. Drink water throughout.'
     });
   } else if (isMuscleGain || isWeightGain) {
-    exerciseType = isMuscleGain ? 'Progressive Strength & Hypertrophy Program' : 'Hypertrophy & High-Resistance Muscle Stimulus';
-    exerciseDesc = isMuscleGain ? 'A high-stimulus program targeting progressive muscle overload.' : 'A muscle-building, progressive loading routine designed to support clean lean mass gain.';
+    exerciseType = isMuscleGain ? 'Strength Building & Muscle Conditioning' : 'Muscle-Building Resistance Routine';
+    exerciseDesc = isMuscleGain ? 'A progressive routine designed to build muscle, tone your body, and gain healthy strength.' : 'A muscle-building routine using resistance to support steady, healthy weight gain.';
     exercisesToRecommend.push({
       name: 'Low-Impact Resistance Rower Warm-up',
       met: 4.5,
       duration: '15 minutes',
       frequency: '3 days/week',
       intensity: 'Low to Moderate',
-      safetyNotes: 'Focus on leg drive first, avoid hinging at the spine too early to prevent lower back stress.'
+      safetyNotes: 'Push with your legs first before pulling with your arms, and keep your back straight to protect your lower back.'
     });
   } else {
     exercisesToRecommend.push({
@@ -1289,7 +1266,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: `${baseDurationMins} minutes`,
       frequency: '3-4 days/week',
       intensity: 'Moderate',
-      safetyNotes: 'Maintain a warm conversational pace. Keep shoulders relaxed and posture tall.'
+      safetyNotes: 'Walk or cycle at a steady pace where you can easily talk. Keep your shoulders relaxed and stand or sit tall.'
     });
   }
 
@@ -1301,7 +1278,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: '15 minutes (2 sets of 12 reps)',
       frequency: '3 days/week',
       intensity: 'Low',
-      safetyNotes: 'Do not hold your breath during the push or pull phase (Valsalva). Slow and controlled movements.'
+      safetyNotes: 'Breathe out when pushing or pulling and never hold your breath. Move slowly with steady control.'
     });
   } else if (hasArthritis) {
     exercisesToRecommend.push({
@@ -1310,7 +1287,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: '15 minutes (hold sits for 20-30s)',
       frequency: '3 days/week',
       intensity: 'Low to Moderate',
-      safetyNotes: 'Keep lower back pinned completely flat to the wall. Stop immediately if there is sharp knee joint friction.'
+      safetyNotes: 'Keep your back flat against the wall and your feet firmly planted. Stop right away if you feel any knee pain.'
     });
   } else if (hasKidney) {
     exercisesToRecommend.push({
@@ -1319,7 +1296,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: '20 minutes (2 sets of 10 reps, high rest)',
       frequency: '3 days/week',
       intensity: 'Low to Moderate',
-      safetyNotes: 'Avoid extreme muscular fatigue or pushing to failure to eliminate rhabdomyolysis risks.'
+      safetyNotes: 'Take plenty of rest between sets and stop before you feel exhausted. Do not push to muscle failure.'
     });
   } else if (isWeightLoss) {
     exercisesToRecommend.push({
@@ -1328,7 +1305,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: '25 minutes (3 circuits)',
       frequency: '3 days/week',
       intensity: 'Moderate',
-      safetyNotes: 'Exhale during execution, maintain a stable core to protect your lumbar spine.'
+      safetyNotes: 'Breathe out as you lift or push, and keep your stomach muscles gently tight to protect your back.'
     });
   } else if (isMuscleGain || isWeightGain) {
     if (age > 60) {
@@ -1338,7 +1315,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
         duration: '20 minutes (3 sets of 8 reps)',
         frequency: '3 days/week',
         intensity: 'Moderate',
-        safetyNotes: 'Keep your torso upright. Sit back as if sitting into a chair. Ensure the chair is directly behind you.'
+        safetyNotes: 'Keep your chest up and sit back gently toward the chair. Make sure the chair is steady and right behind you.'
       });
     } else {
       exercisesToRecommend.push({
@@ -1347,7 +1324,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
         duration: '35 minutes (3 sets of 8-10 reps)',
         frequency: '3 days/week',
         intensity: 'High',
-        safetyNotes: 'Control the descent of weights. Do not lock out elbows or knees. Maintain a rigid neutral spine.'
+        safetyNotes: 'Lower weights slowly with control. Avoid locking your knees or elbows, and keep your back straight.'
       });
     }
   } else {
@@ -1357,7 +1334,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: '20 minutes (3 sets of 12 reps)',
       frequency: '3 days/week',
       intensity: 'Moderate',
-      safetyNotes: 'Keep feet flat. Focus on driving hips up with glutes, avoiding lower back extension.'
+      safetyNotes: 'Keep your feet flat on the floor. Squeeze your hips at the top of the bridge without arching your lower back.'
     });
   }
 
@@ -1369,16 +1346,16 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: '15 minutes',
       frequency: 'Daily',
       intensity: 'Low',
-      safetyNotes: 'Perform adjacent to a sturdy countertop or handrail. Keep gaze forward to train balance receptors.'
+      safetyNotes: 'Practice right next to a sturdy counter or handrail so you can hold on if needed. Look straight ahead.'
     });
   } else if (hasHeart || hasHypertension) {
     exercisesToRecommend.push({
-      name: 'Parasympathetic Deep Breathing (Vagus Activation)',
+      name: 'Slow Deep Breathing Relaxation',
       met: 1.5,
       duration: '10 minutes',
       frequency: 'Daily (preferably post-exercise)',
       intensity: 'Gentle',
-      safetyNotes: 'Inhale for 4 seconds, hold for 2, and exhale slowly for 6-8 seconds to decrease blood pressure.'
+      safetyNotes: 'Breathe in through your nose for 4 seconds, pause for 2, then breathe out slowly for 6 seconds to relax your body.'
     });
   } else if (hasArthritis) {
     exercisesToRecommend.push({
@@ -1387,7 +1364,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: '20 minutes',
       frequency: '4 days/week',
       intensity: 'Low',
-      safetyNotes: 'Never force joint limits. Focus on stretching muscle tissue, not straining tendons.'
+      safetyNotes: 'Never force a stretch to the point of pain. Stretch gently and stop when you feel mild tension in the muscle.'
     });
   } else if (isMuscleGain || isWeightGain) {
     exercisesToRecommend.push({
@@ -1396,7 +1373,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: '15 minutes (holds of 20-30s)',
       frequency: '3 days/week',
       intensity: 'Moderate',
-      safetyNotes: 'Do not let your hips sag. Keep head neutral and squeeze glutes to lock your spine.'
+      safetyNotes: 'Keep your body in a straight line without letting your hips sag, and look at the floor to keep your neck comfortable.'
     });
   } else {
     exercisesToRecommend.push({
@@ -1405,7 +1382,7 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
       duration: '20 minutes',
       frequency: '2-3 days/week',
       intensity: 'Low to Moderate',
-      safetyNotes: 'Coordinate your breathing with each movement. Rest in Child\'s Pose if fatigue arises.'
+      safetyNotes: 'Match your breathing to each gentle movement. Rest in a comfortable seated position whenever you need a break.'
     });
   }
 
@@ -1426,42 +1403,42 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   const exercisePrecautions: string[] = [];
   if (hasHypertension || hasHeart) {
     exercisePrecautions.push(
-      'STRICTLY AVOID the Valsalva maneuver (holding your breath during lifting or straining), as this spikes blood pressure to dangerous highs.',
-      'If you encounter sudden chest tightness, jaw/shoulder pain, cold sweat, or extreme dizziness, terminate exercise immediately and call emergency services.',
-      'Avoid exercises that involve your head being lower than your heart (e.g. decline press, certain yoga inversions).'
+      'Never hold your breath while lifting or straining, as this can suddenly spike your blood pressure. Always breathe out during effort.',
+      'If you encounter sudden chest tightness, jaw or arm pain, cold sweat, or extreme dizziness, stop exercise immediately and call emergency services.',
+      'Avoid exercises where your head is lower than your heart (such as steep decline presses or inverted yoga poses).'
     );
   }
   if (hasAsthma) {
     exercisePrecautions.push(
-      'Always keep your prescribed rescue inhaler directly adjacent to you during physical training.',
-      'Double the duration of your warm-up (10-15 mins) with low intensity to allow airway capillaries to dilate slowly, preventing bronchospasms.',
-      'If training outdoors in cold weather, wear a scarf or mask over your mouth to warm and humidify the air.'
+      'Always keep your prescribed rescue inhaler right next to you whenever you exercise.',
+      'Take 10 to 15 minutes to warm up gently at an easy pace so your airways adjust comfortably.',
+      'If exercising outdoors in cold weather, wear a scarf or light mask over your mouth to warm and humidify the air.'
     );
   }
   if (hasArthritis) {
     exercisePrecautions.push(
-      'Avoid high-impact running, heavy lunges, or jumping, which apply excessive mechanical shock to sensitive joint cartilage.',
-      'Perform a thorough 10-minute dynamic warm-up to lubricate the joint capsule with synovial fluid before adding load.',
-      'If any joint feels hot, swollen, or experiences sharp pain, stop immediately and apply cold compression.'
+      'Avoid high-impact running, heavy lunges, or jumping, which can put hard shock on sensitive joints.',
+      'Take 10 minutes to warm up with gentle arm and leg circles to loosen your joints before exercising.',
+      'If any joint feels hot, swollen, or experiences sharp pain, stop right away and apply a cold compress.'
     );
   }
   if (hasKidney) {
     exercisePrecautions.push(
-      'Avoid extreme, muscle-damaging workouts (e.g., intensive eccentric squats to failure) to eliminate risks of rhabdomyolysis.',
-      'Maintain diligent hydration during workouts, except as strictly limited by your nephrologist, to support metabolic clearing.'
+      'Avoid pushing yourself to extreme exhaustion or severe muscle fatigue, and take restful breaks whenever needed.',
+      'Drink water regularly during workouts unless your doctor has given you a specific fluid restriction.'
     );
   }
   if (age > 60) {
     exercisePrecautions.push(
-      'Prioritize balance training and functional stability over pure load lifting to protect older neural networks and prevent fall injury.',
-      'Always ensure you have a wall, countertop, or heavy object within arm\'s reach when performing balance movements.'
+      'Prioritize balance training and steady, controlled movements over heavy weights to stay safe and steady on your feet.',
+      'Always ensure you have a sturdy wall, countertop, or heavy chair within arm\'s reach when performing balance movements.'
     );
   }
   if (exercisePrecautions.length === 0) {
     exercisePrecautions.push(
-      'Include a 5-10 minute dedicated dynamic warmup and dynamic stretching session before each workout.',
-      'Track resting heart rate weekly as a baseline biomarker of cardiorespiratory recovery.',
-      'Maintain proper hydration and do not exercise through sharp joint pain.'
+      'Include a 5 to 10 minute gentle warmup and light stretching session before each workout.',
+      'Track your resting pulse weekly as an easy way to check how well your body recovers from exercise.',
+      'Drink water regularly and never exercise through sharp joint pain.'
     );
   }
 
@@ -1486,38 +1463,38 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
 
   // A. Personalized Sleep Recommendation
   if (userSleep === 'Less than 6 hours') {
-    let sleepDesc = "You average less than 6 hours of sleep. This chronic deficit elevates morning cortisol and triggers fasting glucose spikes by impairing insulin clearance.";
+    let sleepDesc = "Getting under 6 hours of sleep can raise stress hormones and blood sugar. Try to aim for 7 to 8 hours of sleep each night.";
     if (hasDiabetes || isBloodSugarControl) {
-      sleepDesc += " For blood sugar management, even one night of restricted sleep reduces insulin sensitivity by 33%.";
+      sleepDesc += " Good sleep helps your body use insulin more effectively and keep glucose steady.";
     }
     if (hasHypertension) {
-      sleepDesc += " Short sleep is strongly associated with elevated sympathetic vascular tone, preventing the natural nocturnal blood pressure dip.";
+      sleepDesc += " Quality sleep also allows your blood pressure to lower naturally overnight.";
     }
-    sleepDesc += " Target a daily 20-minute afternoon Non-Sleep Deep Rest (NSDR) or Yoga Nidra session to reset your nervous system, and strictly block blue light after 8:30 PM.";
+    sleepDesc += " A short 20-minute afternoon rest and turning off bright screens by 8:30 PM can help your body unwind.";
     
     lifestyleTips.push({
       id: 'life-sleep-deficit',
-      title: 'Maximize Glycemic & Cortisol Recovery',
+      title: 'Restful Sleep & Evening Unwind',
       description: sleepDesc,
-      badge: 'Sleep Deficit Protocol'
+      badge: 'Sleep Recovery'
     });
   } else if (userSleep === 'More than 8 hours') {
     lifestyleTips.push({
       id: 'life-sleep-excess',
-      title: 'Optimize Waking Inertia & Melatonin Anchoring',
-      description: 'Averaging over 8 hours can sometimes indicate fragmented sleep or sleep inertia. Wake up immediately upon first arousal to prevent morning sluggishness. Seek direct outdoor sunlight (10,000+ lux) for 15 minutes within an hour of waking to suppress melatonin production and synchronize circadian hormone secretion.',
-      badge: 'Circadian Anchoring'
+      title: 'Morning Sunshine & Wake-Up Routine',
+      description: 'Sleeping more than 8 hours can sometimes leave you feeling groggy. Getting out of bed when you first wake up helps you feel refreshed. Step outside for 10 to 15 minutes of natural morning sunlight to reset your body clock and boost daytime alertness.',
+      badge: 'Morning Energy'
     });
   } else {
-    let sleepDesc = "Your sleep duration of 6 to 8 hours is moderate. To optimize sleep quality and transition to deeper REM and slow-wave stages, maintain a cool bedroom temperature (18°C / 65°F).";
+    let sleepDesc = "Your 6 to 8 hours of sleep is a great foundation. Keep your bedroom cool and dark so your body can rest deeply through the night.";
     if (hasGastro) {
-      sleepDesc += " Sleep on your left side to anatomically keep the gastric junction above stomach acid levels, preventing nocturnal GERD reflux.";
+      sleepDesc += " Sleeping on your left side also helps keep stomach acid down and prevents nighttime heartburn.";
     }
-    sleepDesc += " Ensure a completely dark room (or eye mask) to maximize pineal melatonin release, supporting blood-brain-barrier clearing during deep sleep.";
+    sleepDesc += " A quiet, dark room or sleep mask helps you wake up feeling recharged and clear-headed.";
     
     lifestyleTips.push({
       id: 'life-sleep-optimal',
-      title: 'Optimize Sleep Architecture & REM/Deep Phase',
+      title: 'Deep, Restful Sleep Habits',
       description: sleepDesc,
       badge: 'Sleep Quality'
     });
@@ -1525,34 +1502,34 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
 
   // B. Personalized Stress Management
   if (userStress === 'High') {
-    let stressDesc = "Experiencing high chronic stress floods your blood with glucocorticoids, impairing digestion, raising heart rate, and stiffening arteries.";
+    let stressDesc = "High stress can affect your digestion, heart, and daily energy.";
     if (hasGastro) {
-      stressDesc += " High stress stops normal gastric motility and triggers intestinal muscle spasms, exacerbating IBS and acid reflux. Practice deep breathing prior to each meal to signal safety to your enteric nervous system.";
+      stressDesc += " High stress can upset your stomach and worsen heartburn. Taking slow, deep breaths before meals helps your stomach relax.";
     }
     if (hasHypertension || hasHeart) {
-      stressDesc += " Elevated catecholamines from stress prevent vascular relaxation. Implement slow-paced nasal breathing to directly decrease blood pressure.";
+      stressDesc += " Calm breathing helps relax your blood vessels and keep blood pressure steady.";
     }
-    stressDesc += " Practice the double-inhale physiological sigh: take a deep breath in through your nose, take a second micro-inhale to fully dilate the alveoli, and release a slow sigh out through your mouth. Repeat 5 times to immediately trigger the parasympathetic brake.";
+    stressDesc += " Try slow breathing: take a deep breath in through your nose, a quick second sip of air, then a long, slow exhale through your mouth. Repeat 5 times to quickly calm your body and mind.";
     
     lifestyleTips.push({
       id: 'life-stress-high',
-      title: 'Downregulate Sympathetic Overdrive',
+      title: 'Daily Stress Relief & Calming Breath',
       description: stressDesc,
-      badge: 'Autonomic Balance'
+      badge: 'Stress Relief'
     });
   } else if (userStress === 'Moderate') {
     lifestyleTips.push({
       id: 'life-stress-moderate',
-      title: 'Proactive Cortisol Buffering & Stress Resiliency',
-      description: 'Your moderate stress levels are manageable but require proactive cellular buffering. Incorporate a 10-minute daily silent mindfulness scan or a walk in nature without screens. Ensure adequate dietary magnesium-rich whole foods (such as spinach, pumpkin seeds, and almonds) to offset high adrenal magnesium excretion.',
-      badge: 'Adrenal Resiliency'
+      title: 'Mindful Breaks & Outdoor Walks',
+      description: 'Keep everyday stress under control with a 10-minute walk outside or a quiet break away from phones and screens. Eating foods rich in magnesium—like spinach, pumpkin seeds, and almonds—also helps your body stay relaxed.',
+      badge: 'Stress Balance'
     });
   } else {
     lifestyleTips.push({
       id: 'life-stress-low',
-      title: 'Sustain Nervous System Balance & Active Recovery',
-      description: 'Your low stress is a wonderful health asset. Maintain this state of nervous system balance by protecting your boundaries, pursuing creative hobbies, and ensuring you incorporate light active recovery days (like light stretching or leisure walks) to balance demanding cognitive or exercise schedules.',
-      badge: 'Nervous System Health'
+      title: 'Maintain Healthy Balance & Recovery',
+      description: 'Your low stress level is a wonderful asset for your health. Maintain this positive balance by taking regular downtime, enjoying relaxing hobbies, and balancing busy days with gentle walks or light stretching.',
+      badge: 'Daily Balance'
     });
   }
 
@@ -1560,30 +1537,30 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   if (profile.activityLevel === 'Sedentary') {
     lifestyleTips.push({
       id: 'life-activity-sedentary',
-      title: 'Break Sedentary Stagnation with "Exercise Snacks"',
-      description: 'A sedentary baseline causes a rapid decline in muscle capillary density and skeletal muscle insulin sensitivity. Set a desk timer to stand up every 60 minutes and perform 10 bodyweight air squats or a 2-minute brisk corridor walk. This opens glucose transport channels (GLUT-4) without requiring insulin secretion.',
-      badge: 'Metabolic Activity'
+      title: 'Hourly Movement Breaks',
+      description: 'Sitting for long hours slows circulation and metabolism. Stand up once every hour for a 2-minute walk or 10 gentle squats. These quick movement breaks keep your blood flowing and help your body process meals efficiently.',
+      badge: 'Daily Movement'
     });
   } else if (profile.activityLevel === 'Lightly Active') {
     lifestyleTips.push({
       id: 'life-activity-light',
-      title: 'Build Zone 2 Aerobic Base and Capillary Density',
-      description: 'Your light activity is a great starting point. Seek to build on this base by adding brisk walking or cycling at a pace where you can comfortably speak but not sing (Zone 2). Aim for 150 minutes weekly to stimulate mitochondrial biogenesis and significantly lower resting heart rate.',
-      badge: 'Aerobic Base'
+      title: 'Brisk Daily Walks for Heart Health',
+      description: 'Your light activity is a wonderful foundation. Try adding brisk walking or easy cycling at a pace where you can comfortably talk. Aim for about 150 minutes across the week to strengthen your heart and build stamina.',
+      badge: 'Heart Stamina'
     });
   } else if (profile.activityLevel === 'Moderately Active') {
     lifestyleTips.push({
       id: 'life-activity-moderate',
-      title: 'Structure Periodized Training & Skeletal Muscle Density',
-      description: 'With a moderately active routine, balance is key to preventing overtraining. Structure your week with 3 days of progressive resistance training to build lean contractile muscle (which acts as a metabolic storage sink for glycogen) and 2 days of cardiovascular endurance workouts.',
-      badge: 'Balanced Conditioning'
+      title: 'Balanced Weekly Fitness Routine',
+      description: 'With regular exercise, balance is key to avoiding fatigue. Try pairing 3 days of strength exercises to build tone and muscle with 2 days of cardio like walking or cycling for heart endurance.',
+      badge: 'Balanced Fitness'
     });
   } else {
     lifestyleTips.push({
       id: 'life-activity-heavy',
-      title: 'Support High Performance with Strategic Recovery',
-      description: 'Being very active is excellent for metabolic health but requires deliberate recovery structures. Focus on glycogen replenishment with clean starches and ensure 1.6 to 2.2 grams of protein per kg of body weight. Track resting heart rate or heart rate variability (HRV) as indicators of nervous system fatigue.',
-      badge: 'Performance Recovery'
+      title: 'Active Recovery & Proper Fueling',
+      description: 'Staying very active is fantastic for your health, but your body needs rest to rebuild. Make sure to eat enough protein and healthy carbs, drink plenty of water, and take rest days so your muscles fully recover.',
+      badge: 'Active Recovery'
     });
   }
 
@@ -1592,23 +1569,16 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   if (currentSmoking === 'Active smoker' || currentSmoking === 'Yes') {
     lifestyleTips.push({
       id: 'life-smoking-active',
-      title: 'Protect Vascular Endothelial Elasticity',
-      description: 'Inhaling combustion products introduces heavy carbon monoxide, which binds to hemoglobin, depriving vital organs of oxygen. Smoking damages the endothelial lining, raising high-sensitivity C-reactive protein (hs-CRP). Focus on eating high-antioxidant foods (like blueberries and green tea) and consult a healthcare professional regarding structured cessation aids.',
-      badge: 'Endothelial Protection'
+      title: 'Protect Heart & Lung Health',
+      description: 'Smoking places extra strain on your heart, blood vessels, and lungs. Eating antioxidant-rich foods like blueberries and leafy greens helps protect your cells, and speaking with your doctor can give you personalized support to cut back or quit.',
+      badge: 'Heart Protection'
     });
   } else if (currentSmoking === 'Former smoker') {
     lifestyleTips.push({
       id: 'life-smoking-former',
-      title: 'Support Pulmonary Clearance and Alveolar Repair',
-      description: 'Congratulations on quitting! Your body continues to repair lung tissue. Support this repair with deep diaphragmatic yoga breathing (pranayama) to expand vital lung capacity and mobilize lower lobe cilia. Consume plenty of cruciferous vegetables (broccoli, Brussels sprouts) to assist phase II liver detoxification.',
-      badge: 'Pulmonary Restoration'
-    });
-  } else {
-    lifestyleTips.push({
-      id: 'life-smoking-never',
-      title: 'Preserve Mitochondrial Oxygen Delivery',
-      description: 'Maintaining a smoke-free life preserves optimal oxygen transport capacity and capillary integrity. Keep avoiding secondhand vapor or smoke exposure to ensure maximum cardiovascular efficiency, preserving lung elasticity and cellular respiration as you age.',
-      badge: 'Vascular Longevity'
+      title: 'Keep Your Lungs Healthy & Strong',
+      description: 'Congratulations on quitting smoking! Support your continued lung recovery with slow, deep breathing exercises each day. Eating plenty of vegetables like broccoli and Brussels sprouts also helps your body stay clean and healthy.',
+      badge: 'Lung Health'
     });
   }
 
@@ -1617,30 +1587,23 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   if (currentAlcohol === 'Heavy' || currentAlcohol === 'Regularly') {
     lifestyleTips.push({
       id: 'life-alcohol-heavy',
-      title: 'Reverse Hepatic Fat and Protect Sleep Quality',
-      description: 'Frequent or heavy alcohol consumption halts fatty acid oxidation in the liver, leading to hepatic fat deposits, and fragments sleep by blocking deep restorative stages. Establish a plan to taper consumption to zero. Support your liver with high-fiber grains and sulfur-rich foods (onions, garlic, eggs) to aid glutathione production.',
-      badge: 'Hepatic Recovery'
+      title: 'Cut Back to Protect Liver & Sleep',
+      description: 'Frequent alcohol makes it harder for your liver to process fats and prevents deep, restful sleep. Gradually reducing your intake will quickly boost your energy, improve sleep quality, and protect your liver.',
+      badge: 'Liver & Sleep'
     });
   } else if (currentAlcohol === 'Moderate' || currentAlcohol === 'Socially') {
     lifestyleTips.push({
       id: 'life-alcohol-moderate',
-      title: 'Protect Gut Barrier & Overnight Cardiovascular Recovery',
-      description: 'Even moderate or social alcohol consumption triggers minor gut permeability (leaky gut) and raises sleeping heart rate, preventing optimal cardiovascular rest. Avoid drinking alcohol within 4 hours of your bedtime to allow your autonomic nervous system to enter deep parasympathetic recovery.',
-      badge: 'Gut & Sleep Defense'
+      title: 'Drink Water & Finish Drinks Early',
+      description: 'Alcohol close to bedtime raises your sleeping heart rate and disrupts deep rest. Enjoy drinks earlier in the evening and finish at least 3 to 4 hours before bed so your body can rest and recover overnight.',
+      badge: 'Sleep Defense'
     });
   } else if (currentAlcohol === 'Light' || currentAlcohol === 'Rarely') {
     lifestyleTips.push({
       id: 'life-alcohol-light',
-      title: 'Safeguard Cellular Hydration and Nutrient Status',
-      description: 'Your light/occasional consumption keeps toxic acetaldehyde exposure minimal. When you do choose to have a drink, consume 250ml of water containing electrolytes (sodium, potassium) alongside it to prevent mineral depletion and protect cellular hydration.',
+      title: 'Stay Hydrated with Occasional Drinks',
+      description: 'Your light or occasional alcohol intake is well-balanced. When you do enjoy a drink, have a glass of water alongside it to keep yourself well hydrated and energized.',
       badge: 'Hydration Buffer'
-    });
-  } else {
-    lifestyleTips.push({
-      id: 'life-alcohol-none',
-      title: 'Optimize Liver Function and Unfragmented Sleep Stages',
-      description: 'Abstaining from alcohol entirely allows your liver to fully dedicate its enzymatic pathways to carbohydrate and fat metabolism, keeps your gut lining intact, and allows your sleep architecture to progress through complete, natural sleep cycles for maximum mental clarity.',
-      badge: 'Toxic-Free Health'
     });
   }
 
@@ -1648,57 +1611,41 @@ export function generateRecommendations(profile: HealthProfile): Omit<Personaliz
   if (hasDiabetes || isBloodSugarControl || bmiValue >= 25) {
     lifestyleTips.push({
       id: 'life-postmeal-walk',
-      title: 'Perform 10-Minute Post-Meal Strolls',
-      description: 'Walk slowly for exactly 10 minutes immediately following your largest meal. This triggers muscular glucose transporters (GLUT-4) to absorb sugars directly, sparing your pancreas from excessive insulin release.',
-      badge: 'Metabolic Support'
+      title: '10-Minute Walk After Meals',
+      description: 'A light 10-minute walk right after your main meal helps muscles absorb sugar from your food naturally, keeping your blood sugar steady and aiding smooth digestion.',
+      badge: 'Blood Sugar'
     });
   }
 
   if (hasGastro) {
     lifestyleTips.push({
       id: 'life-gastro-chewing-hack',
-      title: 'Implement the 30-Chew Mastification Drill',
-      description: 'Force yourself to chew every bite of food at least 30 times. Salivary amylase begins carbohydrate breakdown early, sparing your stomach lining from heavy digestive work and reducing acid reflux.',
-      badge: 'GI Preservation'
+      title: 'Chew Food Thoroughly',
+      description: 'Take time to chew each bite well before swallowing. Chewing thoroughly breaks food down with saliva, which eases the work on your stomach and helps prevent acid reflux and bloating.',
+      badge: 'Easy Digestion'
     });
     lifestyleTips.push({
       id: 'life-gastro-spacing-hack',
-      title: 'Maintain a 3-Hour Fasting Window Before Bed',
-      description: 'Complete your last calorie intake at least 180 minutes before lying down. This lets your stomach empty, mechanically preventing acid backflow and acid burn.',
-      badge: 'GERD Reflux Prevention'
+      title: 'Finish Eating 3 Hours Before Bed',
+      description: 'Finish dinner or snacks at least 3 hours before lying down to sleep. Giving your stomach time to empty helps prevent nighttime acid reflux and heartburn.',
+      badge: 'Reflux Relief'
     });
   }
 
   if (isWeightLoss) {
     lifestyleTips.push({
       id: 'life-weightloss-satiety',
-      title: 'Practice Mindful Plate Partitioning',
-      description: 'Fill half of your plate with water-rich vegetables, a quarter with lean protein, and the remainder with complex carbs. Drink 300ml of water 15 minutes before the meal to prompt stretch receptors.',
-      badge: 'Satiety Strategy'
+      title: 'Balanced Plate & Water Before Meals',
+      description: 'Fill half your plate with colorful vegetables, a quarter with lean protein, and a quarter with whole grains. Drinking a glass of water 15 minutes before eating helps you feel comfortably satisfied.',
+      badge: 'Portion Balance'
     });
   }
   if (isWeightGain) {
     lifestyleTips.push({
       id: 'life-weightgain-meal-freq',
-      title: 'Structure 5-6 Micro-Meals Daily',
-      description: 'Instead of eating 3 huge meals that cause bloating and satiety fatigue, divide your caloric surplus target into smaller, calorie-dense portions spaced 3 hours apart.',
-      badge: 'Surplus Efficiency'
-    });
-  }
-  if (isMuscleGain) {
-    lifestyleTips.push({
-      id: 'life-musclegain-protein-timing',
-      title: 'Distribute Protein Intake Evenly',
-      description: 'Consume 25-35g of protein every 3-4 hours to continuously trigger muscle protein synthesis (MPS) spikes throughout the waking day, preventing muscle breakdown.',
-      badge: 'Anabolic Optimization'
-    });
-  }
-  if (isHeartHealth || hasHypertension) {
-    lifestyleTips.push({
-      id: 'life-hearthealth-nitric-oxide',
-      title: 'Boost Vascular Nitric Oxide Biosynthesis',
-      description: 'Squeeze dynamic physical activities or deep nasal breathing cycles during your day. Nasal breathing triggers systemic nitric oxide release, relaxing endothelial cells and lowering resting blood pressure.',
-      badge: 'Endothelial Relaxation'
+      title: 'Enjoy 5 to 6 Smaller Meals',
+      description: 'Instead of having 3 heavy meals that leave you uncomfortably full, eat smaller nutritious meals or snacks every 3 hours. This makes it easy to get enough calories without bloating.',
+      badge: 'Healthy Energy'
     });
   }
 

@@ -202,24 +202,24 @@ export default function RecommendationsPage() {
 
     const library: { [key: string]: { label: string; text: string }[] } = {
       'comb-breakfast': [
-        { label: 'Morning Energy', text: 'Combines complete proteins and complex grains to deliver hours of stable, non-fluctuating energy.' },
-        { label: 'Hormone Regulation', text: 'Suppresses breakfast-induced cortisol peaks and satisfies physical fullness cues.' },
-        { label: 'Metabolic Ignite', text: 'Supports early thyroid and metabolic rate processes safely without insulin spikes.' }
+        { label: 'Morning Energy', text: 'Combines proteins and whole grains to deliver steady energy all morning without crashes.' },
+        { label: 'Appetite Control', text: 'Helps keep you comfortably full and prevents mid-morning cravings.' },
+        { label: 'Morning Alertness', text: 'Provides essential nutrients to help you start the day feeling focused and active.' }
       ],
       'comb-lunch': [
-        { label: 'Macronutrient Split', text: 'Delivers a perfectly-proportioned mix of lean proteins, complex grains, and healthy lipids.' },
-        { label: 'Glycemic Buffer', text: 'Soluble fiber from greens delays gastric emptying, eliminating post-lunch brain fog.' },
-        { label: 'Cellular Fueling', text: 'Provides a rich spectrum of bioavailable amino acids for muscle and organ repair.' }
+        { label: 'Balanced Energy', text: 'Combines lean protein, whole grains, and healthy fats to keep your energy steady for the afternoon.' },
+        { label: 'No Afternoon Crash', text: 'Fiber from greens and vegetables slows down digestion so you stay sharp and avoid post-lunch sluggishness.' },
+        { label: 'Daily Nourishment', text: 'Supplies high-quality protein to keep your muscles and body functioning at their best.' }
       ],
       'comb-dinner': [
-        { label: 'Nocturnal Safety', text: 'Protects esophageal walls and prevents overnight acid reflux with soft, alkaline items.' },
-        { label: 'Sustained Glycogen', text: 'Keeps blood sugar stable throughout the night, preventing cortisol-induced sleep disruptions.' },
-        { label: 'System Recovery', text: 'Supplies concentrated trace minerals to support cellular detox and biological repair.' }
+        { label: 'Nighttime Comfort', text: 'Protects against acid reflux with gentle, soothing ingredients that are easy on the stomach.' },
+        { label: 'Steady Night Energy', text: 'Keeps blood sugar stable through the night for deeper, uninterrupted sleep.' },
+        { label: 'Overnight Repair', text: 'Supplies gentle minerals and nutrients to support your body while you sleep.' }
       ],
       'comb-snack': [
-        { label: 'Hunger Control', text: 'Physically fills the stomach between main meals using dietary fiber and healthy plant fats.' },
-        { label: 'Insulin Defense', text: 'Prevents mid-day energy dips without prompting sudden glycemic spikes or cravings.' },
-        { label: 'Cortisol Cushioning', text: 'Provides crucial minerals that help buffer physiological stress responses.' }
+        { label: 'Hunger Control', text: 'Curbs hunger between main meals with natural fiber and healthy plant fats.' },
+        { label: 'Steady Blood Sugar', text: 'Prevents mid-day energy dips without causing sudden sugar spikes.' },
+        { label: 'Quick Refresh', text: 'Provides light hydration and essential minerals to keep you refreshed and focused.' }
       ],
       'comb-iron-vitc': [
         { label: '300% Absorption', text: 'Vitamin C chemically reduces non-heme iron into a highly bioavailable ferrous form.' },
@@ -613,20 +613,20 @@ export default function RecommendationsPage() {
 
     if (comb.id.includes('breakfast')) {
       mealType = 'Breakfast Blueprint';
-      ingredients = ['Protein (Eggs or Plant Source)', 'Complex Grain (Oats or Sweet Potato)', 'Probiotic Base (Yogurt or Ferment)', 'Mineral Seeds / Nuts'];
-      tip = 'Eat within 90 minutes of waking to anchor cortisol cycles and sustain morning focus.';
+      ingredients = ['Protein (Eggs, Tofu, or Yogurt)', 'Whole Grains (Oats or Sweet Potato)', 'Yogurt or Fermented Food', 'Healthy Seeds or Nuts'];
+      tip = 'Enjoy breakfast within 90 minutes of waking up to give you steady morning energy and focus.';
     } else if (comb.id.includes('lunch')) {
       mealType = 'Lunch Blueprint';
-      ingredients = ['Lean Protein (Salmon, Poultry or Tofu)', 'Slow-Release Grain (Brown Rice or Quinoa)', 'Fibrous Greens', 'Cold-Pressed Dressing'];
-      tip = 'Include leafy greens first to coat the intestinal wall and prevent afternoon brain fog.';
+      ingredients = ['Lean Protein (Salmon, Chicken, or Tofu)', 'Whole Grain (Brown Rice or Quinoa)', 'Fresh Green Vegetables', 'Olive Oil Dressing'];
+      tip = 'Start with your vegetables or greens first to help digestion and keep your energy steady through the afternoon.';
     } else if (comb.id.includes('dinner')) {
       mealType = 'Dinner Blueprint';
-      ingredients = ['Gentle Protein (Fish, Lentils, or Tempeh)', 'Light Carb (Squash or Steamed Roots)', 'Tender Steamed Vegetables', 'Healthy Lipid Drizzle'];
-      tip = 'Finish dinner 3 hours prior to sleep to protect esophageal tone and improve nocturnal recovery.';
+      ingredients = ['Gentle Protein (Fish, Lentils, or Tempeh)', 'Light Whole Carbs (Squash or Steamed Roots)', 'Tender Steamed Vegetables', 'Olive Oil Drizzle'];
+      tip = 'Finish dinner 3 hours before bed so your stomach has time to empty and you can sleep comfortably.';
     } else if (comb.id.includes('snack')) {
       mealType = 'Smart Snack Blueprint';
-      ingredients = ['Crunchy Seed or Nut Base', 'Hydrating Vegetable or Fresh Berry', 'Prebiotic Fiber'];
-      tip = 'Pair raw fiber with healthy lipids to maintain steady glucose without mid-day slumps.';
+      ingredients = ['Handful of Seeds or Nuts', 'Fresh Veggie Slices or Berries', 'Natural Fiber'];
+      tip = 'Pair nuts or seeds with fresh fruit or veggies to stay full between meals without energy crashes.';
     } else if (comb.id.includes('iron-vitc')) {
       mealType = 'Nutrient Synergy';
       ingredients = ['Plant-Based Iron (Lentils or Pumpkin Seeds)', 'Fresh Vitamin C (Citrus, Bell Pepper, or Berries)'];
@@ -732,27 +732,27 @@ export default function RecommendationsPage() {
       const safetyNotes = parsed.safetyNotes || 'Maintain steady breathing and pause if you experience discomfort.';
       
       const text = name.toLowerCase();
-      let shortReason = 'Promotes cardiovascular endurance and boosts resting metabolic rate safely.';
+      let shortReason = 'Supports healthy heart function, boosts daily energy, and keeps your muscles active.';
       let formTip = safetyNotes;
 
       if (text.includes('brisk walk') || text.includes('walking')) {
-        shortReason = 'Low-impact cardiovascular conditioning that enhances capillary density and glucose uptake without joint stress.';
-        formTip = 'Keep eyes forward, shoulders relaxed, and swing arms naturally with an upright posture.';
+        shortReason = 'A gentle, low-impact exercise that boosts heart health and supports healthy blood sugar without straining joints.';
+        formTip = 'Keep your eyes forward, relax your shoulders, and swing your arms naturally with an upright posture.';
       } else if (text.includes('squat') || text.includes('push-up') || text.includes('bodyweight')) {
-        shortReason = 'Preserves lean muscle mass and reinforces joint bone density through controlled functional resistance.';
-        formTip = 'Keep your core braced, breathe out through the exertion phase, and avoid locking knees or elbows.';
+        shortReason = 'Builds muscle strength and supports bone health using your own body weight in safe, controlled motions.';
+        formTip = 'Keep your stomach muscles gently tight, breathe out as you push, and avoid locking your knees or elbows.';
       } else if (text.includes('swim') || text.includes('water')) {
-        shortReason = 'Buoyancy eliminates joint impact while providing 360-degree resistance for full-body cardiac and muscle tone.';
-        formTip = 'Focus on long, smooth gliding strokes with synchronized rhythmic exhalation into the water.';
+        shortReason = 'Water gently supports your body weight so you can build fitness and tone muscles with zero impact on joints.';
+        formTip = 'Focus on long, smooth gliding strokes with steady, rhythmic breathing in and out of the water.';
       } else if (text.includes('cycling') || text.includes('bike')) {
-        shortReason = 'Builds quadricep and hamstring power while supporting smooth knee joint synovial fluid circulation.';
-        formTip = 'Adjust saddle height so your knee retains a slight 15-degree bend at the bottom of each stroke.';
+        shortReason = 'Strengthens your leg muscles and improves heart endurance while being very easy on your knees.';
+        formTip = 'Adjust your seat height so your knee has just a slight 15-degree bend at the bottom of each pedal stroke.';
       } else if (text.includes('yoga') || text.includes('mobility') || text.includes('stretch')) {
-        shortReason = 'Downregulates sympathetic nervous system overdrive and preserves spinal flexion and ligament elasticity.';
-        formTip = 'Never force a stretch past mild tension; synchronize steady nasal inhalations with each opening movement.';
+        shortReason = 'Helps calm everyday stress, loosens tight muscles, and keeps your spine and joints flexible.';
+        formTip = 'Never force a stretch to the point of pain; breathe slowly and stretch gently until you feel mild tension.';
       } else if (text.includes('interval') || text.includes('hiit') || text.includes('cardio')) {
-        shortReason = 'Stimulates mitochondrial biogenesis and elevates post-exercise oxygen consumption (EPOC).';
-        formTip = 'Warm up thoroughly for 5 minutes and strictly monitor heart rate within target training zones.';
+        shortReason = 'Alternates brisk and easy paces to burn calories, build stamina, and strengthen your heart.';
+        formTip = 'Warm up thoroughly for 5 minutes first, and keep your pace at an intensity where you can catch your breath.';
       }
 
       return {
@@ -805,27 +805,27 @@ export default function RecommendationsPage() {
     if (text.includes('sleep') || text.includes('circadian') || text.includes('melatonin') || text.includes('light')) {
       categoryTag = tip.badge || 'Sleep & Rest';
       if (!shortReason || shortReason.length < 15) {
-        shortReason = 'Supports restful sleep cycles, cellular repair, and daytime focus.';
+        shortReason = 'Supports restful sleep so you wake up feeling recharged and clear-headed.';
       }
     } else if (text.includes('stress') || text.includes('cortisol') || text.includes('breathing') || text.includes('nervous')) {
       categoryTag = tip.badge || 'Stress Balance';
       if (!shortReason || shortReason.length < 15) {
-        shortReason = 'Calms the nervous system and lowers everyday tension.';
+        shortReason = 'Calms the body and lowers everyday mental and physical tension.';
       }
     } else if (text.includes('chew') || text.includes('bed') || text.includes('gerd') || text.includes('reflux') || text.includes('gastro')) {
       categoryTag = tip.badge || 'Digestive Health';
       if (!shortReason || shortReason.length < 15) {
-        shortReason = 'Promotes smooth digestion and prevents nighttime discomfort.';
+        shortReason = 'Promotes smooth digestion and helps prevent heartburn and bloating.';
       }
     } else if (text.includes('protein') || text.includes('muscle') || text.includes('meal')) {
       categoryTag = tip.badge || 'Meal Timing';
       if (!shortReason || shortReason.length < 15) {
-        shortReason = 'Maintains steady energy levels throughout the day.';
+        shortReason = 'Helps maintain steady energy and stamina throughout the day.';
       }
     } else if (text.includes('nitric oxide') || text.includes('vascular') || text.includes('endothelial')) {
       categoryTag = tip.badge || 'Circulation';
       if (!shortReason || shortReason.length < 15) {
-        shortReason = 'Supports blood vessel elasticity and healthy blood flow.';
+        shortReason = 'Supports healthy circulation and normal blood flow.';
       }
     }
 
@@ -1513,99 +1513,157 @@ export default function RecommendationsPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-5 sm:p-6">
-                {recs.healthyCombinations.length === 0 ? (
-                  <EmptyState
-                    title="No Combinations Generated"
-                    description="Our metabolic synergy analyzer is compiling healthy pairings for your biological markers."
-                    id="recs-combinations-empty-state"
-                  />
-                ) : (
-                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4" id="combinations-items-list">
-                    {recs.healthyCombinations.map((comb) => {
-                      const mealData = getMealBlueprintData(comb);
-                      const cardKey = `meal-${comb.id}`;
-                      const isExpanded = Boolean(expandedCards[cardKey]);
+                {(() => {
+                  const filteredCombinations = recs.healthyCombinations.filter((comb) => {
+                    const id = (comb.id || '').toLowerCase();
+                    const badge = (comb.badge || '').trim().toLowerCase();
+                    const title = (comb.title || '').trim().toLowerCase();
+                    const mealData = getMealBlueprintData(comb);
+                    const mealType = (mealData.mealType || '').trim().toLowerCase();
 
-                      return (
-                        <div 
-                          key={comb.id} 
-                          className="p-3.5 sm:p-5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col gap-2.5 sm:gap-3 shadow-xs hover:border-purple-500/30 transition-all duration-200"
-                        >
-                          {/* Top meta row */}
-                          <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
-                                {mealData.mealType}
-                              </span>
-                              {mealData.badge && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60 truncate">
-                                  {mealData.badge}
-                                </span>
-                              )}
-                            </div>
-                            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
-                          </div>
+                    // 1. Nutrient Synergy — Absorption Synergy
+                    if (
+                      id === 'comb-iron-vitc' ||
+                      badge === 'absorption synergy' ||
+                      badge === 'absorption booster' ||
+                      (mealType.includes('nutrient synergy') && badge.includes('absorption')) ||
+                      title.includes('absorption synergy')
+                    ) {
+                      return false;
+                    }
 
-                          {/* Meal Title */}
-                          <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
-                            {mealData.cleanTitle}
-                          </h4>
+                    // 2. Nutrient Synergy — Bioavailability Hack
+                    if (
+                      id === 'comb-fat-vitamins' ||
+                      badge === 'bioavailability hack' ||
+                      (mealType.includes('nutrient synergy') && badge.includes('bioavailability')) ||
+                      title.includes('bioavailability hack')
+                    ) {
+                      return false;
+                    }
 
-                          {/* Short Reason */}
-                          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                            {mealData.shortReason}
-                          </p>
+                    // 3. Glycemic Shield
+                    if (
+                      id === 'comb-carb-fiber-protein' ||
+                      badge === 'glycemic shield' ||
+                      badge === 'glycemic buffer' ||
+                      mealType === 'glycemic shield' ||
+                      title === 'glycemic shield'
+                    ) {
+                      return false;
+                    }
 
-                          {/* Progressive Disclosure */}
-                          <button
-                            type="button"
-                            onClick={() => toggleCard(cardKey)}
-                            className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 min-h-[44px] cursor-pointer group transition-colors select-none"
-                            aria-expanded={isExpanded}
+                    // 4. Cardioprotective Duo
+                    if (
+                      id === 'comb-potassium-magnesium' ||
+                      badge === 'cardioprotective duo' ||
+                      mealType === 'cardioprotective duo' ||
+                      title === 'cardioprotective duo'
+                    ) {
+                      return false;
+                    }
+
+                    return true;
+                  });
+
+                  if (filteredCombinations.length === 0) {
+                    return (
+                      <EmptyState
+                        title="No Combinations Generated"
+                        description="Our metabolic synergy analyzer is compiling healthy pairings for your biological markers."
+                        id="recs-combinations-empty-state"
+                      />
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4" id="combinations-items-list">
+                      {filteredCombinations.map((comb) => {
+                        const mealData = getMealBlueprintData(comb);
+                        const cardKey = `meal-${comb.id}`;
+                        const isExpanded = Boolean(expandedCards[cardKey]);
+
+                        return (
+                          <div 
+                            key={comb.id} 
+                            className="p-3.5 sm:p-5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col gap-2.5 sm:gap-3 shadow-xs hover:border-purple-500/30 transition-all duration-200"
                           >
-                            <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
-                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
-                          </button>
-
-                          {isExpanded && (
-                            <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
-                              {/* Meal Components */}
-                              {mealData.ingredients.length > 0 && (
-                                <div className="flex flex-col gap-1.5">
-                                  <span className="text-4xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                                    Components & Pairings
+                            {/* Top meta row */}
+                            <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-semibold uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+                                  {mealData.mealType}
+                                </span>
+                                {mealData.badge && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] sm:text-3xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60 truncate">
+                                    {mealData.badge}
                                   </span>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {mealData.ingredients.map((ing, i) => (
-                                      <span key={i} className="inline-flex items-center text-xs px-2 py-0.5 rounded-md bg-purple-500/5 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 border border-purple-200/50 dark:border-purple-800/40 font-medium">
-                                        {ing}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Practical Tip */}
-                              {mealData.tip && (
-                                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
-                                  <Lightbulb className="w-3.5 h-3.5 text-purple-500 flex-shrink-0 mt-0.5" />
-                                  <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Meal tip:</strong> {mealData.tip}</span>
-                                </div>
-                              )}
-
-                              {mealData.benefits.map((benefit, bidx) => (
-                                <div key={bidx} className="p-2.5 rounded-xl bg-purple-500/5 dark:bg-purple-950/20 border border-purple-500/10 dark:border-purple-900/20 flex flex-col gap-0.5">
-                                  <span className="font-bold text-xs text-purple-900 dark:text-purple-200">{benefit.label}</span>
-                                  <p className="text-slate-600 dark:text-slate-400">{benefit.text}</p>
-                                </div>
-                              ))}
+                                )}
+                              </div>
+                              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+
+                            {/* Meal Title */}
+                            <h4 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 dark:text-white leading-snug break-words">
+                              {mealData.cleanTitle}
+                            </h4>
+
+                            {/* Short Reason */}
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
+                              {mealData.shortReason}
+                            </p>
+
+                            {/* Progressive Disclosure */}
+                            <button
+                              type="button"
+                              onClick={() => toggleCard(cardKey)}
+                              className="mt-auto pt-2 flex items-center justify-between text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 min-h-[44px] cursor-pointer group transition-colors select-none"
+                              aria-expanded={isExpanded}
+                            >
+                              <span>{isExpanded ? 'Hide details' : 'Learn more'}</span>
+                              <ChevronDown className={`w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 ${isExpanded ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isExpanded && (
+                              <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5 text-xs leading-relaxed animate-fade-in">
+                                {/* Meal Components */}
+                                {mealData.ingredients.length > 0 && (
+                                  <div className="flex flex-col gap-1.5">
+                                    <span className="text-4xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                      Components & Pairings
+                                    </span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {mealData.ingredients.map((ing, i) => (
+                                        <span key={i} className="inline-flex items-center text-xs px-2 py-0.5 rounded-md bg-purple-500/5 dark:bg-purple-950/30 text-purple-900 dark:text-purple-200 border border-purple-200/50 dark:border-purple-800/40 font-medium">
+                                          {ing}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Practical Tip */}
+                                {mealData.tip && (
+                                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-150/70 dark:border-slate-800/70 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                                    <Lightbulb className="w-3.5 h-3.5 text-purple-500 flex-shrink-0 mt-0.5" />
+                                    <span><strong className="font-semibold text-slate-800 dark:text-slate-200">Meal tip:</strong> {mealData.tip}</span>
+                                  </div>
+                                )}
+
+                                {mealData.benefits.map((benefit, bidx) => (
+                                  <div key={bidx} className="p-2.5 rounded-xl bg-purple-500/5 dark:bg-purple-950/20 border border-purple-500/10 dark:border-purple-900/20 flex flex-col gap-0.5">
+                                    <span className="font-bold text-xs text-purple-900 dark:text-purple-200">{benefit.label}</span>
+                                    <p className="text-slate-600 dark:text-slate-400">{benefit.text}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -1868,24 +1926,55 @@ export default function RecommendationsPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-5 sm:p-6">
-                {recs.lifestyleTips.length === 0 ? (
-                  <EmptyState
-                    title="No Lifestyle Adaptations Triggered"
-                    description="No special circadian adjustments or lifestyle tips are suggested at this moment. Maintain standard wellness cycles."
-                    id="recs-lifestyle-empty-state"
-                  />
-                ) : (
-                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4" id="lifestyle-items-list">
-                    {(() => {
-                      const seen = new Set<string>();
-                      const uniqueTips = recs.lifestyleTips.filter((tip) => {
-                        const key = tip.title.trim().toLowerCase();
-                        if (seen.has(key)) return false;
-                        seen.add(key);
-                        return true;
-                      });
+                {(() => {
+                  const seen = new Set<string>();
+                  const removedLifestyleIds = new Set([
+                    'life-smoking-never',
+                    'life-alcohol-none',
+                    'life-musclegain-protein-timing',
+                    'life-hearthealth-nitric-oxide'
+                  ]);
+                  const uniqueTips = recs.lifestyleTips.filter((tip) => {
+                    const id = (tip.id || '').toLowerCase();
+                    const key = tip.title.trim().toLowerCase();
 
-                      return uniqueTips.map((tip) => {
+                    // Remove exactly four redundant, repetitive, or lowest-priority items:
+                    // 1. Preserve Mitochondrial Oxygen Delivery
+                    if (id === 'life-smoking-never' || key.includes('preserve mitochondrial oxygen delivery')) {
+                      return false;
+                    }
+                    // 2. Optimize Liver Function and Unfragmented Sleep Stages
+                    if (id === 'life-alcohol-none' || key.includes('optimize liver function and unfragmented sleep stages')) {
+                      return false;
+                    }
+                    // 3. Distribute Protein Intake Evenly
+                    if (id === 'life-musclegain-protein-timing' || key.includes('distribute protein intake evenly')) {
+                      return false;
+                    }
+                    // 4. Boost Vascular Nitric Oxide Biosynthesis
+                    if (id === 'life-hearthealth-nitric-oxide' || key.includes('boost vascular nitric oxide biosynthesis')) {
+                      return false;
+                    }
+
+                    if (removedLifestyleIds.has(id)) return false;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                  });
+
+                  if (uniqueTips.length === 0) {
+                    return (
+                      <EmptyState
+                        title="No Lifestyle Adaptations Triggered"
+                        description="No special circadian adjustments or lifestyle tips are suggested at this moment. Maintain standard wellness cycles."
+                        id="recs-lifestyle-empty-state"
+                      />
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4" id="lifestyle-items-list">
+                      {uniqueTips.map((tip) => {
                         const lifeData = getLifestyleCardData(tip);
                         const cardKey = `life-${tip.id}`;
                         const isExpanded = Boolean(expandedCards[cardKey]);
@@ -1939,10 +2028,10 @@ export default function RecommendationsPage() {
                             )}
                           </div>
                         );
-                      });
-                    })()}
-                  </div>
-                )}
+                      })}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
